@@ -861,13 +861,6 @@ function borrarFoto(idx) {
 
 // ── SUBMIT ────────────────────────────────────────────
 async function handleSubmit() {
-  // Validar cuartel obligatorio
-  if (!appState.cuartel) {
-    document.getElementById('cardCuartel').classList.add('error-card');
-    document.getElementById('cardCuartel').scrollIntoView({ behavior: 'smooth', block: 'center' });
-    showToast('Selecciona un cuartel');
-    return;
-  }
 
   const btn = document.getElementById('btnSubmit');
   btn.disabled = true;
