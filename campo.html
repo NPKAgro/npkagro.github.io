@@ -1152,13 +1152,15 @@ function triggerCamera() {
     toast(`Máximo ${CONFIG.MAX_FOTOS} fotos por envío`);
     return;
   }
-  // iOS PWA fix: recrear el input cada vez para garantizar el evento change
+  // iOS necesita input fresco cada vez para disparar el evento change en PWA
+  // Android necesita capture="environment" para abrir cámara directo
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
   const oldInput = document.getElementById('fileInput');
   const newInput = document.createElement('input');
-  newInput.type    = 'file';
-  newInput.id      = 'fileInput';
-  newInput.accept  = 'image/*';
-  // Sin capture="environment" → iOS muestra sheet con opción Cámara/Galería (más confiable)
+  newInput.type   = 'file';
+  newInput.id     = 'fileInput';
+  newInput.accept = 'image/*';
+  if (!isIOS) newInput.capture = 'environment'; // Android: abre cámara directo
   newInput.style.display = 'none';
   newInput.addEventListener('change', handleFileSelect);
   oldInput.parentNode.replaceChild(newInput, oldInput);
