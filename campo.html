@@ -1287,6 +1287,7 @@ async function enviarObservacion() {
 
   const payload = {
     token:    CONFIG.ACCESS_TOKEN,
+    action:   'campo',
     fecha, hora, cuartel,
     hilera:   hilera  || '',
     claro:    claro   || '',
