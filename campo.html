@@ -753,7 +753,7 @@
         <span class="add-icon">📸</span>
         <span id="btnAddFotoTxt">Tomar foto</span>
       </button>
-      <input type="file" id="fileInput" accept="image/*" capture="environment">
+      <input type="file" id="fileInput" accept="image/*">
     </div>
   </div>
 
@@ -920,8 +920,7 @@ function init() {
     claroGrid.appendChild(btn);
   }
 
-  // File input
-  document.getElementById('fileInput').addEventListener('change', handleFileSelect);
+  // File input - el listener se añade dinámicamente en triggerCamera() (iOS fix)
 
   // Restaurar estado (fix iOS camera)
   restaurarEstado();
@@ -1153,9 +1152,17 @@ function triggerCamera() {
     toast(`Máximo ${CONFIG.MAX_FOTOS} fotos por envío`);
     return;
   }
-  const fi  = document.getElementById('fileInput');
-  fi.value  = '';   // Reset para que iOS detecte cambio aunque sea la misma foto
-  fi.click();
+  // iOS PWA fix: recrear el input cada vez para garantizar el evento change
+  const oldInput = document.getElementById('fileInput');
+  const newInput = document.createElement('input');
+  newInput.type    = 'file';
+  newInput.id      = 'fileInput';
+  newInput.accept  = 'image/*';
+  // Sin capture="environment" → iOS muestra sheet con opción Cámara/Galería (más confiable)
+  newInput.style.display = 'none';
+  newInput.addEventListener('change', handleFileSelect);
+  oldInput.parentNode.replaceChild(newInput, oldInput);
+  newInput.click();
 }
 
 async function handleFileSelect(e) {
@@ -1391,9 +1398,8 @@ function resetForm() {
   document.querySelectorAll('.sel-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.card').forEach(c => c.classList.remove('error'));
 
-  const hVal = document.getElementById('hileraVal');
-  hVal.textContent = 'toca para ingresar';
-  hVal.classList.add('placeholder');
+  const hInp = document.getElementById('hileraInput');
+  if (hInp) hInp.value = '';
 
   const pVal = document.getElementById('plantaVal');
   pVal.textContent = 'toca para ingresar';

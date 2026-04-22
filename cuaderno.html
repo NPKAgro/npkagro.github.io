@@ -548,7 +548,7 @@
         <span class="add-icon">📸</span>
         <span id="btnAddFotoTxt">Tomar foto</span>
       </button>
-      <input type="file" id="fileInput" accept="image/*" capture="environment">
+      <input type="file" id="fileInput" accept="image/*">
     </div>
   </div>
 
@@ -653,7 +653,7 @@ function init() {
   });
 
   // File input
-  document.getElementById('fileInput').addEventListener('change', handleFileSelect);
+  // File input listener añadido dinámicamente en triggerCamera() (iOS fix)
 
   // Restaurar estado (fix iOS camera)
   restaurarEstado();
@@ -816,9 +816,16 @@ function triggerCamera() {
     showToast(`Máximo ${CONFIG.MAX_FOTOS} fotos por registro`);
     return;
   }
-  const fi = document.getElementById('fileInput');
-  fi.value = '';
-  fi.click();
+  // iOS PWA fix: recrear input cada vez para garantizar evento change
+  const oldInput = document.getElementById('fileInput');
+  const newInput = document.createElement('input');
+  newInput.type   = 'file';
+  newInput.id     = 'fileInput';
+  newInput.accept = 'image/*';
+  newInput.style.display = 'none';
+  newInput.addEventListener('change', handleFileSelect);
+  oldInput.parentNode.replaceChild(newInput, oldInput);
+  newInput.click();
 }
 
 async function handleFileSelect(e) {
