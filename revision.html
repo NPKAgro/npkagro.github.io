@@ -287,16 +287,69 @@
     }
     .estado-error-hint.visible { display: block; }
 
+    .aprobado-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
     .aprobado-badge {
+      flex: 1;
       background: rgba(16,185,129,0.1);
       color: var(--green);
       border-radius: var(--radius-sm);
       padding: 8px 12px;
       font-size: 12px;
       font-weight: 600;
-      text-align: center;
       border: 1px solid rgba(16,185,129,0.2);
     }
+    .btn-editar-estado {
+      font-size: 11px;
+      padding: 5px 10px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text3);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.12s;
+      flex-shrink: 0;
+    }
+    .btn-editar-estado:hover { border-color: var(--accent); color: var(--accent); }
+    /* Fila de edición inline */
+    .edit-estado-row {
+      display: none;
+      gap: 8px;
+      align-items: stretch;
+    }
+    .edit-estado-row.visible { display: flex; }
+    .btn-cancelar-edicion {
+      font-size: 11px;
+      padding: 6px 10px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text3);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.12s;
+      flex-shrink: 0;
+    }
+    .btn-cancelar-edicion:hover { border-color: var(--text2); color: var(--text2); }
+    .btn-guardar-edicion {
+      font-size: 12px;
+      padding: 6px 14px;
+      background: var(--green);
+      border: none;
+      border-radius: var(--radius-sm);
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: opacity 0.12s;
+    }
+    .btn-guardar-edicion:hover   { opacity: 0.85; }
+    .btn-guardar-edicion:disabled { background: var(--bg3); color: var(--text3); cursor: not-allowed; }
 
     /* ── FOTO ACCIONES ── */
     .foto-acciones { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
@@ -783,7 +836,17 @@ function renderObservaciones(lista) {
            <div class="estado-error-hint" id="hint_${obs.fila}">⚠️ Selecciona un estado antes de aprobar</div>
          </div>
          <div class="foto-acciones">${verFoto}${elimFotoHtml}${elimRegistroHtml}</div>`
-      : `<div class="aprobado-badge">🌱 ${obs.estado_jp || '(sin estado)'}</div>
+      : `<div class="aprobado-row">
+           <div class="aprobado-badge" id="badge_${obs.fila}">🌱 ${obs.estado_jp || '(sin estado)'}</div>
+           <button class="btn-editar-estado" onclick="editarEstado(${obs.fila})">✎ Editar</button>
+         </div>
+         <div class="edit-estado-row" id="editRow_${obs.fila}">
+           <select class="estado-select" id="editSel_${obs.fila}">
+             ${ESTADOS.map(e => `<option value="${e}"${e === obs.estado_jp ? ' selected' : ''}>${e}</option>`).join('')}
+           </select>
+           <button class="btn-cancelar-edicion" onclick="cancelarEdicion(${obs.fila})">✕</button>
+           <button class="btn-guardar-edicion" id="btnGuardar_${obs.fila}" onclick="guardarEdicion(${obs.fila})">Guardar</button>
+         </div>
          <div class="foto-acciones">${verFoto}${elimFotoHtml}${elimRegistroHtml}</div>`;
 
     return `<div class="obs-card ${pendiente ? '' : 'aprobada'}" id="card_${obs.fila}">`
@@ -944,6 +1007,57 @@ function ejecutarEliminarFoto(fila) {
       .eliminarFoto(fila);
   } else {
     fetch(`${GAS_URL}?action=deletefoto&fila=${fila}`)
+      .then(() => onExito()).catch(onError);
+  }
+}
+
+// ── Editar estado aprobado ───────────────────────────────────────────
+function editarEstado(fila) {
+  const obs = observaciones.find(o => o.fila === fila);
+  if (!obs) return;
+  // Preseleccionar estado actual
+  const sel = document.getElementById(`editSel_${fila}`);
+  if (sel && obs.estado_jp) sel.value = obs.estado_jp;
+  // Mostrar fila de edición, ocultar badge
+  document.getElementById(`badge_${fila}`)?.closest('.aprobado-row')?.style.setProperty('display','none');
+  document.getElementById(`editRow_${fila}`)?.classList.add('visible');
+}
+
+function cancelarEdicion(fila) {
+  document.getElementById(`badge_${fila}`)?.closest('.aprobado-row')?.style.removeProperty('display');
+  document.getElementById(`editRow_${fila}`)?.classList.remove('visible');
+}
+
+function guardarEdicion(fila) {
+  const sel      = document.getElementById(`editSel_${fila}`);
+  const nuevoEstado = sel ? sel.value : '';
+  if (!nuevoEstado) return;
+
+  const btn = document.getElementById(`btnGuardar_${fila}`);
+  if (btn) btn.disabled = true;
+
+  function onExito() {
+    const obs = observaciones.find(o => o.fila === fila);
+    if (obs) obs.estado_jp = nuevoEstado;
+    // Actualizar badge
+    const badge = document.getElementById(`badge_${fila}`);
+    if (badge) badge.textContent = `🌱 ${nuevoEstado}`;
+    cancelarEdicion(fila);
+    if (btn) btn.disabled = false;
+    showToast(`✅ Estado actualizado: ${nuevoEstado}`, 'ok');
+  }
+  function onError(err) {
+    if (btn) btn.disabled = false;
+    showToast('Error: ' + (err?.message || err), 'error');
+  }
+
+  if (typeof google !== 'undefined' && google.script) {
+    google.script.run
+      .withSuccessHandler(onExito)
+      .withFailureHandler(onError)
+      .aprobarObservacion(fila, nuevoEstado);
+  } else {
+    fetch(`${GAS_URL}?action=update&fila=${fila}&estado_aprobado=${encodeURIComponent(nuevoEstado)}&estado_revision=Revisado`)
       .then(() => onExito()).catch(onError);
   }
 }
