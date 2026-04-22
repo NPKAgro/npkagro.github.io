@@ -226,6 +226,25 @@
       padding: 8px 0;
     }
     .stepper-val.placeholder { color: var(--text3); font-size: 12px; font-weight: 500; }
+    /* Input directo para hilera (reemplaza el picker) */
+    .stepper-input {
+      flex: 1;
+      text-align: center;
+      font-size: 28px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      background: transparent;
+      border: none;
+      color: var(--text);
+      outline: none;
+      padding: 10px 4px;
+      width: 0;
+      min-width: 0;
+      -moz-appearance: textfield;
+    }
+    .stepper-input::placeholder { color: var(--text3); font-size: 14px; font-weight: 500; }
+    .stepper-input::-webkit-outer-spin-button,
+    .stepper-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 
     /* ── SUBLABEL ── */
     .sublabel {
@@ -694,7 +713,10 @@
         <div class="sublabel">Hilera <span>(1–<span id="lblMaxHilera">59</span>)</span></div>
         <div class="stepper">
           <button class="stepper-btn" onclick="cambiarHilera(-1)" aria-label="Menos">−</button>
-          <div class="stepper-val placeholder" id="hileraVal" onclick="abrirPickerHilera()">toca para ingresar</div>
+          <input type="number" class="stepper-input" id="hileraInput"
+            min="1" max="59" placeholder="—"
+            inputmode="numeric"
+            oninput="onHileraInput(this.value)">
           <button class="stepper-btn" onclick="cambiarHilera(+1)" aria-label="Más">+</button>
         </div>
       </div>
@@ -1001,14 +1023,25 @@ function seleccionarCuartel(c) {
 function setHilera(n) {
   appState.hilera = n;
   guardarEstado();
-  const val = document.getElementById('hileraVal');
-  val.textContent = n;
-  val.classList.remove('placeholder');
+  const inp = document.getElementById('hileraInput');
+  if (inp) inp.value = n;
   actualizarResumen();
 }
 function cambiarHilera(delta) {
   const actual = appState.hilera || 0;
   setHilera(Math.max(1, Math.min(CONFIG.N_HILERAS, actual + delta)));
+}
+function onHileraInput(val) {
+  const n = parseInt(val);
+  if (!isNaN(n) && n >= 1 && n <= CONFIG.N_HILERAS) {
+    appState.hilera = n;
+    guardarEstado();
+    actualizarResumen();
+  } else if (val === '' || val === '0') {
+    appState.hilera = null;
+    guardarEstado();
+    actualizarResumen();
+  }
 }
 
 function setPlanta(n) {

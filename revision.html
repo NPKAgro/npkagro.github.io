@@ -300,7 +300,7 @@
 
     /* ── FOTO ACCIONES ── */
     .foto-acciones { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-    .btn-ver-foto, .btn-elim-foto {
+    .btn-ver-foto, .btn-elim-foto, .btn-elim-registro {
       font-size: 11px;
       padding: 4px 10px;
       background: transparent;
@@ -314,6 +314,8 @@
     .btn-ver-foto:hover { border-color: var(--accent); color: var(--accent); }
     .btn-elim-foto { border: 1px solid rgba(239,68,68,0.3); color: var(--text3); }
     .btn-elim-foto:hover { border-color: var(--red); color: var(--red); }
+    .btn-elim-registro { border: 1px solid rgba(239,68,68,0.15); color: var(--text3); }
+    .btn-elim-registro:hover { border-color: var(--red); color: var(--red); }
 
     .confirm-elim {
       display: none;
@@ -748,7 +750,8 @@ function renderObservaciones(lista) {
     const verFoto    = verFotoUrl
       ? `<a href="${verFotoUrl}" target="_blank" class="btn-ver-foto">↗ Ver en Drive</a>` : '';
 
-    const elimFotoHtml = obs.thumb_url
+    const tieneUrlFoto = obs.url_foto && obs.url_foto.trim();
+    const elimFotoHtml = tieneUrlFoto
       ? `<button class="btn-elim-foto" onclick="confirmarEliminarFoto(${obs.fila})">🗑 Quitar foto</button>`
         + `<div class="confirm-elim" id="confirmElim_${obs.fila}">`
         + `<span>¿Desvinc. foto?</span>`
@@ -756,6 +759,14 @@ function renderObservaciones(lista) {
         + `<button class="btn-no" onclick="cancelarEliminarFoto(${obs.fila})">No</button>`
         + `</div>`
       : '';
+
+    const elimRegistroHtml =
+        `<button class="btn-elim-registro" onclick="confirmarEliminarRegistro(${obs.fila})">✕ Eliminar</button>`
+        + `<div class="confirm-elim" id="confirmElimReg_${obs.fila}">`
+        + `<span>¿Eliminar registro completo?</span>`
+        + `<button class="btn-si" onclick="ejecutarEliminarRegistro(${obs.fila})">Sí</button>`
+        + `<button class="btn-no" onclick="cancelarEliminarRegistro(${obs.fila})">No</button>`
+        + `</div>`;
 
     const optsEstado = ESTADOS.map(e => `<option value="${e}">${e}</option>`).join('');
 
@@ -771,15 +782,15 @@ function renderObservaciones(lista) {
            </div>
            <div class="estado-error-hint" id="hint_${obs.fila}">⚠️ Selecciona un estado antes de aprobar</div>
          </div>
-         <div class="foto-acciones">${verFoto}${elimFotoHtml}</div>`
+         <div class="foto-acciones">${verFoto}${elimFotoHtml}${elimRegistroHtml}</div>`
       : `<div class="aprobado-badge">🌱 ${obs.estado_jp || '(sin estado)'}</div>
-         <div class="foto-acciones">${verFoto}${elimFotoHtml}</div>`;
+         <div class="foto-acciones">${verFoto}${elimFotoHtml}${elimRegistroHtml}</div>`;
 
     return `<div class="obs-card ${pendiente ? '' : 'aprobada'}" id="card_${obs.fila}">`
       + carrusel.html
       + `<div class="card-body">`
       + `<div class="card-top-row">`
-      + `<div><div class="card-fecha">📅 ${formatFecha(obs.fecha)}</div><div class="card-hora">🕐 ${obs.hora || '—'}</div></div>`
+      + `<div><div class="card-fecha">📅 ${formatFecha(obs.fecha)}</div><div class="card-hora">🕐 ${formatHora(obs.hora)}</div></div>`
       + `<span class="badge ${badgeCls}">${badgeTxt}</span>`
       + `</div>`
       + `<div class="chips-row">${chips}</div>`
@@ -856,7 +867,13 @@ function carouselNav(event, dir, fila) {
   let idx = (parseInt(car.dataset.idx || '0') + dir + thumbs.length) % thumbs.length;
   car.dataset.idx = idx;
   const img = car.querySelector('.card-photo');
-  if (img) { img.style.opacity = '0.5'; img.src = thumbs[idx]; img.onload = () => img.style.opacity = '1'; }
+  if (img) {
+    img.style.opacity = '0.5';
+    const restore = () => { img.style.opacity = '1'; };
+    img.onload  = restore;
+    img.onerror = restore;
+    img.src = thumbs[idx];
+  }
   const ctr = document.getElementById(`ctr_${fila}`);
   if (ctr) ctr.textContent = `${idx + 1}/${thumbs.length}`;
 }
@@ -931,6 +948,41 @@ function ejecutarEliminarFoto(fila) {
   }
 }
 
+// ── Eliminar registro completo ───────────────────────────────────────
+function confirmarEliminarRegistro(fila) {
+  document.getElementById(`confirmElimReg_${fila}`).classList.add('visible');
+}
+function cancelarEliminarRegistro(fila) {
+  document.getElementById(`confirmElimReg_${fila}`).classList.remove('visible');
+}
+function ejecutarEliminarRegistro(fila) {
+  cancelarEliminarRegistro(fila);
+  function onExito() {
+    observaciones = observaciones.filter(o => o.fila !== fila);
+    actualizarContadores();
+    showToast('🗑 Registro eliminado', 'ok');
+    const card = document.getElementById(`card_${fila}`);
+    if (card) {
+      card.style.transition = 'opacity 0.3s, transform 0.3s';
+      card.style.opacity    = '0';
+      card.style.transform  = 'scale(0.97)';
+      setTimeout(() => aplicarFiltros(), 320);
+    }
+  }
+  function onError(err) {
+    showToast('Error al eliminar: ' + (err?.message || err), 'error');
+  }
+  if (typeof google !== 'undefined' && google.script) {
+    google.script.run
+      .withSuccessHandler(onExito)
+      .withFailureHandler(onError)
+      .eliminarRegistro(fila);
+  } else {
+    fetch(`${GAS_URL}?action=deleterow&fila=${fila}`)
+      .then(() => onExito()).catch(onError);
+  }
+}
+
 // ── Export JSON ──────────────────────────────────────────────────────
 function exportarJSON() {
   const data = observaciones
@@ -969,6 +1021,14 @@ function formatFecha(fecha) {
   if (p.length < 3) return fecha;
   const m = ['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
   return `${parseInt(p[2])} ${m[parseInt(p[1])]} ${p[0]}`;
+}
+function formatHora(hora) {
+  if (!hora) return '—';
+  const s = String(hora);
+  // Google Sheets envía la hora como "1899-12-30T23:56:45.000Z"
+  // Solo necesitamos HH:MM
+  const m = s.match(/T(\d{2}:\d{2})/);
+  return m ? m[1] : s;
 }
 function showLoading() {
   document.getElementById('gridContainer').innerHTML =
