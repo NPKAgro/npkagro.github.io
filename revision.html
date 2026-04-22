@@ -985,21 +985,12 @@ function cancelarEliminarFoto(fila) {
 function ejecutarEliminarFoto(fila) {
   cancelarEliminarFoto(fila);
   function onExito() {
-    const obs = observaciones.find(o => o.fila === fila);
-    if (obs) { obs.url_foto = ''; obs.thumb_url = ''; obs.drive_id = ''; }
-    showToast('🗑 Foto desvinculada del registro', 'ok');
-    const card = document.getElementById(`card_${fila}`);
-    if (card) {
-      const carousel = document.getElementById(`carousel_${fila}`);
-      if (carousel) carousel.style.display = 'none';
-      const ph = card.querySelector('.card-photo-placeholder');
-      if (ph) ph.style.display = 'flex';
-      const elim = card.querySelector('.btn-elim-foto');
-      if (elim) elim.style.display = 'none';
-    }
+    showToast('🗑 Foto eliminada del registro', 'ok');
+    // Recargar panel para reflejar estado real del servidor
+    setTimeout(() => cargarObservaciones(), 400);
   }
   function onError(err) {
-    showToast('Error al desvincular: ' + (err?.message || err), 'error');
+    showToast('Error al eliminar foto: ' + (err?.message || err), 'error');
   }
 
   if (typeof google !== 'undefined' && google.script) {
@@ -1074,15 +1065,16 @@ function cancelarEliminarRegistro(fila) {
 function ejecutarEliminarRegistro(fila) {
   cancelarEliminarRegistro(fila);
   function onExito() {
-    observaciones = observaciones.filter(o => o.fila !== fila);
-    actualizarContadores();
     showToast('🗑 Registro eliminado', 'ok');
     const card = document.getElementById(`card_${fila}`);
     if (card) {
       card.style.transition = 'opacity 0.3s, transform 0.3s';
       card.style.opacity    = '0';
       card.style.transform  = 'scale(0.97)';
-      setTimeout(() => aplicarFiltros(), 320);
+      // Recargar desde servidor: tras deleteRow los índices cambian
+      setTimeout(() => cargarObservaciones(), 350);
+    } else {
+      cargarObservaciones();
     }
   }
   function onError(err) {
