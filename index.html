@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="La Quinta">
+  <meta name="theme-color" content="#0f1117">
+  <link rel="manifest" href="manifest.json">
+  <title>La Quinta · Agrícola del Pedregal</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0f1117;
+      --bg2:       #161b24;
+      --bg3:       #1e2534;
+      --border:    rgba(255,255,255,0.08);
+      --text:      #f0f2f5;
+      --text2:     #8b93a5;
+      --text3:     #555e70;
+      --accent:    #3b82f6;
+      --accent2:   #1d4ed8;
+      --green:     #10b981;
+      --amber:     #f59e0b;
+      --red:       #ef4444;
+      --purple:    #8b5cf6;
+      --teal:      #14b8a6;
+      --radius:    14px;
+      --radius-sm: 8px;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    body {
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      padding-bottom: env(safe-area-inset-bottom, 20px);
+    }
+
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    /* ── HEADER ── */
+    header {
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 20px 12px;
+    }
+    .brand-eyebrow {
+      font-size: 10px;
+      color: var(--text3);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 3px;
+    }
+    .brand-name {
+      font-size: 23px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.5px;
+      line-height: 1.1;
+    }
+    .brand-name span { color: var(--accent); }
+    .brand-sub {
+      font-size: 12px;
+      color: var(--text3);
+      margin-top: 3px;
+    }
+
+    /* ── STATUS BAR ── */
+    .status-bar {
+      background: var(--bg3);
+      border-bottom: 1px solid var(--border);
+      padding: 7px 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+    }
+    .status-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      flex-shrink: 0;
+      transition: background 0.3s;
+    }
+    .status-dot.offline { background: var(--text3); }
+    .status-text { color: var(--text3); flex: 1; }
+    .status-clock {
+      color: var(--text2);
+      font-variant-numeric: tabular-nums;
+      font-weight: 500;
+    }
+
+    /* ── MAIN ── */
+    main {
+      flex: 1;
+      padding: 18px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-width: 560px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* ── SECTION LABEL ── */
+    .section-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text3);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 4px 0 2px;
+      margin-top: 4px;
+    }
+
+    /* ── NAV CARD ── */
+    .nav-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 15px 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      text-decoration: none;
+      color: var(--text);
+      transition: border-color 0.12s, background 0.12s;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .nav-card:active {
+      background: var(--bg3);
+      border-color: rgba(255,255,255,0.15);
+      transform: scale(0.99);
+    }
+
+    .nav-icon {
+      width: 46px; height: 46px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      flex-shrink: 0;
+    }
+    .icon-blue   { background: rgba(59,130,246,0.15); }
+    .icon-green  { background: rgba(16,185,129,0.15); }
+    .icon-amber  { background: rgba(245,158,11,0.15); }
+    .icon-purple { background: rgba(139,92,246,0.15); }
+    .icon-teal   { background: rgba(20,184,166,0.15); }
+    .icon-red    { background: rgba(239,68,68,0.12); }
+
+    .nav-info { flex: 1; min-width: 0; }
+    .nav-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 2px;
+    }
+    .nav-desc {
+      font-size: 12px;
+      color: var(--text2);
+      line-height: 1.4;
+    }
+    .nav-arrow {
+      font-size: 20px;
+      color: var(--text3);
+      flex-shrink: 0;
+      font-weight: 300;
+    }
+
+    /* ── BADGE ── */
+    .nav-badge {
+      display: inline-block;
+      font-size: 10px;
+      padding: 1px 7px;
+      border-radius: 99px;
+      font-weight: 600;
+      margin-top: 4px;
+    }
+    .badge-campo { background: rgba(59,130,246,0.15); color: var(--accent); }
+    .badge-beta  { background: rgba(245,158,11,0.15); color: var(--amber); }
+
+    /* ── DIVIDER ── */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 6px 0 2px;
+    }
+
+    /* ── INSTALL BANNER ── */
+    .install-banner {
+      display: none;
+      background: rgba(59,130,246,0.08);
+      border: 1px solid rgba(59,130,246,0.2);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      gap: 12px;
+      align-items: center;
+    }
+    .install-banner.visible { display: flex; }
+    .install-text { flex: 1; }
+    .install-text strong { display: block; font-size: 13px; color: var(--accent); margin-bottom: 2px; }
+    .install-text span { font-size: 12px; color: var(--text2); }
+    .install-btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .install-btn:active { background: var(--accent2); }
+
+    /* ── OFFLINE BANNER ── */
+    .offline-banner {
+      display: none;
+      background: rgba(245,158,11,0.08);
+      border: 1px solid rgba(245,158,11,0.2);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      gap: 10px;
+      align-items: center;
+      font-size: 13px;
+      color: var(--amber);
+    }
+    .offline-banner.visible { display: flex; }
+
+    /* ── FOOTER ── */
+    footer {
+      padding: 14px 20px;
+      text-align: center;
+      font-size: 11px;
+      color: var(--text3);
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="brand-eyebrow">Agrícola del Pedregal</div>
+  <div class="brand-name">La <span>Quinta</span></div>
+  <div class="brand-sub">Temporada 2025–2026 · Santina</div>
+</header>
+
+<div class="status-bar">
+  <div class="status-dot" id="statusDot"></div>
+  <span class="status-text" id="statusText">En línea</span>
+  <span class="status-clock" id="statusClock"></span>
+</div>
+
+<main>
+
+  <!-- Banner offline -->
+  <div class="offline-banner" id="offlineBanner">
+    ⚠️ Sin conexión — el envío de observaciones requiere internet
+  </div>
+
+  <!-- Banner instalación PWA -->
+  <div class="install-banner" id="installBanner">
+    <div class="install-text">
+      <strong>📲 Instalar como app</strong>
+      <span>Acceso rápido desde tu pantalla de inicio, sin navegador.</span>
+    </div>
+    <button class="install-btn" id="installBtn">Instalar</button>
+  </div>
+
+  <!-- ── FENOLOGÍA ── -->
+  <div class="section-label">Fenología</div>
+
+  <a class="nav-card" href="campo.html">
+    <div class="nav-icon icon-blue">🌿</div>
+    <div class="nav-info">
+      <div class="nav-title">Nueva observación</div>
+      <div class="nav-desc">Registrar estado fenológico con foto y GPS</div>
+      <span class="nav-badge badge-campo">Campo</span>
+    </div>
+    <div class="nav-arrow">›</div>
+  </a>
+
+  <a class="nav-card" href="revision.html">
+    <div class="nav-icon icon-green">✅</div>
+    <div class="nav-info">
+      <div class="nav-title">Panel de revisión JP</div>
+      <div class="nav-desc">Aprobar observaciones y asignar estado oficial</div>
+    </div>
+    <div class="nav-arrow">›</div>
+  </a>
+
+  <div class="divider"></div>
+
+  <!-- ── CUADERNO DE CAMPO ── -->
+  <div class="section-label">Cuaderno de campo</div>
+
+  <a class="nav-card" href="cuaderno.html?tipo=riego">
+    <div class="nav-icon icon-teal">💧</div>
+    <div class="nav-info">
+      <div class="nav-title">Riego</div>
+      <div class="nav-desc">Registro de riegos: horas, caudal, método</div>
+      <span class="nav-badge badge-beta">Beta</span>
+    </div>
+    <div class="nav-arrow">›</div>
+  </a>
+
+  <a class="nav-card" href="cuaderno.html?tipo=plagas">
+    <div class="nav-icon icon-red">🐛</div>
+    <div class="nav-info">
+      <div class="nav-title">Plagas y enfermedades</div>
+      <div class="nav-desc">Detección, nivel de daño y tratamiento aplicado</div>
+      <span class="nav-badge badge-beta">Beta</span>
+    </div>
+    <div class="nav-arrow">›</div>
+  </a>
+
+  <a class="nav-card" href="cuaderno.html?tipo=labores">
+    <div class="nav-icon icon-amber">🚜</div>
+    <div class="nav-info">
+      <div class="nav-title">Labores</div>
+      <div class="nav-desc">Poda, raleo, cosecha, aplicaciones y otros</div>
+      <span class="nav-badge badge-beta">Beta</span>
+    </div>
+    <div class="nav-arrow">›</div>
+  </a>
+
+  <a class="nav-card" href="cuaderno.html?tipo=estructura">
+    <div class="nav-icon icon-purple">🏗️</div>
+    <div class="nav-info">
+      <div class="nav-title">Estructura</div>
+      <div class="nav-desc">Mallas, postes, sistemas de conducción</div>
+      <span class="nav-badge badge-beta">Beta</span>
+    </div>
+    <div class="nav-arrow">›</div>
+  </a>
+
+  <a class="nav-card" href="cuaderno.html?tipo=calicata">
+    <div class="nav-icon icon-amber">⛏️</div>
+    <div class="nav-info">
+      <div class="nav-title">Calicatas</div>
+      <div class="nav-desc">Perfil de suelo: horizonte, textura, raíces, pH</div>
+      <span class="nav-badge badge-beta">Beta</span>
+    </div>
+    <div class="nav-arrow">›</div>
+  </a>
+
+</main>
+
+<footer>
+  La Quinta · Agrícola del Pedregal &nbsp;·&nbsp; v3.0 Opus
+</footer>
+
+<script>
+// ── Reloj ─────────────────────────────────────────────────────────
+function actualizarReloj() {
+  var ahora = new Date();
+  document.getElementById('statusClock').textContent =
+    ahora.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+}
+actualizarReloj();
+setInterval(actualizarReloj, 10000);
+
+// ── Estado online/offline ─────────────────────────────────────────
+function actualizarEstadoRed() {
+  var online = navigator.onLine;
+  var dot    = document.getElementById('statusDot');
+  var txt    = document.getElementById('statusText');
+  var banner = document.getElementById('offlineBanner');
+  dot.classList.toggle('offline', !online);
+  txt.textContent = online ? 'En línea' : 'Sin conexión';
+  banner.classList.toggle('visible', !online);
+}
+actualizarEstadoRed();
+window.addEventListener('online',  actualizarEstadoRed);
+window.addEventListener('offline', actualizarEstadoRed);
+
+// ── Service Worker ────────────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('./sw.js').catch(function(err) {
+      console.warn('[SW] No registrado:', err);
+    });
+  });
+}
+
+// ── Banner de instalación PWA ─────────────────────────────────────
+var deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', function(e) {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('installBanner').classList.add('visible');
+});
+
+document.getElementById('installBtn').addEventListener('click', function() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(function() {
+    deferredPrompt = null;
+    document.getElementById('installBanner').classList.remove('visible');
+  });
+});
+
+window.addEventListener('appinstalled', function() {
+  document.getElementById('installBanner').classList.remove('visible');
+});
+</script>
+</body>
+</html>

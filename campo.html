@@ -1,0 +1,1346 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Fenología LQ">
+  <meta name="theme-color" content="#0f1117">
+  <title>Fenología · La Quinta</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── Variables unificadas ── */
+    :root {
+      --bg:          #0f1117;
+      --bg2:         #161b24;
+      --bg3:         #1e2534;
+      --border:      rgba(255,255,255,0.08);
+      --text:        #f0f2f5;
+      --text2:       #8b93a5;
+      --text3:       #555e70;
+      --accent:      #3b82f6;
+      --accent2:     #1d4ed8;
+      --accent-pale: rgba(59,130,246,0.15);
+      --green:       #10b981;
+      --amber:       #f59e0b;
+      --red:         #ef4444;
+      --radius:      10px;
+      --radius-sm:   8px;
+      --shadow:      0 4px 20px rgba(0,0,0,0.5);
+    }
+
+    html, body { height: 100%; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+      padding-bottom: env(safe-area-inset-bottom, 20px);
+      -webkit-tap-highlight-color: transparent;
+    }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    /* ── HEADER ── */
+    .header {
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    .header-brand { display: flex; flex-direction: column; line-height: 1.25; }
+    .header-empresa { font-size: 15px; font-weight: 700; color: var(--text); letter-spacing: -0.3px; }
+    .header-empresa span { color: var(--accent); }
+    .header-predio { font-size: 11px; color: var(--text3); }
+    .header-datetime { text-align: right; flex-shrink: 0; }
+    .header-fecha { font-size: 12px; color: var(--text3); }
+    .header-hora {
+      font-size: 20px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.5px;
+    }
+
+    /* ── GPS BAR ── */
+    .gps-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 18px;
+      font-size: 12px;
+      font-weight: 600;
+      background: rgba(0,0,0,0.3);
+      border-bottom: 1px solid var(--border);
+      color: var(--text3);
+    }
+    .gps-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      background: var(--text3);
+      transition: background 0.3s;
+    }
+    .gps-bar.buscando .gps-dot { background: var(--amber); animation: pulse 1.2s ease-in-out infinite; }
+    .gps-bar.ok       .gps-dot { background: var(--green); }
+    .gps-bar.error    .gps-dot { background: var(--red); }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.25} }
+    .gps-coords { color: var(--text3); font-family: monospace; font-weight: 400; font-size: 11px; }
+    .gps-refresh {
+      margin-left: auto;
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text3);
+      border-radius: 6px;
+      padding: 2px 9px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.12s;
+    }
+    .gps-refresh:active { border-color: var(--accent); color: var(--accent); }
+
+    /* ── LAYOUT ── */
+    .content {
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-width: 520px;
+      margin: 0 auto;
+    }
+
+    /* ── CARD ── */
+    .card {
+      background: var(--bg2);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+    /* Highlight when a required field is missing */
+    .card.error { border-color: rgba(239,68,68,0.5); }
+
+    .card-header {
+      padding: 10px 14px 9px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+    }
+    .card-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--accent);
+    }
+    .optional-tag {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 8px;
+      background: rgba(255,255,255,0.06);
+      color: var(--text3);
+      border-radius: 99px;
+    }
+    .card-body { padding: 12px 14px; }
+
+    /* ── BOTONES SELECTOR ── */
+    .btn-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .btn-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .btn-grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+
+    .sel-btn {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 13px 6px;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text3);
+      cursor: pointer;
+      transition: all 0.12s;
+      text-align: center;
+      user-select: none;
+      line-height: 1.2;
+    }
+    .sel-btn sub { display: block; font-size: 10px; font-weight: 500; margin-top: 2px; opacity: 0.7; }
+    .sel-btn.active {
+      background: var(--accent-pale);
+      border-color: var(--accent);
+      color: #60a5fa;
+    }
+    .sel-btn:active { transform: scale(0.93); }
+
+    /* ── STEPPER ── */
+    .stepper {
+      display: flex;
+      align-items: center;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      transition: border-color 0.15s;
+    }
+    .stepper:focus-within { border-color: var(--accent); }
+    .stepper-btn {
+      background: none;
+      border: none;
+      font-size: 26px;
+      font-weight: 300;
+      color: var(--accent);
+      padding: 10px 18px;
+      cursor: pointer;
+      line-height: 1;
+      user-select: none;
+      transition: background 0.1s;
+    }
+    .stepper-btn:active { background: var(--accent-pale); }
+    .stepper-val {
+      flex: 1;
+      text-align: center;
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+      cursor: pointer;
+      padding: 8px 0;
+    }
+    .stepper-val.placeholder { color: var(--text3); font-size: 12px; font-weight: 500; }
+
+    /* ── SUBLABEL ── */
+    .sublabel {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text3);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 7px;
+    }
+    .sublabel span { font-weight: 400; opacity: 0.7; text-transform: none; }
+
+    /* ── FOTOS ── */
+    .fotos-grid {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    /* Adaptativo: 1 foto = full-width, 2+ = 2 cols */
+    .fotos-grid.n1 { grid-template-columns: 1fr; }
+    .fotos-grid.n2,
+    .fotos-grid.n3,
+    .fotos-grid.n4 { grid-template-columns: 1fr 1fr; }
+
+    .foto-thumb {
+      position: relative;
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      border: 1px solid var(--accent);
+      background: #000;
+    }
+    /* 1 foto más alta, múltiples más cuadradas */
+    .fotos-grid.n1 .foto-thumb { aspect-ratio: 16/9; }
+    .fotos-grid.n2 .foto-thumb,
+    .fotos-grid.n3 .foto-thumb,
+    .fotos-grid.n4 .foto-thumb { aspect-ratio: 4/3; }
+
+    .foto-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .foto-delete {
+      position: absolute; top: 5px; right: 5px;
+      background: rgba(0,0,0,0.72);
+      color: #fff; border: none; border-radius: 50%;
+      width: 28px; height: 28px; font-size: 14px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.12s;
+    }
+    .foto-delete:active { background: rgba(239,68,68,0.8); }
+    .foto-num {
+      position: absolute; bottom: 5px; left: 7px;
+      background: rgba(0,0,0,0.6); color: #fff;
+      font-size: 10px; font-weight: 700;
+      padding: 2px 6px; border-radius: 4px;
+    }
+    .btn-add-foto {
+      width: 100%;
+      aspect-ratio: 4/3;
+      border-radius: var(--radius-sm);
+      border: 1.5px dashed rgba(255,255,255,0.13);
+      background: var(--bg3);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 6px; cursor: pointer;
+      color: var(--text3);
+      font-size: 14px; font-weight: 600;
+      transition: all 0.15s;
+    }
+    .btn-add-foto:active { border-color: var(--accent); transform: scale(0.97); }
+    .btn-add-foto .add-icon { font-size: 32px; }
+    #fileInput { display: none; }
+
+    /* ── SELECT ── */
+    .field-select {
+      width: 100%;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 11px 38px 11px 14px;
+      font-size: 14px;
+      color: var(--text);
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238b93a5' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      cursor: pointer; outline: none;
+      transition: border-color 0.12s;
+    }
+    .field-select:focus { border-color: var(--accent); }
+    .field-select option { background: var(--bg3); }
+
+    /* ── TEXTAREA ── */
+    .field-textarea {
+      width: 100%;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 11px 14px;
+      font-size: 14px;
+      font-family: inherit;
+      color: var(--text);
+      resize: none;
+      min-height: 72px;
+      outline: none;
+      transition: border-color 0.12s;
+    }
+    .field-textarea:focus { border-color: var(--accent); }
+    .field-textarea::placeholder { color: var(--text3); }
+
+    /* ── RESUMEN UBICACIÓN ── */
+    .ubicacion-resumen {
+      display: none;
+      background: var(--accent-pale);
+      border: 1px solid rgba(59,130,246,0.2);
+      border-radius: var(--radius-sm);
+      padding: 9px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #60a5fa;
+      text-align: center;
+      margin-top: 8px;
+    }
+    .ubicacion-resumen.visible { display: block; }
+
+    /* ── ADVERTENCIA ── */
+    .gas-warning {
+      background: rgba(245,158,11,0.08);
+      border-left: 3px solid var(--amber);
+      border-radius: var(--radius);
+      padding: 10px 14px;
+      font-size: 13px;
+      color: var(--amber);
+      line-height: 1.5;
+    }
+    .gas-warning strong { display: block; margin-bottom: 2px; font-size: 12px; }
+
+    /* ── BOTÓN ENVIAR ── */
+    .btn-submit {
+      width: 100%;
+      padding: 16px;
+      border-radius: var(--radius);
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+      letter-spacing: -0.2px;
+    }
+    .btn-submit:active { background: var(--accent2); transform: scale(0.99); }
+    .btn-submit:disabled { background: var(--bg3); color: var(--text3); cursor: not-allowed; transform: none; }
+
+    /* ── OVERLAY BASE ── */
+    .overlay {
+      display: none;
+      position: fixed; inset: 0;
+      z-index: 100;
+    }
+    .overlay.visible { display: block; }
+
+    /* ── OVERLAY LOADING ── */
+    .overlay-loading-bg {
+      position: fixed; inset: 0;
+      background: rgba(10,13,20,0.96);
+      z-index: 100;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      text-align: center;
+      padding: 32px;
+    }
+    .overlay-loading-bg.visible { display: flex; }
+    .spinner {
+      width: 44px; height: 44px;
+      border: 3px solid rgba(255,255,255,0.1);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .overlay-title { font-size: 20px; font-weight: 700; color: var(--text); }
+    .overlay-sub   { font-size: 14px; color: var(--text2); line-height: 1.6; }
+
+    /* ── OVERLAY ÉXITO ── */
+    .overlay-success-bg {
+      position: fixed; inset: 0;
+      background: rgba(10,13,20,0.97);
+      z-index: 100;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      text-align: center;
+      padding: 32px;
+    }
+    .overlay-success-bg.visible { display: flex; }
+    .success-icon { font-size: 72px; animation: pop 0.4s cubic-bezier(0.34,1.56,0.64,1); }
+    @keyframes pop { from { transform: scale(0); opacity:0; } to { transform: scale(1); opacity:1; } }
+    .success-msg {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      font-size: 13px;
+      color: var(--text2);
+      text-align: left;
+      line-height: 1.7;
+      width: 100%;
+      max-width: 340px;
+      white-space: pre-line;
+    }
+    .btn-nuevo {
+      margin-top: 6px;
+      padding: 14px 36px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(255,255,255,0.15);
+      background: var(--accent-pale);
+      color: var(--text);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.12s;
+    }
+    .btn-nuevo:active { background: rgba(59,130,246,0.3); }
+
+    /* ── TOAST ── */
+    .toast {
+      display: none;
+      position: fixed;
+      bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+      left: 50%; transform: translateX(-50%);
+      background: var(--bg3);
+      border: 1px solid rgba(239,68,68,0.4);
+      color: var(--red);
+      padding: 10px 20px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+      z-index: 200;
+      max-width: 88vw;
+      text-align: center;
+      box-shadow: var(--shadow);
+    }
+    .toast.visible { display: block; }
+    .toast.ok { border-color: rgba(16,185,129,0.4); color: var(--green); }
+
+    /* ── NUMBER PICKER (reemplaza prompt()) ── */
+    .picker-backdrop {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.65);
+      z-index: 300;
+      align-items: flex-end;
+    }
+    .picker-backdrop.visible { display: flex; }
+    .picker-sheet {
+      background: var(--bg2);
+      border-top: 1px solid var(--border);
+      border-radius: 18px 18px 0 0;
+      padding: 0 0 calc(env(safe-area-inset-bottom, 16px) + 16px);
+      width: 100%;
+      animation: slideUp 0.22s ease-out;
+    }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    .picker-handle {
+      width: 36px; height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      margin: 12px auto 16px;
+    }
+    .picker-title {
+      text-align: center;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text2);
+      margin-bottom: 20px;
+      padding: 0 24px;
+    }
+    .picker-controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      margin-bottom: 20px;
+    }
+    .picker-minus,
+    .picker-plus {
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      color: var(--accent);
+      font-size: 28px;
+      font-weight: 300;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.1s;
+    }
+    .picker-minus:active,
+    .picker-plus:active { background: var(--accent-pale); border-color: var(--accent); }
+    .picker-display {
+      min-width: 110px;
+      text-align: center;
+      font-size: 52px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      color: var(--text);
+      letter-spacing: -2px;
+    }
+    .picker-range {
+      text-align: center;
+      font-size: 12px;
+      color: var(--text3);
+      margin-bottom: 4px;
+    }
+    .picker-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      padding: 0 20px;
+    }
+    .picker-cancel,
+    .picker-ok {
+      padding: 14px;
+      border-radius: var(--radius);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.12s;
+    }
+    .picker-cancel {
+      background: var(--bg3);
+      color: var(--text2);
+      border: 1px solid var(--border);
+    }
+    .picker-cancel:active { background: rgba(255,255,255,0.06); }
+    .picker-ok {
+      background: var(--accent);
+      color: #fff;
+    }
+    .picker-ok:active { background: var(--accent2); }
+
+    /* ── CONFIRM MODAL (reemplaza confirm()) ── */
+    .confirm-backdrop {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.65);
+      z-index: 300;
+      align-items: flex-end;
+    }
+    .confirm-backdrop.visible { display: flex; }
+    .confirm-sheet {
+      background: var(--bg2);
+      border-top: 1px solid var(--border);
+      border-radius: 18px 18px 0 0;
+      padding: 20px 20px calc(env(safe-area-inset-bottom, 16px) + 16px);
+      width: 100%;
+      animation: slideUp 0.22s ease-out;
+    }
+    .confirm-icon { font-size: 32px; text-align: center; margin-bottom: 10px; }
+    .confirm-title { font-size: 16px; font-weight: 700; color: var(--text); text-align: center; margin-bottom: 6px; }
+    .confirm-body { font-size: 13px; color: var(--text2); text-align: center; margin-bottom: 20px; line-height: 1.5; }
+    .confirm-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .confirm-back {
+      padding: 14px;
+      border-radius: var(--radius);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      background: var(--bg3);
+      color: var(--text2);
+      border: 1px solid var(--border);
+    }
+    .confirm-back:active { background: rgba(255,255,255,0.06); }
+    .confirm-send {
+      padding: 14px;
+      border-radius: var(--radius);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      background: var(--amber);
+      color: #000;
+      border: none;
+    }
+    .confirm-send:active { opacity: 0.85; }
+  </style>
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<header>
+  <div class="header">
+    <div class="header-brand">
+      <div class="header-empresa">Agrícola <span>del Pedregal</span></div>
+      <div class="header-predio">La Quinta &nbsp;·&nbsp; Fenología Santina</div>
+    </div>
+    <div class="header-datetime">
+      <div class="header-fecha" id="hdrFecha"></div>
+      <div class="header-hora"  id="hdrHora"></div>
+    </div>
+  </div>
+  <div class="gps-bar buscando" id="gpsBar">
+    <div class="gps-dot"></div>
+    <span id="gpsMsg">🛰 Buscando GPS...</span>
+    <span class="gps-coords" id="gpsCoords"></span>
+    <button class="gps-refresh" onclick="pedirGPS()" title="Actualizar GPS">↻</button>
+  </div>
+</header>
+
+<div class="content">
+
+  <!-- Advertencia local / sin configurar -->
+  <div class="gas-warning" id="gasWarning" style="display:none">
+    <strong>⚠️ Backend no configurado</strong>
+    El formulario funciona pero el envío fallará. Abre esta app desde la URL del GAS (termina en /exec) o desde un servidor HTTPS.
+  </div>
+
+  <!-- ── CUARTEL ── -->
+  <div class="card" id="cardCuartel">
+    <div class="card-header"><span class="card-label">🌳 Cuartel</span></div>
+    <div class="card-body">
+      <div class="btn-grid-3" id="cuartelGrid"></div>
+    </div>
+  </div>
+
+  <!-- ── HILERA + CLARO + PLANTA ── -->
+  <div class="card" id="cardUbicacion">
+    <div class="card-header"><span class="card-label">📍 Ubicación en el cuartel</span></div>
+    <div class="card-body" style="display:flex;flex-direction:column;gap:14px">
+
+      <div>
+        <div class="sublabel">Hilera <span>(1–<span id="lblMaxHilera">59</span>)</span></div>
+        <div class="stepper">
+          <button class="stepper-btn" onclick="cambiarHilera(-1)" aria-label="Menos">−</button>
+          <div class="stepper-val placeholder" id="hileraVal" onclick="abrirPickerHilera()">toca para ingresar</div>
+          <button class="stepper-btn" onclick="cambiarHilera(+1)" aria-label="Más">+</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="sublabel">Claro</div>
+        <div class="btn-grid-5" id="claroGrid"></div>
+      </div>
+
+      <div>
+        <div class="sublabel">Planta <span>(1–<span id="lblMaxPlanta">16</span>)</span></div>
+        <div class="stepper">
+          <button class="stepper-btn" onclick="cambiarPlanta(-1)" aria-label="Menos">−</button>
+          <div class="stepper-val placeholder" id="plantaVal" onclick="abrirPickerPlanta()">toca para ingresar</div>
+          <button class="stepper-btn" onclick="cambiarPlanta(+1)" aria-label="Más">+</button>
+        </div>
+      </div>
+
+      <div class="ubicacion-resumen" id="ubicResumen"></div>
+    </div>
+  </div>
+
+  <!-- ── FOTOS ── -->
+  <div class="card" id="cardFotos">
+    <div class="card-header">
+      <span class="card-label">📷 Fotografías</span>
+      <span class="optional-tag" id="fotoContador">0 / 4</span>
+    </div>
+    <div class="card-body">
+      <div class="fotos-grid" id="fotosGrid"></div>
+      <button class="btn-add-foto" id="btnAddFoto" onclick="triggerCamera()">
+        <span class="add-icon">📸</span>
+        <span id="btnAddFotoTxt">Tomar foto</span>
+      </button>
+      <input type="file" id="fileInput" accept="image/*" capture="environment">
+    </div>
+  </div>
+
+  <!-- ── ESTADO FENOLÓGICO ── -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-label">🌱 Estado fenológico</span>
+      <span class="optional-tag">Opcional</span>
+    </div>
+    <div class="card-body">
+      <select class="field-select" id="estado">
+        <option value="">— No determinado —</option>
+        <option value="Yema dormida">Yema dormida</option>
+        <option value="Yema hinchada">Yema hinchada</option>
+        <option value="Ramillete expuesto">Ramillete expuesto</option>
+        <option value="Botón blanco">Botón blanco</option>
+        <option value="Inicio floración">Inicio floración</option>
+        <option value="Plena flor">Plena flor</option>
+        <option value="Caída de pétalos">Caída de pétalos</option>
+        <option value="Caída de chaqueta">Caída de chaqueta</option>
+        <option value="Crecimiento del fruto">Crecimiento del fruto</option>
+        <option value="Endurecimiento de carozo">Endurecimiento de carozo</option>
+        <option value="Color amarillo pajizo">Color amarillo pajizo</option>
+        <option value="Pinta">Pinta</option>
+        <option value="Cosecha">Cosecha</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- ── NOTAS ── -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-label">📝 Notas</span>
+      <span class="optional-tag">Opcional</span>
+    </div>
+    <div class="card-body">
+      <textarea class="field-textarea" id="notas"
+        placeholder="Cobertura del estado, condición del árbol, observaciones del día..."></textarea>
+    </div>
+  </div>
+
+  <!-- ── BOTÓN ENVIAR ── -->
+  <button class="btn-submit" id="btnSubmit" onclick="handleSubmit()">
+    📤 &nbsp;Enviar observación
+  </button>
+
+</div><!-- /content -->
+
+<!-- ── OVERLAYS ── -->
+<div class="overlay-loading-bg" id="overlayLoading">
+  <div class="spinner"></div>
+  <div class="overlay-title">Enviando...</div>
+  <div class="overlay-sub" id="loadingMsg">Comprimiendo fotos y subiendo a Drive</div>
+</div>
+
+<div class="overlay-success-bg" id="overlaySuccess">
+  <div class="success-icon">✅</div>
+  <div class="overlay-title">¡Observación enviada!</div>
+  <div class="success-msg" id="successMsg"></div>
+  <button class="btn-nuevo" onclick="resetForm()">＋ Nuevo registro</button>
+</div>
+
+<!-- ── NUMBER PICKER ── -->
+<div class="picker-backdrop" id="pickerBackdrop" onclick="cerrarPicker()">
+  <div class="picker-sheet" onclick="event.stopPropagation()">
+    <div class="picker-handle"></div>
+    <div class="picker-title" id="pickerTitle">Ingresa el número</div>
+    <div class="picker-controls">
+      <button class="picker-minus" id="pickerMinus">−</button>
+      <div class="picker-display" id="pickerDisplay">1</div>
+      <button class="picker-plus" id="pickerPlus">+</button>
+    </div>
+    <div class="picker-range" id="pickerRange"></div>
+    <div class="picker-actions">
+      <button class="picker-cancel" onclick="cerrarPicker()">Cancelar</button>
+      <button class="picker-ok" id="pickerOk">Aceptar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── CONFIRM MODAL ── -->
+<div class="confirm-backdrop" id="confirmBackdrop">
+  <div class="confirm-sheet">
+    <div class="confirm-icon">⚠️</div>
+    <div class="confirm-title">Campos incompletos</div>
+    <div class="confirm-body" id="confirmBody"></div>
+    <div class="confirm-actions">
+      <button class="confirm-back" onclick="cerrarConfirm()">← Volver</button>
+      <button class="confirm-send" id="confirmSendBtn">Enviar igual</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── TOAST ── -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════════
+//  CONFIGURACIÓN
+// ══════════════════════════════════════════════════════
+const CONFIG = {
+  GAS_URL:      'https://script.google.com/macros/s/AKfycbydi5imjeA5bXY5TlA7MBVGkG6-Aq4XhYC0soXGPUMl41lEvdL8rc-xhjeRv9m0_aJg/exec',
+  ACCESS_TOKEN: 'LQ2026-Santina',
+  PREDIO:       'La Quinta',
+  VARIEDAD:     'Santina',
+  JP_EMAIL:     'jpdelped@gmail.com',
+  CUARTELES:    ['C2', 'C3', 'C4'],
+  N_CLAROS:     5,
+  N_HILERAS:    59,
+  N_PLANTAS:    16,
+  MAX_FOTOS:    4,
+};
+// ══════════════════════════════════════════════════════
+
+// ── Estado (persistido en sessionStorage para sobrevivir iOS camera) ──
+const STATE_KEY = 'fenolq_state_v3';
+let appState = {
+  cuartel: null, hilera: null, claro: null, planta: null,
+  fotos: [], gps: null,
+};
+let gpsData = null;
+let _submitPending = null; // callback de envío pendiente post-confirm
+
+// ══════════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════════
+function init() {
+  actualizarReloj();
+  // Actualizar cada 10 segundos (vs 30s en la versión anterior)
+  setInterval(actualizarReloj, 10000);
+
+  // Advertencia si se abre como archivo local
+  if (window.location.protocol === 'file:') {
+    const w = document.getElementById('gasWarning');
+    w.style.display = 'block';
+  }
+
+  // Labels de rango
+  document.getElementById('lblMaxHilera').textContent = CONFIG.N_HILERAS;
+  document.getElementById('lblMaxPlanta').textContent = CONFIG.N_PLANTAS;
+
+  // Construir cuarteles
+  const cGrid = document.getElementById('cuartelGrid');
+  CONFIG.CUARTELES.forEach(c => {
+    const btn = document.createElement('button');
+    btn.className    = 'sel-btn';
+    btn.textContent  = c;
+    btn.dataset.val  = c;
+    btn.onclick = () => seleccionarCuartel(c);
+    cGrid.appendChild(btn);
+  });
+
+  // Construir claros
+  const claroGrid = document.getElementById('claroGrid');
+  for (let i = 1; i <= CONFIG.N_CLAROS; i++) {
+    const btn = document.createElement('button');
+    btn.className   = 'sel-btn';
+    btn.textContent = i;
+    btn.dataset.val = i;
+    btn.onclick = () => seleccionarClaro(i);
+    claroGrid.appendChild(btn);
+  }
+
+  // File input
+  document.getElementById('fileInput').addEventListener('change', handleFileSelect);
+
+  // Restaurar estado (fix iOS camera)
+  restaurarEstado();
+
+  // GPS automático al abrir
+  pedirGPS();
+
+  // Render fotos inicial
+  renderFotos();
+}
+
+// ── RELOJ ────────────────────────────────────────────
+function actualizarReloj() {
+  const now = new Date();
+  document.getElementById('hdrFecha').textContent =
+    now.toLocaleDateString('es-CL', { weekday: 'short', day: 'numeric', month: 'short' });
+  document.getElementById('hdrHora').textContent =
+    now.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+}
+
+// ── GPS ──────────────────────────────────────────────
+function pedirGPS() {
+  const bar    = document.getElementById('gpsBar');
+  const msg    = document.getElementById('gpsMsg');
+  const coords = document.getElementById('gpsCoords');
+
+  bar.className      = 'gps-bar buscando';
+  msg.textContent    = '🛰 Buscando ubicación...';
+  coords.textContent = '';
+
+  if (!navigator.geolocation) {
+    bar.className   = 'gps-bar error';
+    msg.textContent = '⚠️ GPS no disponible en este dispositivo';
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      gpsData = {
+        lat:       pos.coords.latitude,
+        lng:       pos.coords.longitude,
+        accuracy:  Math.round(pos.coords.accuracy),
+        timestamp: new Date().toISOString(),
+      };
+      appState.gps = gpsData;
+      guardarEstado();
+      bar.className      = 'gps-bar ok';
+      msg.textContent    = `📍 GPS ±${gpsData.accuracy}m`;
+      coords.textContent = `${gpsData.lat.toFixed(5)}, ${gpsData.lng.toFixed(5)}`;
+    },
+    err => {
+      bar.className   = 'gps-bar error';
+      const msgs = {
+        1: '⚠️ GPS denegado — activa permisos en Ajustes',
+        2: '⚠️ GPS no disponible — toca ↻ para reintentar',
+        3: '⚠️ GPS tardó demasiado — toca ↻ para reintentar',
+      };
+      msg.textContent    = msgs[err.code] || '⚠️ Error de GPS';
+      coords.textContent = '';
+      gpsData            = null;
+    },
+    { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
+  );
+}
+
+// ── PERSISTENCIA ESTADO (fix iOS camera) ─────────────
+function guardarEstado() {
+  sessionStorage.setItem(STATE_KEY, JSON.stringify(appState));
+}
+function restaurarEstado() {
+  const saved = sessionStorage.getItem(STATE_KEY);
+  if (!saved) return;
+  try {
+    const s = JSON.parse(saved);
+    if (s.cuartel)          seleccionarCuartel(s.cuartel);
+    if (s.hilera)           setHilera(s.hilera);
+    if (s.claro)            seleccionarClaro(s.claro);
+    if (s.planta)           setPlanta(s.planta);
+    if (s.fotos?.length)    { appState.fotos = s.fotos; }
+    if (s.gps) {
+      gpsData = s.gps;
+      const bar = document.getElementById('gpsBar');
+      bar.className = 'gps-bar ok';
+      document.getElementById('gpsMsg').textContent    = `📍 GPS ±${s.gps.accuracy}m`;
+      document.getElementById('gpsCoords').textContent = `${s.gps.lat.toFixed(5)}, ${s.gps.lng.toFixed(5)}`;
+    }
+  } catch(_) { /* ignorar */ }
+}
+
+// ── SELECCIONES ──────────────────────────────────────
+function seleccionarCuartel(c) {
+  appState.cuartel = c;
+  guardarEstado();
+  document.querySelectorAll('#cuartelGrid .sel-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.val === c);
+  });
+  limpiarError('cardCuartel');
+  actualizarResumen();
+}
+
+function setHilera(n) {
+  appState.hilera = n;
+  guardarEstado();
+  const val = document.getElementById('hileraVal');
+  val.textContent = n;
+  val.classList.remove('placeholder');
+  actualizarResumen();
+}
+function cambiarHilera(delta) {
+  const actual = appState.hilera || 0;
+  setHilera(Math.max(1, Math.min(CONFIG.N_HILERAS, actual + delta)));
+}
+
+function setPlanta(n) {
+  appState.planta = n;
+  guardarEstado();
+  const val = document.getElementById('plantaVal');
+  val.textContent = n;
+  val.classList.remove('placeholder');
+  actualizarResumen();
+}
+function cambiarPlanta(delta) {
+  const actual = appState.planta || 0;
+  setPlanta(Math.max(1, Math.min(CONFIG.N_PLANTAS, actual + delta)));
+}
+
+function seleccionarClaro(c) {
+  appState.claro = c;
+  guardarEstado();
+  document.querySelectorAll('#claroGrid .sel-btn').forEach(b => {
+    b.classList.toggle('active', parseInt(b.dataset.val) === c);
+  });
+  actualizarResumen();
+}
+
+function actualizarResumen() {
+  const { cuartel, hilera, claro, planta } = appState;
+  const res = document.getElementById('ubicResumen');
+  if (cuartel || hilera || claro || planta) {
+    const partes = [];
+    if (cuartel) partes.push(`Cuartel ${cuartel}`);
+    if (hilera)  partes.push(`Hilera ${hilera}`);
+    if (claro)   partes.push(`Claro ${claro}`);
+    if (planta)  partes.push(`Planta ${planta}`);
+    res.textContent = '📍 ' + partes.join(' · ');
+    res.classList.add('visible');
+  } else {
+    res.classList.remove('visible');
+  }
+}
+
+// ── NUMBER PICKER ─────────────────────────────────────
+// Reemplaza los prompt() nativos que no funcionan bien en iOS PWA.
+let _pickerMin = 1, _pickerMax = 99, _pickerVal = 1, _pickerCallback = null;
+
+function abrirPicker(titulo, min, max, actual, callback) {
+  _pickerMin      = min;
+  _pickerMax      = max;
+  _pickerVal      = actual || min;
+  _pickerCallback = callback;
+
+  document.getElementById('pickerTitle').textContent = titulo;
+  document.getElementById('pickerRange').textContent = `(${min} – ${max})`;
+  document.getElementById('pickerDisplay').textContent = _pickerVal;
+
+  document.getElementById('pickerMinus').onclick = () => {
+    if (_pickerVal > _pickerMin) { _pickerVal--; document.getElementById('pickerDisplay').textContent = _pickerVal; }
+  };
+  document.getElementById('pickerPlus').onclick = () => {
+    if (_pickerVal < _pickerMax) { _pickerVal++; document.getElementById('pickerDisplay').textContent = _pickerVal; }
+  };
+  document.getElementById('pickerOk').onclick = () => {
+    cerrarPicker();
+    if (_pickerCallback) _pickerCallback(_pickerVal);
+  };
+
+  document.getElementById('pickerBackdrop').classList.add('visible');
+}
+
+function cerrarPicker() {
+  document.getElementById('pickerBackdrop').classList.remove('visible');
+}
+
+function abrirPickerHilera() {
+  abrirPicker(
+    `Número de hilera`,
+    1, CONFIG.N_HILERAS,
+    appState.hilera,
+    n => setHilera(n)
+  );
+}
+function abrirPickerPlanta() {
+  abrirPicker(
+    `Número de planta`,
+    1, CONFIG.N_PLANTAS,
+    appState.planta,
+    n => setPlanta(n)
+  );
+}
+
+// ── CONFIRM MODAL ─────────────────────────────────────
+// Reemplaza confirm() nativo que falla en iOS PWA.
+function mostrarConfirm(mensaje, onConfirm) {
+  document.getElementById('confirmBody').textContent = mensaje;
+  document.getElementById('confirmSendBtn').onclick = () => {
+    cerrarConfirm();
+    onConfirm();
+  };
+  document.getElementById('confirmBackdrop').classList.add('visible');
+}
+function cerrarConfirm() {
+  document.getElementById('confirmBackdrop').classList.remove('visible');
+}
+
+// ── CÁMARA / FOTOS ───────────────────────────────────
+function triggerCamera() {
+  if (appState.fotos.length >= CONFIG.MAX_FOTOS) {
+    toast(`Máximo ${CONFIG.MAX_FOTOS} fotos por envío`);
+    return;
+  }
+  const fi  = document.getElementById('fileInput');
+  fi.value  = '';   // Reset para que iOS detecte cambio aunque sea la misma foto
+  fi.click();
+}
+
+async function handleFileSelect(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const blob = await compressImage(file, 1280, 0.72);
+  const b64  = await blobToBase64(blob);
+  appState.fotos.push(b64);
+  guardarEstado();
+  renderFotos();
+  limpiarError('cardFotos');
+  // Scroll suave hacia la grilla de fotos
+  document.getElementById('fotosGrid').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function renderFotos() {
+  const grid     = document.getElementById('fotosGrid');
+  const btn      = document.getElementById('btnAddFoto');
+  const contador = document.getElementById('fotoContador');
+  const n        = appState.fotos.length;
+
+  contador.textContent = `${n} / ${CONFIG.MAX_FOTOS}`;
+
+  // Clase adaptativa para el grid
+  grid.className = 'fotos-grid' + (n > 0 ? ` n${Math.min(n, 4)}` : '');
+
+  grid.innerHTML = appState.fotos.map((b64, i) => `
+    <div class="foto-thumb">
+      <img src="${b64}" alt="Foto ${i + 1}">
+      <button class="foto-delete" onclick="eliminarFoto(${i})" title="Eliminar">✕</button>
+      <span class="foto-num">📷 ${i + 1}</span>
+    </div>
+  `).join('');
+
+  btn.style.display = n >= CONFIG.MAX_FOTOS ? 'none' : 'flex';
+  document.getElementById('btnAddFotoTxt').textContent = n === 0 ? 'Tomar foto' : 'Agregar otra foto';
+}
+
+function eliminarFoto(idx) {
+  appState.fotos.splice(idx, 1);
+  guardarEstado();
+  renderFotos();
+}
+
+// ── COMPRESIÓN IMAGEN ────────────────────────────────
+function compressImage(file, maxW, quality) {
+  return new Promise(resolve => {
+    const reader  = new FileReader();
+    reader.onload = ev => {
+      const img    = new Image();
+      img.onload   = () => {
+        let w = img.width, h = img.height;
+        if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+        const c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        c.getContext('2d').drawImage(img, 0, 0, w, h);
+        c.toBlob(resolve, 'image/jpeg', quality);
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+function blobToBase64(blob) {
+  return new Promise(resolve => {
+    const r  = new FileReader();
+    r.onload = () => resolve(r.result);
+    r.readAsDataURL(blob);
+  });
+}
+
+// ── VALIDACIÓN + ENVÍO ───────────────────────────────
+async function handleSubmit() {
+  const { cuartel, hilera, claro, planta, fotos } = appState;
+
+  // Campos obligatorios: cuartel y al menos 1 foto
+  let errores = [];
+  if (!cuartel)    errores.push('cuartel');
+  if (!fotos.length) errores.push('foto');
+
+  if (errores.length) {
+    // Destacar la card con error
+    if (!cuartel)      marcarError('cardCuartel');
+    if (!fotos.length) marcarError('cardFotos');
+    toast(errores.includes('cuartel')
+      ? 'Selecciona un cuartel'
+      : 'Toma al menos una foto');
+    return;
+  }
+
+  // Campos informativos opcionales: avisar pero no bloquear
+  const faltantes = [
+    !hilera && 'hilera',
+    !claro  && 'claro',
+    !planta && 'planta',
+  ].filter(Boolean);
+
+  if (faltantes.length > 0) {
+    mostrarConfirm(
+      `No indicaste: ${faltantes.join(', ')}. ¿Enviar igual?\n\nPodrás completarlo desde el panel de revisión.`,
+      () => enviarObservacion()
+    );
+    return;
+  }
+
+  enviarObservacion();
+}
+
+async function enviarObservacion() {
+  const { cuartel, hilera, claro, planta, fotos } = appState;
+  const now      = new Date();
+  const fecha    = toLocalDate(now);
+  const hora     = toLocalTime(now);
+  const estado   = document.getElementById('estado').value;
+  const notas    = document.getElementById('notas').value.trim();
+  const base     = `${CONFIG.PREDIO.replace(/\s+/g, '')}_${cuartel}_H${hilera || '?'}_C${claro || '?'}_P${planta || '?'}_${fecha.replace(/-/g, '')}_${hora.replace(':', '')}`;
+  const filenames = fotos.map((_, i) => `${base}_${i + 1}.jpg`);
+
+  setLoading(true, `Enviando ${fotos.length} foto${fotos.length > 1 ? 's' : ''}...`);
+
+  const payload = {
+    token:    CONFIG.ACCESS_TOKEN,
+    fecha, hora, cuartel,
+    hilera:   hilera  || '',
+    claro:    claro   || '',
+    planta:   planta  || '',
+    estado, notas,
+    fotos,      // array de base64
+    filenames,
+    predio:   CONFIG.PREDIO,
+    variedad: CONFIG.VARIEDAD,
+    gps_lat:  gpsData?.lat       ?? '',
+    gps_lng:  gpsData?.lng       ?? '',
+    gps_acc:  gpsData?.accuracy  ?? '',
+    gps_ts:   gpsData?.timestamp ?? '',
+  };
+
+  // Modo dual: google.script.run (dentro de GAS) vs fetch HTTPS (GitHub Pages, etc.)
+  if (typeof google !== 'undefined' && google.script) {
+    google.script.run
+      .withSuccessHandler(function(result) {
+        setLoading(false);
+        if (result?.success) {
+          mostrarExito(fecha, hora, cuartel, hilera, claro, planta, estado);
+        } else {
+          toast('Error del servidor: ' + (result?.error || 'sin respuesta'));
+        }
+      })
+      .withFailureHandler(function(err) {
+        setLoading(false);
+        const msg = err?.message ? err.message : String(err);
+        if (msg.toLowerCase().includes('drive') || msg.toLowerCase().includes('servicio')) {
+          toast('⚡ Google tardó en arrancar — toca Enviar de nuevo');
+        } else {
+          toast('Error al enviar: ' + msg);
+        }
+        console.error('[GAS error]', msg);
+      })
+      .salvarObservacion(JSON.stringify(payload));
+
+  } else {
+    // GitHub Pages / hosting HTTPS externo
+    try {
+      await fetch(CONFIG.GAS_URL, {
+        method:  'POST',
+        mode:    'no-cors',
+        headers: { 'Content-Type': 'text/plain' },
+        body:    JSON.stringify(payload),
+      });
+      // Con no-cors no podemos leer la respuesta; asumimos éxito si no hay error de red.
+      setLoading(false);
+      mostrarExito(fecha, hora, cuartel, hilera, claro, planta, estado);
+    } catch (err) {
+      setLoading(false);
+      toast('Error de red. Verifica tu conexión e intenta nuevamente.');
+      console.error('[fetch error]', err);
+    }
+  }
+}
+
+function mostrarExito(fecha, hora, cuartel, hilera, claro, planta, estado) {
+  const gpsLine = gpsData
+    ? `📍 ${gpsData.lat.toFixed(5)}, ${gpsData.lng.toFixed(5)}  ±${gpsData.accuracy}m`
+    : '📍 Sin GPS';
+  const nFotos  = appState.fotos.length;
+  const lineas  = [
+    `📅 ${fecha} · ${hora}`,
+    `🌳 ${cuartel}${hilera ? ' · H' + hilera : ''}${claro ? ' · C' + claro : ''}${planta ? ' · P' + planta : ''}`,
+    estado ? `🌱 ${estado}` : '🌱 Estado: JP lo determinará',
+    `📷 ${nFotos} foto${nFotos > 1 ? 's' : ''} enviada${nFotos > 1 ? 's' : ''}`,
+    gpsLine,
+  ];
+  document.getElementById('successMsg').textContent = lineas.join('\n');
+  document.getElementById('overlaySuccess').classList.add('visible');
+  sessionStorage.removeItem(STATE_KEY);
+}
+
+// ── HELPERS ──────────────────────────────────────────
+function toLocalDate(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+function toLocalTime(d) {
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+function setLoading(visible, msg) {
+  if (msg) document.getElementById('loadingMsg').textContent = msg;
+  document.getElementById('overlayLoading').classList.toggle('visible', visible);
+  document.getElementById('btnSubmit').disabled = visible;
+}
+function toast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast visible' + (type === 'ok' ? ' ok' : '');
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove('visible'), 3500);
+}
+function marcarError(cardId) {
+  const el = document.getElementById(cardId);
+  if (!el) return;
+  el.classList.add('error');
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+function limpiarError(cardId) {
+  document.getElementById(cardId)?.classList.remove('error');
+}
+
+// ── RESET ────────────────────────────────────────────
+function resetForm() {
+  gpsData  = null;
+  appState = { cuartel: null, hilera: null, claro: null, planta: null, fotos: [], gps: null };
+  sessionStorage.removeItem(STATE_KEY);
+
+  document.querySelectorAll('.sel-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.card').forEach(c => c.classList.remove('error'));
+
+  const hVal = document.getElementById('hileraVal');
+  hVal.textContent = 'toca para ingresar';
+  hVal.classList.add('placeholder');
+
+  const pVal = document.getElementById('plantaVal');
+  pVal.textContent = 'toca para ingresar';
+  pVal.classList.add('placeholder');
+
+  document.getElementById('ubicResumen').classList.remove('visible');
+  document.getElementById('fileInput').value = '';
+  document.getElementById('estado').value    = '';
+  document.getElementById('notas').value     = '';
+  document.getElementById('overlaySuccess').classList.remove('visible');
+  document.getElementById('btnSubmit').disabled = false;
+
+  renderFotos();
+  actualizarReloj();
+  pedirGPS();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── START ─────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>

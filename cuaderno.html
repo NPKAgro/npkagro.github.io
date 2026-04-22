@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0f1117">
+  <title>Cuaderno de Campo · La Quinta</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0f1117;
+      --bg2:       #161b24;
+      --bg3:       #1e2534;
+      --border:    rgba(255,255,255,0.08);
+      --text:      #f0f2f5;
+      --text2:     #8b93a5;
+      --text3:     #555e70;
+      --accent:    #3b82f6;
+      --accent2:   #1d4ed8;
+      --green:     #10b981;
+      --amber:     #f59e0b;
+      --red:       #ef4444;
+      --purple:    #8b5cf6;
+      --teal:      #14b8a6;
+      --radius:    10px;
+      --radius-sm: 6px;
+      --shadow:    0 4px 20px rgba(0,0,0,0.5);
+    }
+
+    html, body { height: 100%; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+      padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    /* ── HEADER ── */
+    .header {
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    .header-back {
+      width: 36px; height: 36px;
+      border-radius: var(--radius-sm);
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; color: var(--text2);
+      text-decoration: none; flex-shrink: 0;
+      transition: all 0.12s;
+    }
+    .header-back:active { border-color: var(--accent); color: var(--accent); }
+    .header-info { flex: 1; }
+    .header-title { font-size: 16px; font-weight: 700; color: var(--text); }
+    .header-sub   { font-size: 11px; color: var(--text3); margin-top: 1px; }
+    .header-icon  { font-size: 28px; flex-shrink: 0; }
+
+    /* ── GPS BAR (calicata) ── */
+    .gps-bar {
+      display: none;  /* visible sólo en calicata via JS */
+      align-items: center;
+      gap: 8px;
+      padding: 7px 16px;
+      font-size: 12px;
+      font-weight: 600;
+      background: rgba(0,0,0,0.3);
+      border-bottom: 1px solid var(--border);
+      color: var(--text3);
+    }
+    .gps-bar.show { display: flex; }
+    .gps-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; background: var(--text3); }
+    .gps-bar.buscando .gps-dot { background: var(--amber); animation: pulse 1.2s ease-in-out infinite; }
+    .gps-bar.ok       .gps-dot { background: var(--green); }
+    .gps-bar.error    .gps-dot { background: var(--red); }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.25} }
+
+    /* ── FORM WRAP ── */
+    .form-wrap {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* ── SECTION SEP ── */
+    .section-sep {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text3);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 6px;
+    }
+
+    /* ── ROW 2 COLS ── */
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    /* ── FIELD ── */
+    .field { display: flex; flex-direction: column; gap: 5px; }
+    .field-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text2);
+    }
+    .field-label .req { color: var(--red); margin-left: 2px; }
+
+    input[type="text"],
+    input[type="number"],
+    input[type="date"],
+    input[type="time"],
+    select,
+    textarea {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-size: 15px;
+      padding: 10px 12px;
+      width: 100%;
+      outline: none;
+      appearance: none;
+      -webkit-appearance: none;
+      transition: border-color 0.12s;
+      font-family: inherit;
+    }
+    input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+    input.error, select.error, textarea.error { border-color: rgba(239,68,68,0.6); }
+    textarea { resize: vertical; min-height: 80px; }
+    select { cursor: pointer; }
+
+    /* ── GPS FIELD ── */
+    .gps-field-row { display: flex; gap: 8px; align-items: center; }
+    .gps-field-status {
+      flex: 1;
+      font-size: 12px;
+      color: var(--text3);
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      transition: all 0.2s;
+    }
+    .gps-field-status.ok { color: var(--green); border-color: rgba(16,185,129,0.3); }
+    .btn-gps {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      color: var(--text2);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      font-size: 13px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.12s;
+      flex-shrink: 0;
+    }
+    .btn-gps:active { border-color: var(--accent); color: var(--accent); }
+
+    /* ── FOTOS ── */
+    .foto-area {
+      background: var(--bg3);
+      border: 1.5px dashed rgba(255,255,255,0.12);
+      border-radius: var(--radius);
+      min-height: 100px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 8px;
+      cursor: pointer;
+      transition: border-color 0.12s;
+      user-select: none;
+    }
+    .foto-area:active { border-color: var(--accent); }
+    .foto-area-icon { font-size: 28px; }
+    .foto-area-txt { font-size: 13px; color: var(--text3); }
+    #fotoInput { display: none; }
+
+    .fotos-preview { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+    .foto-thumb-wrap { position: relative; width: 76px; height: 76px; }
+    .foto-thumb {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      border-radius: var(--radius-sm);
+      display: block;
+      border: 1px solid var(--border);
+    }
+    .foto-thumb-del {
+      position: absolute; top: -7px; right: -7px;
+      background: var(--red); color: #fff;
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      font-size: 13px; line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; border: none;
+    }
+
+    /* ── BOTTOM BAR ── */
+    .bottombar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: var(--bg2);
+      border-top: 1px solid var(--border);
+      padding: 12px 16px;
+      padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+      z-index: 40;
+    }
+    .btn-enviar {
+      width: 100%;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      padding: 14px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.12s, background 0.12s;
+    }
+    .btn-enviar:active { opacity: 0.85; }
+    .btn-enviar:disabled { background: var(--bg3); color: var(--text3); cursor: not-allowed; opacity: 1; }
+
+    /* ── OVERLAY ÉXITO ── */
+    .overlay-success {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(10,13,20,0.97);
+      z-index: 100;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      text-align: center;
+      padding: 32px;
+    }
+    .overlay-success.visible { display: flex; }
+    .success-icon { font-size: 64px; animation: pop 0.4s cubic-bezier(0.34,1.56,0.64,1); }
+    @keyframes pop { from { transform: scale(0); opacity:0; } to { transform: scale(1); opacity:1; } }
+    .success-title { font-size: 20px; font-weight: 700; color: var(--text); }
+    .success-sub {
+      font-size: 13px;
+      color: var(--text2);
+      line-height: 1.6;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      width: 100%;
+      max-width: 320px;
+      text-align: left;
+      white-space: pre-line;
+    }
+    .success-actions {
+      display: flex;
+      gap: 10px;
+      width: 100%;
+      max-width: 320px;
+    }
+    .btn-otro, .btn-inicio {
+      flex: 1;
+      padding: 13px;
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.12s;
+      border: none;
+    }
+    .btn-otro { background: rgba(59,130,246,0.15); color: var(--accent); border: 1px solid rgba(59,130,246,0.2); }
+    .btn-otro:active { background: rgba(59,130,246,0.25); }
+    .btn-inicio { background: var(--bg3); color: var(--text2); border: 1px solid var(--border); }
+    .btn-inicio:active { background: rgba(255,255,255,0.06); }
+
+    /* ── SPINNER ── */
+    .spinner {
+      display: inline-block;
+      width: 18px; height: 18px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── TOAST ── */
+    .toast {
+      display: none;
+      position: fixed;
+      bottom: 80px; left: 50%; transform: translateX(-50%);
+      background: var(--bg3); border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 20px; border-radius: var(--radius-sm);
+      font-size: 13px; font-weight: 500;
+      z-index: 200; white-space: nowrap;
+      box-shadow: var(--shadow);
+    }
+    .toast.visible { display: block; }
+    .toast.ok    { border-color: rgba(16,185,129,0.4); color: var(--green); }
+    .toast.error { border-color: rgba(239,68,68,0.4);  color: var(--red); }
+  </style>
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<div class="header">
+  <a class="header-back" href="index.html">‹</a>
+  <div class="header-info">
+    <div class="header-title" id="headerTitle">Cuaderno</div>
+    <div class="header-sub">La Quinta · Agrícola del Pedregal</div>
+  </div>
+  <div class="header-icon" id="headerIcon">📋</div>
+</div>
+
+<!-- GPS bar (sólo calicata) -->
+<div class="gps-bar buscando" id="gpsBar">
+  <div class="gps-dot"></div>
+  <span id="gpsBarMsg">🛰 Buscando GPS...</span>
+  <span id="gpsBarCoords" style="margin-left:6px;font-family:monospace;font-size:11px;font-weight:400"></span>
+</div>
+
+<!-- ── FORM ── -->
+<div class="form-wrap" id="formWrap">
+  <div style="text-align:center;padding:40px;color:var(--text3)">Cargando formulario...</div>
+</div>
+
+<!-- ── BOTTOM BAR ── -->
+<div class="bottombar">
+  <button class="btn-enviar" id="btnEnviar" disabled>Guardar registro</button>
+</div>
+
+<!-- ── OVERLAY ÉXITO ── -->
+<div class="overlay-success" id="overlaySuccess">
+  <div class="success-icon" id="successIcon">✅</div>
+  <div class="success-title" id="successTitle">¡Registro guardado!</div>
+  <div class="success-sub" id="successSub"></div>
+  <div class="success-actions">
+    <button class="btn-otro" id="btnOtro">＋ Otro registro</button>
+    <button class="btn-inicio" onclick="window.location.href='index.html'">← Inicio</button>
+  </div>
+</div>
+
+<!-- ── TOAST ── -->
+<div class="toast" id="toast"></div>
+<input type="file" id="fotoInput" accept="image/*" capture="environment" multiple>
+
+<script>
+// ══════════════════════════════════════════════════════
+//  CONFIGURACIÓN
+// ══════════════════════════════════════════════════════
+var GAS_URL      = 'https://script.google.com/macros/s/AKfycbydi5imjeA5bXY5TlA7MBVGkG6-Aq4XhYC0soXGPUMl41lEvdL8rc-xhjeRv9m0_aJg/exec';
+var ACCESS_TOKEN = 'LQ2026-Santina';
+// ★ BUG CORREGIDO: cuarteles alineados con campo.html (C2, C3, C4)
+var CUARTELES    = ['C2', 'C3', 'C4', 'Otro'];
+
+// ── Tipos de registro ────────────────────────────────────────────────
+var TIPOS = {
+  riego: {
+    titulo: 'Riego',
+    icono:  '💧',
+    campos: ['fecha', 'hora', 'cuartel', 'sector', 'horas_riego', 'caudal_lh', 'metodo_riego', 'observaciones'],
+  },
+  plagas: {
+    titulo: 'Plagas y enfermedades',
+    icono:  '🐛',
+    campos: ['fecha', 'hora', 'cuartel', 'sector', 'plaga', 'nivel', 'producto', 'dosis', 'observaciones'],
+  },
+  labores: {
+    titulo: 'Labores',
+    icono:  '🚜',
+    campos: ['fecha', 'hora', 'cuartel', 'tipo_labor', 'personal', 'equipos', 'observaciones'],
+  },
+  estructura: {
+    titulo: 'Estructura',
+    icono:  '🏗️',
+    campos: ['fecha', 'cuartel', 'tipo_estructura', 'descripcion', 'estado_estructura', 'observaciones'],
+  },
+  calicata: {
+    titulo: 'Calicata',
+    icono:  '⛏️',
+    campos: ['fecha', 'cuartel', 'gps', 'profundidad_cm', 'textura', 'color_suelo', 'estructura_suelo', 'raices', 'ph_aproximado', 'observaciones'],
+  },
+};
+
+// ── Definición de campos ─────────────────────────────────────────────
+var CAMPOS_DEF = {
+  fecha:            { label: 'Fecha',                 req: true,  tipo: 'date' },
+  hora:             { label: 'Hora',                  req: false, tipo: 'time' },
+  cuartel:          { label: 'Cuartel',               req: true,  tipo: 'select', opts: null },  // opts inyectadas en init
+  sector:           { label: 'Sector',                req: false, tipo: 'text',   ph: 'Ej: Bloque 2 Norte' },
+  horas_riego:      { label: 'Horas de riego',        req: true,  tipo: 'number', ph: 'ej: 4.5', min: '0', step: '0.5' },
+  caudal_lh:        { label: 'Caudal (L/h)',          req: false, tipo: 'number', ph: 'ej: 2000' },
+  metodo_riego:     { label: 'Método de riego',       req: false, tipo: 'select', opts: ['Goteo', 'Microaspersión', 'Aspersión', 'Surco', 'Otro'] },
+  plaga:            { label: 'Plaga / Enfermedad',    req: true,  tipo: 'text',   ph: 'ej: Oidio, Ácaros, Botrytis...' },
+  nivel:            { label: 'Nivel de incidencia',   req: true,  tipo: 'select', opts: ['Bajo (<10%)', 'Medio (10-30%)', 'Alto (>30%)', 'Severo (>60%)'] },
+  producto:         { label: 'Producto aplicado',     req: false, tipo: 'text',   ph: 'Nombre comercial' },
+  dosis:            { label: 'Dosis',                 req: false, tipo: 'text',   ph: 'ej: 0.5 L/100L' },
+  tipo_labor:       { label: 'Tipo de labor',         req: true,  tipo: 'select', opts: ['Poda invierno', 'Poda verde', 'Raleo manual', 'Raleo quím.', 'Cosecha', 'Amarra', 'Aplicación fitosanitaria', 'Fertilización', 'Otro'] },
+  personal:         { label: 'Personal (N° personas)',req: false, tipo: 'number', ph: 'ej: 6' },
+  equipos:          { label: 'Equipos usados',        req: false, tipo: 'text',   ph: 'ej: Tijeras, tractor...' },
+  tipo_estructura:  { label: 'Tipo de estructura',    req: true,  tipo: 'select', opts: ['Malla antigranizo', 'Malla heladas', 'Poste', 'Cable', 'Tensor', 'Espaldera', 'Techo plástico', 'Otro'] },
+  descripcion:      { label: 'Descripción',           req: false, tipo: 'text',   ph: 'Detalle de la estructura' },
+  estado_estructura:{ label: 'Estado',                req: false, tipo: 'select', opts: ['Bueno', 'Regular', 'Dañado', 'Repuesto', 'En construcción'] },
+  gps:              { label: 'Ubicación GPS',         req: false, tipo: 'gps' },
+  profundidad_cm:   { label: 'Profundidad (cm)',       req: true,  tipo: 'number', ph: 'ej: 80' },
+  textura:          { label: 'Textura de suelo',      req: false, tipo: 'select', opts: ['Arenosa', 'Arenosa franca', 'Franco arenosa', 'Franca', 'Franco arcillosa', 'Arcillosa', 'Otro'] },
+  color_suelo:      { label: 'Color de suelo',        req: false, tipo: 'text',   ph: 'ej: Pardo oscuro' },
+  estructura_suelo: { label: 'Estructura de suelo',   req: false, tipo: 'select', opts: ['Sin estructura', 'Granular', 'Bloques subangulares', 'Bloques angulares', 'Laminar', 'Prismática'] },
+  raices:           { label: 'Presencia de raíces',   req: false, tipo: 'select', opts: ['Sin raíces', 'Escasas', 'Moderadas', 'Abundantes'] },
+  ph_aproximado:    { label: 'pH aproximado',         req: false, tipo: 'number', ph: 'ej: 6.5', step: '0.1', min: '0', max: '14' },
+  observaciones:    { label: 'Observaciones',         req: false, tipo: 'textarea', ph: 'Notas adicionales...' },
+};
+
+// ── Estado global ────────────────────────────────────────────────────
+var gpsData = { lat: null, lng: null, acc: null };
+var fotos   = [];
+var tipoActual = 'labores';
+
+// ── Init ─────────────────────────────────────────────────────────────
+function init() {
+  // Inyectar cuarteles en la definición
+  CAMPOS_DEF.cuartel.opts = CUARTELES;
+
+  var params = new URLSearchParams(window.location.search);
+  tipoActual = params.get('tipo') || 'labores';
+  var config = TIPOS[tipoActual] || TIPOS.labores;
+
+  document.title  = config.titulo + ' · La Quinta';
+  document.getElementById('headerTitle').textContent = config.titulo;
+  document.getElementById('headerIcon').textContent  = config.icono;
+  document.getElementById('btnEnviar').textContent   = 'Guardar ' + config.titulo.toLowerCase();
+  document.getElementById('btnEnviar').disabled      = false;
+
+  // Calicata: mostrar GPS bar y arrancar GPS automáticamente
+  if (tipoActual === 'calicata') {
+    var bar = document.getElementById('gpsBar');
+    bar.classList.add('show');
+    pedirGPSAuto();
+  }
+
+  renderForm(tipoActual, config);
+  document.getElementById('btnOtro').onclick = function() {
+    window.location.href = 'cuaderno.html?tipo=' + tipoActual;
+  };
+}
+
+// ── GPS automático (calicata) ─────────────────────────────────────────
+function pedirGPSAuto() {
+  var bar    = document.getElementById('gpsBar');
+  var msg    = document.getElementById('gpsBarMsg');
+  var coords = document.getElementById('gpsBarCoords');
+
+  if (!navigator.geolocation) {
+    bar.className = 'gps-bar show error';
+    msg.textContent = '⚠️ GPS no disponible';
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    function(pos) {
+      gpsData = {
+        lat: pos.coords.latitude.toFixed(6),
+        lng: pos.coords.longitude.toFixed(6),
+        acc: Math.round(pos.coords.accuracy),
+      };
+      bar.className     = 'gps-bar show ok';
+      msg.textContent   = '📍 GPS capturado ±' + gpsData.acc + 'm';
+      coords.textContent = gpsData.lat + ', ' + gpsData.lng;
+      // Actualizar el campo GPS visual en el formulario si ya se renderizó
+      var el = document.getElementById('gpsStatus');
+      if (el) {
+        el.textContent = '✅ ' + gpsData.lat + ', ' + gpsData.lng + ' ±' + gpsData.acc + 'm';
+        el.className = 'gps-field-status ok';
+      }
+    },
+    function(err) {
+      bar.className = 'gps-bar show error';
+      msg.textContent = '⚠️ Error GPS — toca "Obtener GPS" en el formulario';
+    },
+    { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
+  );
+}
+
+// ── GPS manual (botón en formulario) ─────────────────────────────────
+function obtenerGPS() {
+  var el = document.getElementById('gpsStatus');
+  if (!el) return;
+  el.textContent = '⏳ Obteniendo ubicación...';
+  el.className   = 'gps-field-status';
+
+  navigator.geolocation.getCurrentPosition(
+    function(pos) {
+      gpsData = {
+        lat: pos.coords.latitude.toFixed(6),
+        lng: pos.coords.longitude.toFixed(6),
+        acc: Math.round(pos.coords.accuracy),
+      };
+      el.textContent = '✅ ' + gpsData.lat + ', ' + gpsData.lng + ' ±' + gpsData.acc + 'm';
+      el.className   = 'gps-field-status ok';
+    },
+    function(err) {
+      el.textContent = '❌ Error GPS: ' + err.message;
+      el.className   = 'gps-field-status';
+    },
+    { enableHighAccuracy: true, timeout: 12000 }
+  );
+}
+
+// ── Render formulario ────────────────────────────────────────────────
+function renderForm(tipo, config) {
+  var wrap = document.getElementById('formWrap');
+  var html = '';
+
+  html += '<div class="section-sep">Datos del registro</div>';
+
+  // ¿Hay campo de 2 columnas? (fecha + hora juntos)
+  var campos = config.campos;
+  var i = 0;
+  while (i < campos.length) {
+    var key = campos[i];
+    if (key === 'gps') { html += renderGps(); i++; continue; }
+
+    var def = CAMPOS_DEF[key];
+    if (!def) { i++; continue; }
+
+    // Agrupar fecha+hora en fila 2 cols si son consecutivos
+    if (key === 'fecha' && campos[i + 1] === 'hora') {
+      html += '<div class="row2">'
+        + renderCampo('fecha', CAMPOS_DEF.fecha)
+        + renderCampo('hora',  CAMPOS_DEF.hora)
+        + '</div>';
+      i += 2;
+    } else {
+      html += renderCampo(key, def);
+      i++;
+    }
+  }
+
+  html += '<div class="section-sep">Fotografías <span style="font-size:10px;font-weight:400;text-transform:none">(opcional — no se suben a Drive)</span></div>';
+  html += '<div class="foto-area" id="fotoArea"><div class="foto-area-icon">📷</div><div class="foto-area-txt">Toca para agregar fotos</div></div>';
+  html += '<div class="fotos-preview" id="fotosPreview"></div>';
+
+  wrap.innerHTML = html;
+
+  // Auto-fill fecha y hora con la hora local correcta
+  var hoy     = new Date();
+  var dateEl  = document.getElementById('f_fecha');
+  if (dateEl) dateEl.value = toLocalDate(hoy);
+  var timeEl  = document.getElementById('f_hora');
+  if (timeEl) timeEl.value = toLocalTime(hoy);
+
+  // Bindings
+  document.getElementById('fotoArea').addEventListener('click', function() {
+    document.getElementById('fotoInput').click();
+  });
+  document.getElementById('fotoInput').addEventListener('change', onFotoChange);
+  document.getElementById('btnEnviar').addEventListener('click', function() { onSubmit(tipo); });
+}
+
+function renderCampo(key, def) {
+  var id  = 'f_' + key;
+  var lbl = def.label + (def.req ? '<span class="req">*</span>' : '');
+  var inp = '';
+
+  if (def.tipo === 'select') {
+    inp = '<select id="' + id + '">'
+      + def.opts.map(function(o) { return '<option value="' + o + '">' + o + '</option>'; }).join('')
+      + '</select>';
+  } else if (def.tipo === 'textarea') {
+    inp = '<textarea id="' + id + '" placeholder="' + (def.ph || '') + '"></textarea>';
+  } else {
+    var attrs = 'type="' + def.tipo + '" id="' + id + '"'
+      + (def.ph   ? ' placeholder="' + def.ph + '"' : '')
+      + (def.min  !== undefined ? ' min="' + def.min + '"' : '')
+      + (def.max  !== undefined ? ' max="' + def.max + '"' : '')
+      + (def.step ? ' step="' + def.step + '"' : '');
+    inp = '<input ' + attrs + '>';
+  }
+
+  return '<div class="field"><div class="field-label">' + lbl + '</div>' + inp + '</div>';
+}
+
+function renderGps() {
+  return '<div class="field">'
+    + '<div class="field-label">Ubicación GPS</div>'
+    + '<div class="gps-field-row">'
+    + '<div class="gps-field-status" id="gpsStatus">📍 Sin ubicación</div>'
+    + '<button type="button" class="btn-gps" onclick="obtenerGPS()">📡 Obtener GPS</button>'
+    + '</div></div>';
+}
+
+// ── Fotos ─────────────────────────────────────────────────────────────
+function onFotoChange(e) {
+  var files = Array.from(e.target.files);
+  var promises = files.map(function(file) {
+    return compressImage(file, 1280, 0.72).then(function(blob) {
+      return blobToBase64(blob);
+    }).then(function(dataUrl) {
+      fotos.push({ name: file.name, dataUrl: dataUrl });
+    });
+  });
+  Promise.all(promises).then(renderThumbs);
+  e.target.value = '';
+}
+
+function compressImage(file, maxW, quality) {
+  return new Promise(function(resolve) {
+    var reader  = new FileReader();
+    reader.onload = function(ev) {
+      var img = new Image();
+      img.onload = function() {
+        var w = img.width, h = img.height;
+        if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+        var c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        c.getContext('2d').drawImage(img, 0, 0, w, h);
+        c.toBlob(resolve, 'image/jpeg', quality);
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+function blobToBase64(blob) {
+  return new Promise(function(resolve) {
+    var r = new FileReader();
+    r.onload = function() { resolve(r.result); };
+    r.readAsDataURL(blob);
+  });
+}
+
+function renderThumbs() {
+  var prev = document.getElementById('fotosPreview');
+  if (!prev) return;
+  prev.innerHTML = fotos.map(function(f, i) {
+    return '<div class="foto-thumb-wrap">'
+      + '<img class="foto-thumb" src="' + f.dataUrl + '" alt="Foto ' + (i + 1) + '">'
+      + '<button class="foto-thumb-del" onclick="quitarFoto(' + i + ')">×</button>'
+      + '</div>';
+  }).join('');
+}
+
+function quitarFoto(idx) {
+  fotos.splice(idx, 1);
+  renderThumbs();
+}
+
+// ── Submit ────────────────────────────────────────────────────────────
+function onSubmit(tipo) {
+  var config = TIPOS[tipo];
+  if (!config) return;
+
+  var btn = document.getElementById('btnEnviar');
+
+  // Recoger datos
+  var datos = { tipo: tipo };
+  config.campos.forEach(function(key) {
+    if (key === 'gps') {
+      datos.gps_lat = gpsData.lat || '';
+      datos.gps_lng = gpsData.lng || '';
+      datos.gps_acc = gpsData.acc || '';
+    } else {
+      var el = document.getElementById('f_' + key);
+      datos[key] = el ? el.value.trim() : '';
+    }
+  });
+  datos.ts         = new Date().toISOString();
+  datos.fotos_count = fotos.length;
+
+  // Validar campos requeridos
+  var errCampo = null;
+  config.campos.forEach(function(key) {
+    if (errCampo) return;
+    var def = CAMPOS_DEF[key];
+    if (!def || !def.req || key === 'gps') return;
+    if (!datos[key]) {
+      errCampo = key;
+      var el = document.getElementById('f_' + key);
+      if (el) el.classList.add('error');
+    }
+  });
+
+  if (errCampo) {
+    var def = CAMPOS_DEF[errCampo];
+    btn.disabled = false;
+    btn.textContent = 'Guardar ' + config.titulo.toLowerCase();
+    showToast('Campo requerido: ' + (def ? def.label : errCampo), 'error');
+    return;
+  }
+
+  // Bloquear doble-submit
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Guardando...';
+
+  // Quitar errores visuales
+  document.querySelectorAll('input.error, select.error, textarea.error').forEach(function(el) {
+    el.classList.remove('error');
+  });
+
+  // Agregar token
+  datos.token  = ACCESS_TOKEN;
+  datos.action = 'cuaderno';
+
+  // Modo dual: google.script.run (si se sirve dentro de GAS) vs fetch HTTPS
+  if (typeof google !== 'undefined' && google.script) {
+    // ★ BUG CORREGIDO: modo GAS ahora funciona (versión anterior usaba sólo fetch)
+    google.script.run
+      .withSuccessHandler(function(result) {
+        mostrarExito(tipo, config, datos);
+      })
+      .withFailureHandler(function(err) {
+        btn.disabled = false;
+        btn.textContent = 'Guardar ' + config.titulo.toLowerCase();
+        showToast('Error al guardar: ' + (err.message || err), 'error');
+      })
+      .guardarCuadernoScriptRun(JSON.stringify(datos));
+
+  } else {
+    // GitHub Pages / hosting HTTPS externo
+    // ★ BUG CORREGIDO: Content-Type: text/plain (no application/json) para no-cors con GAS
+    fetch(GAS_URL, {
+      method:  'POST',
+      mode:    'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body:    JSON.stringify(datos),
+    })
+      .then(function() {
+        // no-cors → respuesta opaque, asumimos éxito si no hay error de red
+        mostrarExito(tipo, config, datos);
+      })
+      .catch(function(err) {
+        btn.disabled = false;
+        btn.textContent = 'Guardar ' + config.titulo.toLowerCase();
+        showToast('Error de red: ' + err.message, 'error');
+      });
+  }
+}
+
+function mostrarExito(tipo, config, datos) {
+  var lineas = [
+    '🗂 ' + config.titulo,
+    '📅 ' + (datos.fecha || '—'),
+    datos.cuartel ? '🌳 Cuartel ' + datos.cuartel : '',
+    datos.horas_riego   ? '💧 ' + datos.horas_riego + ' horas' : '',
+    datos.plaga         ? '🐛 ' + datos.plaga : '',
+    datos.tipo_labor    ? '🚜 ' + datos.tipo_labor : '',
+    datos.tipo_estructura ? '🏗️ ' + datos.tipo_estructura : '',
+    datos.profundidad_cm  ? '⛏️ Profundidad: ' + datos.profundidad_cm + ' cm' : '',
+    datos.fotos_count > 0 ? '📷 ' + datos.fotos_count + ' foto(s) adjunta(s)' : '',
+  ].filter(Boolean).join('\n');
+
+  document.getElementById('successIcon').textContent  = config.icono;
+  document.getElementById('successTitle').textContent = '¡' + config.titulo + ' guardado!';
+  document.getElementById('successSub').textContent   = lineas;
+  document.getElementById('overlaySuccess').classList.add('visible');
+}
+
+// ── Utils ─────────────────────────────────────────────────────────────
+function toLocalDate(d) {
+  return d.getFullYear() + '-'
+    + String(d.getMonth() + 1).padStart(2, '0') + '-'
+    + String(d.getDate()).padStart(2, '0');
+}
+function toLocalTime(d) {
+  return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+}
+function showToast(msg, type) {
+  type = type || '';
+  var t  = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast visible' + (type ? ' ' + type : '');
+  clearTimeout(t._tid);
+  t._tid = setTimeout(function() { t.classList.remove('visible'); }, 3500);
+}
+
+init();
+</script>
+</body>
+</html>

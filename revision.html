@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel de Revisión JP · La Quinta</title>
+  <style>
+    :root {
+      --bg:        #0f1117;
+      --bg2:       #161b24;
+      --bg3:       #1e2534;
+      --border:    rgba(255,255,255,0.08);
+      --text:      #f0f2f5;
+      --text2:     #8b93a5;
+      --text3:     #555e70;
+      --accent:    #3b82f6;
+      --accent2:   #1d4ed8;
+      --green:     #10b981;
+      --amber:     #f59e0b;
+      --red:       #ef4444;
+      --purple:    #8b5cf6;
+      --radius:    10px;
+      --radius-sm: 6px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, 'Segoe UI', sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* ── HEADER ── */
+    header {
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 56px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .logo-block { display: flex; flex-direction: column; line-height: 1.2; }
+    .logo-empresa { font-size: 15px; font-weight: 700; letter-spacing: -0.3px; }
+    .logo-empresa span { color: var(--accent); }
+    .logo-predio { font-size: 11px; color: var(--text3); }
+    .header-right { display: flex; align-items: center; gap: 10px; }
+    .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
+    #fechaHoy { font-size: 12px; color: var(--text3); }
+
+    /* ── CONTROLES + FILTROS ── */
+    .controls-wrap {
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 2rem;
+    }
+    .controls-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .filter-label { font-size: 12px; color: var(--text3); margin-right: 2px; }
+
+    .fbtn {
+      font-size: 12px;
+      padding: 5px 12px;
+      border-radius: 99px;
+      cursor: pointer;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text2);
+      transition: all 0.12s;
+      white-space: nowrap;
+    }
+    .fbtn:hover { border-color: rgba(255,255,255,0.2); color: var(--text); }
+    .fbtn.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 500; }
+
+    .btn-reload {
+      margin-left: auto;
+      font-size: 12px;
+      padding: 5px 12px;
+      border-radius: 99px;
+      cursor: pointer;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text2);
+      transition: all 0.12s;
+    }
+    .btn-reload:hover { border-color: rgba(255,255,255,0.2); color: var(--text); }
+
+    /* ── FILTRO CUARTEL (segunda fila) ── */
+    .cuartel-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+    .cuartel-label { font-size: 11px; color: var(--text3); margin-right: 2px; }
+    .cbtn {
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 99px;
+      cursor: pointer;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text3);
+      transition: all 0.12s;
+    }
+    .cbtn.active { background: rgba(139,92,246,0.2); border-color: var(--purple); color: #c4b5fd; }
+
+    .badge-count {
+      display: inline-block;
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 99px;
+      font-weight: 600;
+      margin-left: 4px;
+      background: rgba(245,158,11,0.2);
+      color: var(--amber);
+    }
+
+    /* ── KPIs ── */
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 12px;
+      padding: 1.25rem 2rem 0;
+    }
+    .kpi {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem 1.1rem;
+    }
+    .kpi-lbl { font-size: 12px; color: var(--text2); margin-bottom: 6px; }
+    .kpi-val { font-size: 22px; font-weight: 600; letter-spacing: -0.5px; line-height: 1.1; }
+    .kpi-sub { font-size: 11px; color: var(--text3); margin-top: 5px; }
+
+    /* ── GRID CARDS ── */
+    .main-content { padding-bottom: 72px; }
+    .grid-container {
+      padding: 1.25rem 2rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 14px;
+    }
+
+    /* ── CARD OBSERVACIÓN ── */
+    .obs-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      transition: border-color 0.15s;
+    }
+    .obs-card:hover { border-color: rgba(255,255,255,0.14); }
+    .obs-card.aprobada { border-color: rgba(16,185,129,0.25); }
+
+    .card-photo {
+      width: 100%;
+      height: 230px;
+      object-fit: cover;
+      display: block;
+      background: var(--bg3);
+      cursor: zoom-in;
+    }
+    .card-photo-placeholder {
+      width: 100%;
+      height: 230px;
+      background: var(--bg3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      color: var(--text3);
+    }
+
+    .card-body { padding: 12px 14px; display: flex; flex-direction: column; gap: 9px; }
+
+    .card-top-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .card-fecha { font-size: 14px; font-weight: 600; }
+    .card-hora  { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+    /* ── BADGES ── */
+    .badge {
+      display: inline-block;
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 99px;
+      font-weight: 500;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .badge-pendiente { background: rgba(245,158,11,0.15); color: var(--amber); }
+    .badge-revisado  { background: rgba(16,185,129,0.15);  color: var(--green); }
+
+    /* ── CHIPS ── */
+    .chips-row { display: flex; gap: 5px; flex-wrap: wrap; }
+    .chip {
+      font-size: 11px;
+      padding: 2px 9px;
+      border-radius: var(--radius-sm);
+      font-weight: 500;
+    }
+    .chip-cuartel   { background: rgba(59,130,246,0.15);  color: var(--accent); }
+    .chip-ubicacion { background: rgba(139,92,246,0.15);  color: var(--purple); }
+    .chip-estado    { background: rgba(16,185,129,0.12);  color: var(--green); }
+    .chip-fotos     { background: rgba(245,158,11,0.12);  color: var(--amber); }
+
+    /* ── GPS LINK ── */
+    .gps-link {
+      font-size: 11px;
+      color: var(--text3);
+      text-decoration: none;
+      transition: color 0.12s;
+    }
+    .gps-link:hover { color: var(--accent); }
+
+    /* ── NOTAS ── */
+    .card-notas {
+      font-size: 12px;
+      color: var(--text2);
+      line-height: 1.5;
+      background: var(--bg3);
+      border-radius: var(--radius-sm);
+      padding: 7px 10px;
+      border-left: 2px solid var(--border);
+      font-style: italic;
+    }
+
+    /* ── SELECTOR ESTADO JP ── */
+    .estado-jp-row { display: flex; gap: 8px; align-items: stretch; }
+    .estado-select {
+      flex: 1;
+      padding: 8px 10px;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-size: 12px;
+      appearance: none;
+      -webkit-appearance: none;
+      outline: none;
+      cursor: pointer;
+      transition: border-color 0.12s;
+    }
+    .estado-select:focus { border-color: var(--accent); }
+    /* Resaltar en rojo si se intenta aprobar sin seleccionar */
+    .estado-select.sin-estado { border-color: rgba(239,68,68,0.6); }
+
+    .btn-aprobar {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.12s;
+      white-space: nowrap;
+    }
+    .btn-aprobar:hover    { background: var(--accent2); }
+    .btn-aprobar:disabled { background: var(--bg3); color: var(--text3); cursor: not-allowed; }
+
+    .estado-error-hint {
+      font-size: 11px;
+      color: var(--red);
+      display: none;
+    }
+    .estado-error-hint.visible { display: block; }
+
+    .aprobado-badge {
+      background: rgba(16,185,129,0.1);
+      color: var(--green);
+      border-radius: var(--radius-sm);
+      padding: 8px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      text-align: center;
+      border: 1px solid rgba(16,185,129,0.2);
+    }
+
+    /* ── FOTO ACCIONES ── */
+    .foto-acciones { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .btn-ver-foto, .btn-elim-foto {
+      font-size: 11px;
+      padding: 4px 10px;
+      background: transparent;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      transition: all 0.12s;
+    }
+    .btn-ver-foto { border: 1px solid var(--border); color: var(--text3); }
+    .btn-ver-foto:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-elim-foto { border: 1px solid rgba(239,68,68,0.3); color: var(--text3); }
+    .btn-elim-foto:hover { border-color: var(--red); color: var(--red); }
+
+    .confirm-elim {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--text2);
+    }
+    .confirm-elim.visible { display: flex; }
+    .confirm-elim .btn-si {
+      font-size: 11px; padding: 3px 10px; border-radius: var(--radius-sm);
+      background: var(--red); color: #fff; border: none; cursor: pointer; font-weight: 600;
+    }
+    .confirm-elim .btn-no {
+      font-size: 11px; padding: 3px 10px; border-radius: var(--radius-sm);
+      background: transparent; color: var(--text3); border: 1px solid var(--border); cursor: pointer;
+    }
+
+    /* ── ESTADOS VACÍOS ── */
+    .state-box {
+      grid-column: 1/-1;
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text3);
+    }
+    .state-icon { font-size: 48px; margin-bottom: 14px; }
+    .state-msg  { font-size: 16px; font-weight: 500; color: var(--text2); }
+    .state-sub  { font-size: 13px; margin-top: 8px; line-height: 1.6; max-width: 480px; margin-left: auto; margin-right: auto; }
+
+    .spinner-wrap {
+      grid-column: 1/-1;
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text2);
+    }
+    .spinner {
+      display: inline-block;
+      width: 28px; height: 28px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      margin-bottom: 14px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── CAROUSEL ── */
+    .photo-carousel { position: relative; width: 100%; overflow: hidden; }
+    .carousel-btn {
+      position: absolute;
+      top: 50%; transform: translateY(-50%);
+      background: rgba(0,0,0,0.52);
+      color: #fff; border: none;
+      border-radius: 50%;
+      width: 34px; height: 34px;
+      font-size: 22px; line-height: 1;
+      cursor: pointer; z-index: 10;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.12s; padding: 0; user-select: none;
+    }
+    .carousel-btn:hover { background: rgba(0,0,0,0.80); }
+    .carousel-prev { left: 8px; }
+    .carousel-next { right: 8px; }
+    .carousel-counter {
+      position: absolute;
+      bottom: 8px; right: 8px;
+      background: rgba(0,0,0,0.55); color: #fff;
+      font-size: 11px; padding: 2px 8px;
+      border-radius: 99px; pointer-events: none;
+    }
+
+    /* ── LIGHTBOX ── */
+    .lightbox {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.96);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    .lightbox.visible { display: flex; }
+    .lightbox img { max-width: 94vw; max-height: 92vh; border-radius: var(--radius); object-fit: contain; }
+    .lightbox-close {
+      position: absolute; top: 18px; right: 22px;
+      color: var(--text2); font-size: 28px; cursor: pointer;
+      transition: color 0.12s;
+    }
+    .lightbox-close:hover { color: var(--text); }
+    .lightbox-nav {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      background: rgba(255,255,255,0.12); color: #fff; border: none;
+      border-radius: 50%; width: 44px; height: 44px;
+      font-size: 26px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.12s;
+    }
+    .lightbox-nav:hover { background: rgba(255,255,255,0.25); }
+    .lightbox-prev { left: 18px; }
+    .lightbox-next { right: 18px; }
+    .lightbox-indicator {
+      position: absolute; bottom: 18px;
+      left: 50%; transform: translateX(-50%);
+      color: rgba(255,255,255,0.6); font-size: 13px;
+    }
+
+    /* ── BOTTOM BAR ── */
+    .bottombar {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: var(--bg2);
+      border-top: 1px solid var(--border);
+      padding: 12px 2rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      z-index: 40;
+    }
+    .bottombar-info { flex: 1; font-size: 12px; color: var(--text3); }
+    .bottombar-info strong { color: var(--text2); font-weight: 600; }
+    .btn-export {
+      font-size: 12px; padding: 7px 16px;
+      background: var(--accent); border: none;
+      border-radius: var(--radius-sm);
+      color: #fff; font-weight: 500; cursor: pointer;
+      transition: background 0.12s;
+    }
+    .btn-export:hover { background: var(--accent2); }
+
+    /* ── TOAST ── */
+    .toast {
+      display: none;
+      position: fixed;
+      bottom: 72px; left: 50%; transform: translateX(-50%);
+      background: var(--bg3); border: 1px solid var(--border);
+      color: var(--text);
+      padding: 9px 20px; border-radius: var(--radius-sm);
+      font-size: 13px; font-weight: 500;
+      z-index: 500; white-space: nowrap;
+    }
+    .toast.ok    { border-color: rgba(16,185,129,0.4); color: var(--green); }
+    .toast.error { border-color: rgba(239,68,68,0.4);  color: var(--red); }
+    .toast.visible { display: block; }
+  </style>
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<header>
+  <div class="logo-block">
+    <div class="logo-empresa">Agrícola <span>del Pedregal</span></div>
+    <div class="logo-predio">La Quinta &nbsp;·&nbsp; Registro Estados Fenológicos</div>
+  </div>
+  <div class="header-right">
+    <div class="status-dot"></div>
+    <span id="fechaHoy"></span>
+  </div>
+</header>
+
+<!-- ── KPIs ── -->
+<div class="kpis">
+  <div class="kpi">
+    <div class="kpi-lbl">⏳ Pendientes</div>
+    <div class="kpi-val" id="kpiPendientes">—</div>
+    <div class="kpi-sub">Por asignar estado</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-lbl">✅ Revisadas</div>
+    <div class="kpi-val" id="kpiRevisadas">—</div>
+    <div class="kpi-sub">Estado JP asignado</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-lbl">📷 Total registros</div>
+    <div class="kpi-val" id="kpiTotal">—</div>
+    <div class="kpi-sub">Temporada 2025–2026</div>
+  </div>
+</div>
+
+<!-- ── CONTROLES ── -->
+<div class="controls-wrap">
+  <!-- Filtro estado de revisión -->
+  <div class="controls-row">
+    <span class="filter-label">Estado:</span>
+    <button class="fbtn active" data-filtro="Pendiente" onclick="setFiltroEstado('Pendiente', this)">
+      Pendientes <span class="badge-count" id="countPendiente">—</span>
+    </button>
+    <button class="fbtn" data-filtro="Revisado" onclick="setFiltroEstado('Revisado', this)">Revisadas</button>
+    <button class="fbtn" data-filtro="todos" onclick="setFiltroEstado('todos', this)">Todas</button>
+    <button class="btn-reload" onclick="cargarObservaciones()">↻ Actualizar</button>
+  </div>
+
+  <!-- Filtro cuartel -->
+  <div class="cuartel-row">
+    <span class="cuartel-label">Cuartel:</span>
+    <button class="cbtn active" data-cuartel="todos" onclick="setFiltroCuartel('todos', this)">Todos</button>
+    <button class="cbtn" data-cuartel="C2" onclick="setFiltroCuartel('C2', this)">C2</button>
+    <button class="cbtn" data-cuartel="C3" onclick="setFiltroCuartel('C3', this)">C3</button>
+    <button class="cbtn" data-cuartel="C4" onclick="setFiltroCuartel('C4', this)">C4</button>
+  </div>
+</div>
+
+<!-- ── GRID ── -->
+<div class="main-content">
+  <div class="grid-container" id="gridContainer">
+    <div class="spinner-wrap">
+      <div class="spinner"></div>
+      <div>Cargando observaciones...</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── BOTTOM BAR ── -->
+<div class="bottombar">
+  <div class="bottombar-info">
+    <strong id="resumenAprobadas">—</strong> revisadas &nbsp;·&nbsp;
+    <strong id="resumenTotal">—</strong> total
+  </div>
+  <button class="btn-export" onclick="exportarJSON()">⬇ Exportar JSON</button>
+</div>
+
+<!-- ── LIGHTBOX ── -->
+<div class="lightbox" id="lightbox" onclick="cerrarLightbox()">
+  <span class="lightbox-close" onclick="cerrarLightbox()">✕</span>
+  <button class="lightbox-nav lightbox-prev" id="lbPrev" onclick="event.stopPropagation();lightboxNav(-1)" style="display:none">&#8249;</button>
+  <img id="lightboxImg" src="" alt="Foto ampliada" onclick="event.stopPropagation()">
+  <button class="lightbox-nav lightbox-next" id="lbNext" onclick="event.stopPropagation();lightboxNav(1)" style="display:none">&#8250;</button>
+  <div class="lightbox-indicator" id="lbIndicator" style="display:none"></div>
+</div>
+
+<!-- ── TOAST ── -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Config ──────────────────────────────────────────────────────────
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbydi5imjeA5bXY5TlA7MBVGkG6-Aq4XhYC0soXGPUMl41lEvdL8rc-xhjeRv9m0_aJg/exec';
+
+const ESTADOS = [
+  'Yema dormida', 'Yema hinchada', 'Ramillete expuesto',
+  'Botón blanco', 'Inicio floración', 'Plena flor',
+  'Caída de pétalos', 'Caída de chaqueta', 'Crecimiento del fruto',
+  'Endurecimiento de carozo', 'Color amarillo pajizo', 'Pinta', 'Cosecha',
+];
+
+// ── Estado de filtros ────────────────────────────────────────────────
+let filtroEstado   = 'Pendiente';
+let filtroCuartel  = 'todos';
+let observaciones  = [];
+let _retryCount    = 0;
+
+// ── Init ─────────────────────────────────────────────────────────────
+function init() {
+  document.getElementById('fechaHoy').textContent =
+    new Date().toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  cargarObservaciones();
+}
+
+// ── Cargar (modo dual) ───────────────────────────────────────────────
+function cargarObservaciones() {
+  showLoading();
+  _retryCount = 0;
+
+  if (typeof google !== 'undefined' && google.script) {
+    _llamarGAS();
+  } else {
+    fetch(`${GAS_URL}?action=list&filtro=todos&_=${Date.now()}`)
+      .then(r => r.json())
+      .then(data => {
+        observaciones = data.observaciones || [];
+        actualizarContadores();
+        aplicarFiltros();
+      })
+      .catch(() => {
+        mostrarError(
+          'Error de conexión. Abre este panel desde:<br>'
+          + `<code style="font-size:11px;word-break:break-all">${GAS_URL}?action=revision</code>`
+        );
+      });
+  }
+}
+
+function _llamarGAS() {
+  const TIMEOUT_MS = 22000;
+  const timeout    = setTimeout(() => {
+    mostrarError('El servidor tardó demasiado. Haz clic en "↻ Actualizar" para reintentar.');
+  }, TIMEOUT_MS);
+
+  google.script.run
+    .withSuccessHandler(function(jsonStr) {
+      clearTimeout(timeout);
+      try {
+        const data = typeof jsonStr === 'string' ? JSON.parse(jsonStr) : jsonStr;
+        observaciones = data?.observaciones || [];
+      } catch(_) { observaciones = []; }
+      actualizarContadores();
+      aplicarFiltros();
+    })
+    .withFailureHandler(function(err) {
+      clearTimeout(timeout);
+      const msg = err?.message ? err.message : String(err);
+
+      // Auto-reintento una vez por cold start de Drive
+      if (_retryCount === 0 && (
+        msg.toLowerCase().includes('drive') ||
+        msg.toLowerCase().includes('servicio') ||
+        msg.toLowerCase().includes('service')
+      )) {
+        _retryCount++;
+        const spinnerTxt = document.querySelector('#gridContainer .spinner-wrap div:last-child');
+        if (spinnerTxt) spinnerTxt.textContent = '⚡ Reintentando (Google se estaba iniciando)...';
+        setTimeout(_llamarGAS, 2500);
+        return;
+      }
+
+      if (msg.includes('not defined') || msg.includes('listarObservaciones')) {
+        mostrarError('⚠️ Backend desactualizado — la función <code>listarObservaciones</code> no existe. Actualiza el script GAS.');
+      } else {
+        mostrarError('Error al cargar: ' + msg + '<br><small>Haz clic en "↻ Actualizar" para reintentar.</small>');
+      }
+    })
+    .listarObservaciones('todos');
+}
+
+// ── Filtros ──────────────────────────────────────────────────────────
+function setFiltroEstado(filtro, btn) {
+  filtroEstado = filtro;
+  document.querySelectorAll('.fbtn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  aplicarFiltros();
+}
+
+function setFiltroCuartel(cuartel, btn) {
+  filtroCuartel = cuartel;
+  document.querySelectorAll('.cbtn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  aplicarFiltros();
+}
+
+function aplicarFiltros() {
+  let lista = observaciones;
+
+  // Filtro por estado de revisión
+  if (filtroEstado !== 'todos') {
+    lista = lista.filter(o => o.estado_revision === filtroEstado);
+  }
+
+  // Filtro por cuartel
+  if (filtroCuartel !== 'todos') {
+    lista = lista.filter(o => o.cuartel === filtroCuartel);
+  }
+
+  renderObservaciones(lista);
+}
+
+function actualizarContadores() {
+  const pendientes = observaciones.filter(o => o.estado_revision === 'Pendiente').length;
+  const revisadas  = observaciones.filter(o => o.estado_revision !== 'Pendiente').length;
+  document.getElementById('countPendiente').textContent  = pendientes;
+  document.getElementById('kpiPendientes').textContent   = pendientes;
+  document.getElementById('kpiRevisadas').textContent    = revisadas;
+  document.getElementById('kpiTotal').textContent        = observaciones.length;
+  document.getElementById('resumenAprobadas').textContent = revisadas;
+  document.getElementById('resumenTotal').textContent    = observaciones.length;
+}
+
+// ── Helpers de foto ──────────────────────────────────────────────────
+function urlAThumb(u) {
+  const m = u.match(/\/d\/([a-zA-Z0-9_-]+)\//);
+  return m ? 'https://drive.google.com/thumbnail?id=' + m[1] + '&sz=w480' : '';
+}
+
+function construirCarruselHtml(obs) {
+  const todasUrls = obs.url_foto ? obs.url_foto.split('\n').filter(Boolean) : [];
+  const thumbsArr = todasUrls.map(urlAThumb).filter(Boolean);
+  const primerThumb = thumbsArr[0] || obs.thumb_url || '';
+
+  if (!primerThumb) {
+    return { html: '<div class="card-photo-placeholder">📷</div>', urls: todasUrls, thumbs: thumbsArr };
+  }
+
+  const urlsJson   = JSON.stringify(todasUrls).replace(/'/g, '&#39;');
+  const thumbsJson = JSON.stringify(thumbsArr).replace(/'/g, '&#39;');
+  const fila       = obs.fila;
+
+  let html = `<div class="photo-carousel" id="carousel_${fila}" data-urls='${urlsJson}' data-thumbs='${thumbsJson}' data-idx="0">`
+    + `<img class="card-photo" src="${primerThumb}" onclick="abrirLightboxCarousel(${fila})" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+    + `<div class="card-photo-placeholder" style="display:none">📷</div>`;
+
+  if (thumbsArr.length > 1) {
+    html += `<button class="carousel-btn carousel-prev" onclick="carouselNav(event,-1,${fila})">&#8249;</button>`
+          + `<button class="carousel-btn carousel-next" onclick="carouselNav(event,1,${fila})">&#8250;</button>`
+          + `<div class="carousel-counter" id="ctr_${fila}">1/${thumbsArr.length}</div>`;
+  }
+  html += '</div>';
+
+  return { html, urls: todasUrls, thumbs: thumbsArr };
+}
+
+// ── Render principal ─────────────────────────────────────────────────
+function renderObservaciones(lista) {
+  const grid = document.getElementById('gridContainer');
+
+  if (!lista.length) {
+    grid.innerHTML = '<div class="state-box"><div class="state-icon">🌿</div>'
+      + '<div class="state-msg">Sin observaciones</div>'
+      + '<div class="state-sub">No hay registros con los filtros aplicados</div></div>';
+    return;
+  }
+
+  grid.innerHTML = lista.map(obs => {
+    const pendiente = obs.estado_revision === 'Pendiente';
+    const badgeCls  = pendiente ? 'badge-pendiente' : 'badge-revisado';
+    const badgeTxt  = pendiente ? '⏳ Pendiente'   : '✅ Revisado';
+
+    const carrusel  = construirCarruselHtml(obs);
+    const nFotos    = (obs.url_foto || '').split('\n').filter(Boolean).length;
+
+    const chips = [
+      obs.cuartel      ? `<span class="chip chip-cuartel">${obs.cuartel}</span>`         : '',
+      obs.hilera       ? `<span class="chip chip-ubicacion">H ${obs.hilera}</span>`      : '',
+      obs.claro        ? `<span class="chip chip-ubicacion">C ${obs.claro}</span>`       : '',
+      obs.planta       ? `<span class="chip chip-ubicacion">P ${obs.planta}</span>`      : '',
+      obs.estado_campo ? `<span class="chip chip-estado">${obs.estado_campo}</span>`     : '',
+      nFotos > 1       ? `<span class="chip chip-fotos">📷 ${nFotos} fotos</span>`       : '',
+    ].filter(Boolean).join('');
+
+    const gpsHtml   = obs.maps_link
+      ? `<a class="gps-link" href="${obs.maps_link}" target="_blank">📍 Ver en mapa &nbsp;±${obs.gps_acc}m</a>`
+      : '';
+
+    const notasHtml = obs.notas
+      ? `<div class="card-notas">${obs.notas}</div>` : '';
+
+    const verFotoUrl = obs.url_foto ? obs.url_foto.split('\n')[0] : '';
+    const verFoto    = verFotoUrl
+      ? `<a href="${verFotoUrl}" target="_blank" class="btn-ver-foto">↗ Ver en Drive</a>` : '';
+
+    const elimFotoHtml = obs.thumb_url
+      ? `<button class="btn-elim-foto" onclick="confirmarEliminarFoto(${obs.fila})">🗑 Quitar foto</button>`
+        + `<div class="confirm-elim" id="confirmElim_${obs.fila}">`
+        + `<span>¿Desvinc. foto?</span>`
+        + `<button class="btn-si" onclick="ejecutarEliminarFoto(${obs.fila})">Sí</button>`
+        + `<button class="btn-no" onclick="cancelarEliminarFoto(${obs.fila})">No</button>`
+        + `</div>`
+      : '';
+
+    const optsEstado = ESTADOS.map(e => `<option value="${e}">${e}</option>`).join('');
+
+    // ─ Bloque de acción según estado ─
+    const accionHtml = pendiente
+      ? `<div>
+           <div class="estado-jp-row">
+             <select class="estado-select" id="sel_${obs.fila}">
+               <option value="">— Seleccionar estado fenológico —</option>
+               ${optsEstado}
+             </select>
+             <button class="btn-aprobar" onclick="aprobar(${obs.fila})">Aprobar</button>
+           </div>
+           <div class="estado-error-hint" id="hint_${obs.fila}">⚠️ Selecciona un estado antes de aprobar</div>
+         </div>
+         <div class="foto-acciones">${verFoto}${elimFotoHtml}</div>`
+      : `<div class="aprobado-badge">🌱 ${obs.estado_jp || '(sin estado)'}</div>
+         <div class="foto-acciones">${verFoto}${elimFotoHtml}</div>`;
+
+    return `<div class="obs-card ${pendiente ? '' : 'aprobada'}" id="card_${obs.fila}">`
+      + carrusel.html
+      + `<div class="card-body">`
+      + `<div class="card-top-row">`
+      + `<div><div class="card-fecha">📅 ${formatFecha(obs.fecha)}</div><div class="card-hora">🕐 ${obs.hora || '—'}</div></div>`
+      + `<span class="badge ${badgeCls}">${badgeTxt}</span>`
+      + `</div>`
+      + `<div class="chips-row">${chips}</div>`
+      + gpsHtml
+      + notasHtml
+      + accionHtml
+      + `</div></div>`;
+  }).join('');
+}
+
+// ── Aprobar ──────────────────────────────────────────────────────────
+function aprobar(fila) {
+  const sel      = document.getElementById(`sel_${fila}`);
+  const hint     = document.getElementById(`hint_${fila}`);
+  const estadoJP = sel ? sel.value : '';
+
+  // ★ NUEVO: validar que se seleccionó un estado antes de aprobar
+  if (!estadoJP) {
+    if (sel)  sel.classList.add('sin-estado');
+    if (hint) hint.classList.add('visible');
+    // Quitar highlight después de 3s o al seleccionar algo
+    if (sel) sel.addEventListener('change', () => {
+      sel.classList.remove('sin-estado');
+      hint.classList.remove('visible');
+    }, { once: true });
+    showToast('⚠️ Selecciona un estado fenológico antes de aprobar', 'error');
+    return;
+  }
+
+  const btn = document.querySelector(`#card_${fila} .btn-aprobar`);
+  if (btn) btn.disabled = true;
+
+  function onExito() {
+    const obs = observaciones.find(o => o.fila === fila);
+    if (obs) { obs.estado_revision = 'Revisado'; obs.estado_jp = estadoJP; }
+    actualizarContadores();
+    showToast(`✅ Aprobada: ${estadoJP}`, 'ok');
+    if (filtroEstado === 'Pendiente') {
+      const card = document.getElementById(`card_${fila}`);
+      if (card) {
+        card.style.transition = 'opacity 0.3s, transform 0.3s';
+        card.style.opacity    = '0';
+        card.style.transform  = 'scale(0.97)';
+        setTimeout(() => aplicarFiltros(), 320);
+      }
+    } else {
+      aplicarFiltros();
+    }
+  }
+  function onError(err) {
+    if (btn) btn.disabled = false;
+    showToast('Error: ' + (err?.message || err), 'error');
+  }
+
+  if (typeof google !== 'undefined' && google.script) {
+    google.script.run
+      .withSuccessHandler(onExito)
+      .withFailureHandler(onError)
+      .aprobarObservacion(fila, estadoJP);
+  } else {
+    fetch(`${GAS_URL}?action=update&fila=${fila}&estado_aprobado=${encodeURIComponent(estadoJP)}&estado_revision=Revisado`)
+      .then(() => onExito())
+      .catch(onError);
+  }
+}
+
+// ── Carousel ─────────────────────────────────────────────────────────
+function carouselNav(event, dir, fila) {
+  event.stopPropagation();
+  const car = document.getElementById(`carousel_${fila}`);
+  if (!car) return;
+  const thumbs = JSON.parse(car.dataset.thumbs || '[]');
+  if (thumbs.length < 2) return;
+  let idx = (parseInt(car.dataset.idx || '0') + dir + thumbs.length) % thumbs.length;
+  car.dataset.idx = idx;
+  const img = car.querySelector('.card-photo');
+  if (img) { img.style.opacity = '0.5'; img.src = thumbs[idx]; img.onload = () => img.style.opacity = '1'; }
+  const ctr = document.getElementById(`ctr_${fila}`);
+  if (ctr) ctr.textContent = `${idx + 1}/${thumbs.length}`;
+}
+
+// ── Lightbox ─────────────────────────────────────────────────────────
+let _lbUrls = [], _lbIdx = 0;
+
+function abrirLightboxCarousel(fila) {
+  const car = document.getElementById(`carousel_${fila}`);
+  if (!car) { return; }
+  _lbUrls = JSON.parse(car.dataset.urls || '[]');
+  _lbIdx  = parseInt(car.dataset.idx || '0');
+  _mostrarLightboxImg();
+}
+
+function _mostrarLightboxImg() {
+  const url = _lbUrls[_lbIdx] || '';
+  const id  = url.match(/\/d\/([a-zA-Z0-9_-]+)\//)?.[1] || '';
+  const src = id ? `https://drive.google.com/thumbnail?id=${id}&sz=w1600` : url;
+  document.getElementById('lightboxImg').src = src;
+  document.getElementById('lightbox').classList.add('visible');
+  const multi = _lbUrls.length > 1;
+  document.getElementById('lbPrev').style.display      = multi ? 'flex' : 'none';
+  document.getElementById('lbNext').style.display      = multi ? 'flex' : 'none';
+  document.getElementById('lbIndicator').style.display = multi ? 'block' : 'none';
+  if (multi) document.getElementById('lbIndicator').textContent = `${_lbIdx + 1} / ${_lbUrls.length}`;
+}
+function lightboxNav(dir) {
+  if (_lbUrls.length < 2) return;
+  _lbIdx = (_lbIdx + dir + _lbUrls.length) % _lbUrls.length;
+  _mostrarLightboxImg();
+}
+function cerrarLightbox() {
+  document.getElementById('lightbox').classList.remove('visible');
+}
+
+// ── Eliminar foto ────────────────────────────────────────────────────
+function confirmarEliminarFoto(fila) {
+  document.getElementById(`confirmElim_${fila}`).classList.add('visible');
+}
+function cancelarEliminarFoto(fila) {
+  document.getElementById(`confirmElim_${fila}`).classList.remove('visible');
+}
+function ejecutarEliminarFoto(fila) {
+  cancelarEliminarFoto(fila);
+  function onExito() {
+    const obs = observaciones.find(o => o.fila === fila);
+    if (obs) { obs.url_foto = ''; obs.thumb_url = ''; obs.drive_id = ''; }
+    showToast('🗑 Foto desvinculada del registro', 'ok');
+    const card = document.getElementById(`card_${fila}`);
+    if (card) {
+      const carousel = document.getElementById(`carousel_${fila}`);
+      if (carousel) carousel.style.display = 'none';
+      const ph = card.querySelector('.card-photo-placeholder');
+      if (ph) ph.style.display = 'flex';
+      const elim = card.querySelector('.btn-elim-foto');
+      if (elim) elim.style.display = 'none';
+    }
+  }
+  function onError(err) {
+    showToast('Error al desvincular: ' + (err?.message || err), 'error');
+  }
+
+  if (typeof google !== 'undefined' && google.script) {
+    google.script.run
+      .withSuccessHandler(onExito)
+      .withFailureHandler(onError)
+      .eliminarFoto(fila);
+  } else {
+    fetch(`${GAS_URL}?action=deletefoto&fila=${fila}`)
+      .then(() => onExito()).catch(onError);
+  }
+}
+
+// ── Export JSON ──────────────────────────────────────────────────────
+function exportarJSON() {
+  const data = observaciones
+    .filter(o => o.estado_revision !== 'Pendiente' && o.estado_jp)
+    .map(o => ({
+      fecha:     o.fecha,
+      cuartel:   o.cuartel,
+      hilera:    o.hilera  || '',
+      claro:     o.claro   || '',
+      planta:    o.planta  || '',
+      variedad:  o.variedad || '',
+      estado:    o.estado_jp,
+      notas:     o.notas   || '',
+      foto_url:  o.url_foto ? o.url_foto.split('\n')[0] : '',
+      gps_lat:   o.gps_lat || '',
+      gps_lng:   o.gps_lng || '',
+    }));
+
+  if (!data.length) {
+    showToast('No hay observaciones revisadas para exportar', 'error');
+    return;
+  }
+
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(blob);
+  a.download = `fenologia_LQ_${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+  showToast(`⬇ ${data.length} observaciones exportadas`, 'ok');
+}
+
+// ── Utilidades ───────────────────────────────────────────────────────
+function formatFecha(fecha) {
+  if (!fecha) return '—';
+  const p = String(fecha).split('-');
+  if (p.length < 3) return fecha;
+  const m = ['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  return `${parseInt(p[2])} ${m[parseInt(p[1])]} ${p[0]}`;
+}
+function showLoading() {
+  document.getElementById('gridContainer').innerHTML =
+    '<div class="spinner-wrap"><div class="spinner"></div><div>Cargando observaciones...</div></div>';
+}
+function mostrarError(msg) {
+  document.getElementById('gridContainer').innerHTML =
+    `<div class="state-box"><div class="state-icon">⚠️</div><div class="state-msg">Error de conexión</div><div class="state-sub">${msg}</div></div>`;
+}
+function showToast(msg, type) {
+  const t  = document.getElementById('toast');
+  t.innerHTML = msg;
+  t.className = `toast visible${type ? ' ' + type : ''}`;
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove('visible'), 3800);
+}
+
+// ── Teclado: Escape cierra lightbox ──────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') cerrarLightbox();
+});
+
+init();
+</script>
+</body>
+</html>
