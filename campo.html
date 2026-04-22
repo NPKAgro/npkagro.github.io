@@ -57,6 +57,17 @@
       top: 0;
       z-index: 50;
     }
+    .header-back {
+      width: 36px; height: 36px;
+      border-radius: var(--radius-sm);
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; color: var(--text2);
+      text-decoration: none; flex-shrink: 0;
+      transition: all 0.12s;
+    }
+    .header-back:active { border-color: var(--accent); color: var(--accent); }
     .header-brand { display: flex; flex-direction: column; line-height: 1.25; }
     .header-empresa { font-size: 15px; font-weight: 700; color: var(--text); letter-spacing: -0.3px; }
     .header-empresa span { color: var(--accent); }
@@ -430,9 +441,16 @@
       max-width: 340px;
       white-space: pre-line;
     }
+    .success-btns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      width: 100%;
+      max-width: 340px;
+      margin-top: 4px;
+    }
     .btn-nuevo {
-      margin-top: 6px;
-      padding: 14px 36px;
+      padding: 14px;
       border-radius: var(--radius);
       border: 1px solid rgba(255,255,255,0.15);
       background: var(--accent-pale);
@@ -443,6 +461,22 @@
       transition: background 0.12s;
     }
     .btn-nuevo:active { background: rgba(59,130,246,0.3); }
+    .btn-inicio {
+      padding: 14px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--bg3);
+      color: var(--text2);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.12s;
+    }
+    .btn-inicio:active { background: rgba(255,255,255,0.06); }
 
     /* ── TOAST ── */
     .toast {
@@ -617,6 +651,7 @@
 <!-- ── HEADER ── -->
 <header>
   <div class="header">
+    <a class="header-back" href="index.html" title="Volver al inicio">‹</a>
     <div class="header-brand">
       <div class="header-empresa">Agrícola <span>del Pedregal</span></div>
       <div class="header-predio">La Quinta &nbsp;·&nbsp; Fenología Santina</div>
@@ -754,7 +789,10 @@
   <div class="success-icon">✅</div>
   <div class="overlay-title">¡Observación enviada!</div>
   <div class="success-msg" id="successMsg"></div>
-  <button class="btn-nuevo" onclick="resetForm()">＋ Nuevo registro</button>
+  <div class="success-btns">
+    <button class="btn-nuevo" onclick="resetForm()">＋ Nuevo registro</button>
+    <a class="btn-inicio" href="index.html">← Inicio</a>
+  </div>
 </div>
 
 <!-- ── NUMBER PICKER ── -->
