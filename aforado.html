@@ -1,0 +1,1386 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Aforado LQ">
+  <meta name="theme-color" content="#0f1117">
+  <title>Aforado del Campo · La Quinta</title>
+  <script>window.LQ_AUTH_MODE = 'equipo'; window.LQ_AUTH_SHOW_BAR = false;</script>
+  <script src="auth.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:          #0f1117;
+      --bg2:         #161b24;
+      --bg3:         #1e2534;
+      --border:      rgba(255,255,255,0.08);
+      --text:        #f0f2f5;
+      --text2:       #8b93a5;
+      --text3:       #555e70;
+      --accent:      #3b82f6;
+      --accent2:     #1d4ed8;
+      --accent-pale: rgba(59,130,246,0.15);
+      --green:       #10b981;
+      --amber:       #f59e0b;
+      --red:         #ef4444;
+      --purple:      #8b5cf6;
+      --teal:        #14b8a6;
+      --teal-pale:   rgba(20,184,166,0.15);
+      --orange:      #f97316;
+      --radius:      10px;
+      --radius-sm:   8px;
+      --shadow:      0 4px 20px rgba(0,0,0,0.5);
+    }
+
+    html, body { height: 100%; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+      padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
+      -webkit-tap-highlight-color: transparent;
+    }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    /* ── HEADER ── */
+    .header {
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    .header-back {
+      width: 36px; height: 36px;
+      border-radius: var(--radius-sm);
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; color: var(--text2);
+      text-decoration: none; flex-shrink: 0;
+      transition: all 0.12s;
+    }
+    .header-back:active { border-color: var(--teal); color: var(--teal); }
+    .header-brand { display: flex; flex-direction: column; line-height: 1.25; flex: 1; }
+    .header-empresa { font-size: 15px; font-weight: 700; color: var(--text); letter-spacing: -0.3px; }
+    .header-empresa span { color: var(--teal); }
+    .header-predio { font-size: 11px; color: var(--text3); }
+    .header-datetime { text-align: right; flex-shrink: 0; }
+    .header-fecha { font-size: 12px; color: var(--text3); }
+    .header-hora {
+      font-size: 18px; font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      color: var(--text); line-height: 1.1;
+    }
+
+    /* ── TAB BAR ── */
+    .tabs {
+      display: flex;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 61px;
+      z-index: 40;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 11px 8px;
+      background: none; border: none;
+      color: var(--text3);
+      font-size: 12px; font-weight: 600;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+      text-align: center;
+    }
+    .tab-btn.active {
+      color: var(--teal);
+      border-bottom-color: var(--teal);
+    }
+    .tab-btn .tab-icon { font-size: 16px; display: block; margin-bottom: 2px; }
+
+    /* ── CONTENT ── */
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+    .content {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* ── CARD ── */
+    .card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      transition: border-color 0.15s;
+    }
+    .card.error-card { border-color: rgba(239,68,68,0.5); }
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 11px 14px 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .card-label { font-size: 13px; font-weight: 600; color: var(--text2); }
+    .optional-tag {
+      font-size: 10px; color: var(--text3);
+      background: var(--bg3); border-radius: 99px; padding: 2px 8px;
+    }
+    .card-body { padding: 12px 14px; }
+
+    /* ── CUARTEL BUTTONS ── */
+    .btn-grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .sel-btn {
+      padding: 14px 8px;
+      border-radius: var(--radius-sm);
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      color: var(--text2);
+      font-size: 16px; font-weight: 700;
+      cursor: pointer; transition: all 0.12s;
+      text-align: center;
+    }
+    .sel-btn.active {
+      background: var(--teal-pale);
+      border-color: var(--teal);
+      color: var(--teal);
+    }
+    .sel-btn:active { transform: scale(0.93); }
+
+    /* ── SUBLABEL ── */
+    .sublabel {
+      font-size: 11px; font-weight: 600;
+      color: var(--text3); text-transform: uppercase;
+      letter-spacing: 0.06em; margin-bottom: 7px;
+    }
+    .sublabel span { font-weight: 400; opacity: 0.7; text-transform: none; }
+
+    /* ── INPUT ── */
+    .field-input {
+      width: 100%;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-size: 15px; padding: 11px 13px;
+      outline: none; transition: border-color 0.12s;
+    }
+    .field-input:focus { border-color: var(--teal); }
+    .field-select {
+      width: 100%;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-size: 15px; padding: 11px 13px;
+      outline: none; transition: border-color 0.12s;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+    .field-select:focus { border-color: var(--teal); }
+
+    /* ── STEPPER ── */
+    .stepper {
+      display: flex; align-items: center;
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+      transition: border-color 0.15s;
+    }
+    .stepper:focus-within { border-color: var(--teal); }
+    .stepper-btn {
+      background: none; border: none;
+      font-size: 26px; font-weight: 300;
+      color: var(--teal); padding: 8px 16px;
+      cursor: pointer; line-height: 1; user-select: none;
+      transition: background 0.1s;
+    }
+    .stepper-btn:active { background: var(--teal-pale); }
+    .stepper-input {
+      flex: 1; text-align: center;
+      font-size: 24px; font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      background: transparent; border: none;
+      color: var(--text); outline: none;
+      padding: 8px 4px; width: 0; min-width: 0;
+      -moz-appearance: textfield;
+    }
+    .stepper-input::-webkit-outer-spin-button,
+    .stepper-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    .stepper-unit {
+      font-size: 12px; color: var(--text3);
+      padding-right: 12px; font-weight: 500;
+    }
+
+    /* ── GRID 2 COLS ── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+
+    /* ── MEDICIÓN ENTRY ── */
+    .medicion-row {
+      display: grid;
+      grid-template-columns: 40px 1fr 80px;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .medicion-row:last-child { border-bottom: none; }
+    .medicion-label {
+      font-size: 12px; font-weight: 700;
+      color: var(--text3); text-align: center;
+    }
+    .medicion-input {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--text);
+      font-size: 16px; font-weight: 600;
+      padding: 8px 10px; outline: none;
+      transition: border-color 0.12s; text-align: right;
+      -moz-appearance: textfield;
+    }
+    .medicion-input::-webkit-outer-spin-button,
+    .medicion-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+    .medicion-input:focus { border-color: var(--teal); }
+    .medicion-unit { font-size: 11px; color: var(--text3); font-weight: 600; text-align: left; }
+
+    /* ── UD BADGE ── */
+    .ud-badge {
+      display: flex; align-items: center; justify-content: center;
+      gap: 12px; padding: 16px;
+      background: var(--bg3); border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+    }
+    .ud-value {
+      font-size: 48px; font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+    }
+    .ud-value.excellent { color: var(--green); }
+    .ud-value.good      { color: var(--teal); }
+    .ud-value.fair      { color: var(--amber); }
+    .ud-value.poor      { color: var(--red); }
+    .ud-info { display: flex; flex-direction: column; gap: 4px; }
+    .ud-label { font-size: 13px; color: var(--text2); font-weight: 600; }
+    .ud-desc  { font-size: 11px; color: var(--text3); }
+
+    /* ── ALERT BADGE ── */
+    .alert-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      margin-bottom: 6px;
+      font-size: 12px; font-weight: 600;
+    }
+    .alert-row.green  { background: rgba(16,185,129,0.08); color: var(--green); }
+    .alert-row.amber  { background: rgba(245,158,11,0.1);  color: var(--amber); }
+    .alert-row.red    { background: rgba(239,68,68,0.1);   color: var(--red);   }
+    .alert-icon { font-size: 18px; flex-shrink: 0; }
+
+    /* ── HEATMAP ── */
+    .heatmap-wrapper {
+      background: var(--bg3);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      overflow-x: auto;
+    }
+    .heatmap-title {
+      font-size: 11px; font-weight: 700; color: var(--text3);
+      text-transform: uppercase; letter-spacing: 0.06em;
+      margin-bottom: 8px;
+    }
+    .heatmap-cuartel { margin-bottom: 14px; }
+    .heatmap-cuartel-label {
+      font-size: 12px; font-weight: 700; color: var(--text2);
+      margin-bottom: 6px;
+    }
+    .heatmap-grid {
+      display: grid;
+      gap: 2px;
+    }
+    .heatmap-cell {
+      height: 10px;
+      border-radius: 2px;
+      background: var(--bg2);
+      transition: background 0.3s;
+      cursor: pointer;
+      position: relative;
+    }
+    .heatmap-cell[data-val]:hover::after {
+      content: attr(data-val);
+      position: absolute;
+      top: -24px; left: 50%; transform: translateX(-50%);
+      background: rgba(0,0,0,0.9);
+      color: #fff;
+      font-size: 10px; padding: 2px 6px;
+      border-radius: 4px; white-space: nowrap;
+      z-index: 10; pointer-events: none;
+    }
+    /* Heat colors */
+    .hc-none  { background: rgba(255,255,255,0.04); }
+    .hc-low   { background: rgba(239,68,68,0.7); }
+    .hc-mid   { background: rgba(245,158,11,0.7); }
+    .hc-ok    { background: rgba(20,184,166,0.75); }
+    .hc-high  { background: rgba(139,92,246,0.7); }
+
+    /* ── LEGEND ── */
+    .legend {
+      display: flex; gap: 12px; flex-wrap: wrap;
+      margin-top: 8px;
+    }
+    .legend-item {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 10px; color: var(--text3);
+    }
+    .legend-dot {
+      width: 10px; height: 10px; border-radius: 2px;
+    }
+
+    /* ── HISTORIAL ── */
+    .historial-item {
+      display: flex; align-items: center;
+      gap: 12px; padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .historial-item:last-child { border-bottom: none; }
+    .historial-fecha {
+      font-size: 11px; color: var(--text3);
+      min-width: 80px;
+    }
+    .historial-cuartel {
+      font-size: 12px; font-weight: 700;
+      color: var(--teal);
+      min-width: 30px;
+    }
+    .historial-ud {
+      font-size: 18px; font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      min-width: 55px;
+    }
+    .historial-notas {
+      font-size: 12px; color: var(--text2);
+      flex: 1; overflow: hidden;
+      text-overflow: ellipsis; white-space: nowrap;
+    }
+
+    /* ── COMPARISON BAR ── */
+    .compare-row { margin-bottom: 10px; }
+    .compare-header {
+      display: flex; justify-content: space-between;
+      font-size: 12px; margin-bottom: 4px;
+    }
+    .compare-label { color: var(--text2); font-weight: 600; }
+    .compare-values { color: var(--text3); }
+    .compare-bar-bg {
+      height: 8px; background: var(--bg3); border-radius: 99px;
+      overflow: hidden; position: relative;
+    }
+    .compare-bar-nominal {
+      position: absolute; top: 0; left: 0; height: 100%;
+      background: rgba(255,255,255,0.15); border-radius: 99px;
+      transition: width 0.4s;
+    }
+    .compare-bar-real {
+      position: absolute; top: 0; left: 0; height: 100%;
+      border-radius: 99px; transition: width 0.4s;
+    }
+    .bar-ok   { background: var(--teal); }
+    .bar-warn { background: var(--amber); }
+    .bar-bad  { background: var(--red); }
+
+    /* ── BOTTOM BAR ── */
+    .bottombar {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: var(--bg2); border-top: 1px solid var(--border);
+      padding: 12px 16px;
+      padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+      z-index: 40;
+    }
+    .btn-submit {
+      width: 100%; background: var(--teal); color: #fff;
+      border: none; border-radius: var(--radius);
+      padding: 15px; font-size: 16px; font-weight: 700;
+      cursor: pointer; transition: opacity 0.12s;
+    }
+    .btn-submit:active { opacity: 0.85; }
+    .btn-submit:disabled { background: var(--bg3); color: var(--text3); cursor: not-allowed; opacity: 1; }
+
+    /* ── OVERLAY ── */
+    .overlay-loading-bg {
+      position: fixed; inset: 0;
+      background: rgba(10,13,20,0.95);
+      z-index: 100; display: none;
+      flex-direction: column; align-items: center;
+      justify-content: center; gap: 16px; padding: 32px;
+    }
+    .overlay-loading-bg.visible { display: flex; }
+    .spinner {
+      width: 44px; height: 44px;
+      border: 3px solid rgba(255,255,255,0.1);
+      border-top-color: var(--teal);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .overlay-title { font-size: 20px; font-weight: 700; color: var(--text); }
+
+    .overlay-success-bg {
+      position: fixed; inset: 0;
+      background: rgba(10,13,20,0.97);
+      z-index: 100; display: none;
+      flex-direction: column; align-items: center;
+      justify-content: center; gap: 16px; padding: 32px;
+      text-align: center;
+    }
+    .overlay-success-bg.visible { display: flex; }
+    .success-icon { font-size: 72px; animation: pop 0.4s cubic-bezier(0.34,1.56,0.64,1); }
+    @keyframes pop { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .success-msg {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 14px 18px;
+      font-size: 13px; color: var(--text2);
+      text-align: left; line-height: 1.7;
+      width: 100%; max-width: 340px; white-space: pre-line;
+    }
+    .success-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; max-width: 340px; }
+    .btn-nuevo {
+      padding: 14px; border-radius: var(--radius);
+      border: 1px solid rgba(20,184,166,0.3);
+      background: var(--teal-pale); color: var(--text);
+      font-size: 15px; font-weight: 600; cursor: pointer;
+    }
+    .btn-inicio {
+      padding: 14px; border-radius: var(--radius);
+      border: 1px solid var(--border); background: var(--bg3);
+      color: var(--text2); font-size: 15px; font-weight: 600;
+      cursor: pointer; text-decoration: none;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* ── TOAST ── */
+    .toast {
+      display: none; position: fixed;
+      bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+      left: 50%; transform: translateX(-50%);
+      background: var(--bg3); border: 1px solid rgba(239,68,68,0.4);
+      color: var(--red); padding: 10px 20px;
+      border-radius: var(--radius-sm);
+      font-size: 13px; font-weight: 600;
+      z-index: 200; max-width: 88vw;
+      text-align: center; box-shadow: var(--shadow);
+    }
+    .toast.visible { display: block; }
+    .toast.ok { border-color: rgba(16,185,129,0.4); color: var(--green); }
+
+    /* ── KPI CARDS ── */
+    .kpi-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .kpi-card {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 12px 14px;
+    }
+    .kpi-val { font-size: 28px; font-weight: 800; font-variant-numeric: tabular-nums; }
+    .kpi-label { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+    /* ── SECTION HEAD ── */
+    .section-head {
+      font-size: 11px; font-weight: 700; color: var(--teal);
+      text-transform: uppercase; letter-spacing: 0.08em;
+      padding: 4px 0;
+    }
+
+    /* ── PRESION COMPARE ── */
+    .presion-row {
+      display: grid; grid-template-columns: 1fr auto 1fr;
+      align-items: center; gap: 8px;
+    }
+    .presion-box {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 10px 12px;
+      text-align: center;
+    }
+    .presion-box .pb-label { font-size: 10px; color: var(--text3); font-weight: 600; text-transform: uppercase; }
+    .presion-box .pb-val   { font-size: 22px; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; margin: 2px 0; }
+    .presion-box .pb-unit  { font-size: 11px; color: var(--text3); }
+    .presion-arrow { font-size: 20px; color: var(--text3); text-align: center; }
+    .presion-box.measured { border-color: var(--teal); }
+    .presion-box.measured .pb-val { color: var(--teal); }
+
+    /* ── EMPTY STATE ── */
+    .empty-state {
+      text-align: center; padding: 40px 20px;
+      color: var(--text3); font-size: 14px; line-height: 1.8;
+    }
+    .empty-icon { font-size: 48px; display: block; margin-bottom: 12px; opacity: 0.5; }
+  </style>
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<div class="header">
+  <a class="header-back" href="index.html" title="Inicio">‹</a>
+  <div class="header-brand">
+    <div class="header-empresa">Agrícola <span>del Pedregal</span></div>
+    <div class="header-predio">La Quinta · Aforado del Campo</div>
+  </div>
+  <div class="header-datetime">
+    <div class="header-fecha" id="hdrFecha"></div>
+    <div class="header-hora"  id="hdrHora"></div>
+  </div>
+</div>
+
+<!-- ── TAB BAR ── -->
+<div class="tabs">
+  <button class="tab-btn active" onclick="setTab('captura')" id="tabCaptura">
+    <span class="tab-icon">📏</span>Medición
+  </button>
+  <button class="tab-btn" onclick="setTab('analisis')" id="tabAnalisis">
+    <span class="tab-icon">🍊</span>Análisis
+  </button>
+  <button class="tab-btn" onclick="setTab('historial')" id="tabHistorial">
+    <span class="tab-icon">🕐</span>Historial
+  </button>
+</div>
+
+<!-- ══════════════════ TAB: CAPTURA ══════════════════ -->
+<div class="tab-panel active" id="panelCaptura">
+<div class="content">
+
+  <!-- CUARTEL -->
+  <div class="card" id="cardCuartel">
+    <div class="card-header"><span class="card-label">🌳 Cuartel</span></div>
+    <div class="card-body">
+      <div class="btn-grid-3" id="cuartelGrid"></div>
+    </div>
+  </div>
+
+  <!-- DISEÑO DEL SISTEMA -->
+  <div class="card">
+    <div class="card-header"><span class="card-label">⚙️ Diseño del sistema</span></div>
+    <div class="card-body" style="display:flex;flex-direction:column;gap:12px">
+
+      <div>
+        <div class="sublabel">Tipo de gotero</div>
+        <select class="field-select" id="tipoGotero">
+          <option value="">— Seleccionar —</option>
+          <option value="autocompensante">Autocompensante</option>
+          <option value="presion">Por presión</option>
+          <option value="exudacion">Exudación</option>
+          <option value="microaspersor">Microaspersor</option>
+        </select>
+      </div>
+
+      <div class="grid-2">
+        <div>
+          <div class="sublabel">Caudal nominal <span>(L/h)</span></div>
+          <div class="stepper">
+            <button class="stepper-btn" onclick="cambiarCaudalNom(-0.5)">−</button>
+            <input type="number" class="stepper-input" id="caudalNominal"
+              min="0" max="20" step="0.1" placeholder="—" inputmode="decimal"
+              oninput="onSistemaChange()">
+            <span class="stepper-unit">L/h</span>
+            <button class="stepper-btn" onclick="cambiarCaudalNom(+0.5)">+</button>
+          </div>
+        </div>
+        <div>
+          <div class="sublabel">Presión requerida</div>
+          <div class="stepper">
+            <button class="stepper-btn" onclick="cambiarPresionNom(-0.1)">−</button>
+            <input type="number" class="stepper-input" id="presionNominal"
+              min="0" max="10" step="0.1" placeholder="—" inputmode="decimal"
+              oninput="onSistemaChange()">
+            <span class="stepper-unit" id="presionUnit">bar</span>
+            <button class="stepper-btn" onclick="cambiarPresionNom(+0.1)">+</button>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="sublabel">Duración medición <span>(minutos)</span></div>
+        <div class="stepper">
+          <button class="stepper-btn" onclick="cambiarDuracion(-1)">−</button>
+          <input type="number" class="stepper-input" id="duracionMin"
+            min="1" max="60" placeholder="5" inputmode="numeric"
+            oninput="onSistemaChange()">
+          <span class="stepper-unit">min</span>
+          <button class="stepper-btn" onclick="cambiarDuracion(+1)">+</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- PRESIÓN VÁLVULA -->
+  <div class="card">
+    <div class="card-header"><span class="card-label">🔧 Presión en válvula</span></div>
+    <div class="card-body">
+      <div class="presion-row">
+        <div class="presion-box">
+          <div class="pb-label">Requerida</div>
+          <div class="pb-val" id="presNomDisplay">—</div>
+          <div class="pb-unit" id="presNomUnit">bar</div>
+        </div>
+        <div class="presion-arrow">⟶</div>
+        <div class="presion-box measured">
+          <div class="pb-label">Medida</div>
+          <div class="stepper" style="border:none;background:transparent;">
+            <button class="stepper-btn" onclick="cambiarPresionMed(-0.1)">−</button>
+            <input type="number" class="stepper-input" id="presionMedida"
+              min="0" max="15" step="0.1" placeholder="—" inputmode="decimal"
+              oninput="calcularResultados()" style="font-size:20px;">
+            <button class="stepper-btn" onclick="cambiarPresionMed(+0.1)">+</button>
+          </div>
+          <div class="pb-unit">bar</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MEDICIÓN DE CAUDAL POR HILERA (primera + última hilera de cada bloque) -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-label">💧 Caudal real por gotero</span>
+      <span class="optional-tag" id="medUnidadTag">ml / 5 min</span>
+    </div>
+    <div class="card-body">
+      <div id="medicionesContainer">
+        <!-- Se generan dinámicamente para el cuartel seleccionado -->
+        <div class="empty-state">
+          <span class="empty-icon">🌳</span>
+          Selecciona un cuartel para ingresar las mediciones de caudal
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULTADOS EN TIEMPO REAL -->
+  <div class="card" id="cardResultados" style="display:none">
+    <div class="card-header"><span class="card-label">📈 Resultados</span></div>
+    <div class="card-body" style="display:flex;flex-direction:column;gap:14px">
+
+      <!-- UD% -->
+      <div class="ud-badge" id="udBadge">
+        <div class="ud-value" id="udValue">—</div>
+        <div class="ud-info">
+          <div class="ud-label">Uniformidad de Distribución</div>
+          <div class="ud-desc" id="udDesc">Ingresa las mediciones para calcular</div>
+        </div>
+      </div>
+
+      <!-- Caudal comparativo -->
+      <div id="comparaciones"></div>
+
+      <!-- Alertas -->
+      <div id="alertasContainer"></div>
+
+    </div>
+  </div>
+
+  <!-- NOTAS -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-label">📝 Observaciones</span>
+      <span class="optional-tag">Opcional</span>
+    </div>
+    <div class="card-body">
+      <textarea class="field-input" id="notasAforado" rows="3"
+        placeholder="Condiciones del día, estado del equipo, anomalías observadas..."
+        style="resize:vertical;font-family:inherit;"></textarea>
+    </div>
+  </div>
+
+  <div style="height:8px"></div>
+</div><!-- /content -->
+</div><!-- /panelCaptura -->
+
+<!-- ══════════════════ TAB: ANÁLISIS ══════════════════ -->
+<div class="tab-panel" id="panelAnalisis">
+<div class="content">
+
+  <!-- KPIs globales -->
+  <div class="kpi-row" id="kpiRow">
+    <div class="kpi-card">
+      <div class="kpi-val" id="kpiUdProm" style="color:var(--teal)">—</div>
+      <div class="kpi-label">UD% promedio sistema</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-val" id="kpiDesvMax" style="color:var(--amber)">—</div>
+      <div class="kpi-label">Desviación máx. caudal</div>
+    </div>
+  </div>
+
+  <!-- HEATMAP -->
+  <div class="card">
+    <div class="card-header"><span class="card-label">🗺 Mapa de uniformidad por cuartel</span></div>
+    <div class="card-body">
+      <div id="heatmapContainer">
+        <div class="empty-state">
+          <span class="empty-icon">🍊</span>
+          Registra mediciones en la pestaña Medición para ver el mapa de calor
+        </div>
+      </div>
+      <div class="legend" id="heatmapLegend" style="display:none">
+        <div class="legend-item"><div class="legend-dot hc-low"  ></div>Subpresión (&lt;15%)</div>
+        <div class="legend-item"><div class="legend-dot hc-mid"  ></div>Advertencia (±15%)</div>
+        <div class="legend-item"><div class="legend-dot hc-ok"   ></div>Uniforme</div>
+        <div class="legend-item"><div class="legend-dot hc-high" ></div>Sobrepresión (&gt;15%)</div>
+        <div class="legend-item"><div class="legend-dot hc-none" ></div>Sin datos</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GRÁFICO DE BARRAS comparativo caudal nominal vs real -->
+  <div class="card">
+    <div class="card-header"><span class="card-label">⚡ Caudal nominal vs. real por hilera</span></div>
+    <div class="card-body">
+      <div id="barrasContainer">
+        <div class="empty-state">
+          <span class="empty-icon">📏</span>
+          Las comparaciones aparecerán aquí tras registrar las mediciones
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /content -->
+</div><!-- /panelAnalisis -->
+
+<!-- ══════════════════ TAB: HISTORIAL ══════════════════ -->
+<div class="tab-panel" id="panelHistorial">
+<div class="content">
+
+  <div class="card">
+    <div class="card-header"><span class="card-label">🕐 Registros de aforado</span></div>
+    <div class="card-body" id="historialContent">
+      <div class="empty-state">
+        <span class="empty-icon">📋</span>
+        No hay registros de aforado aún.<br>Registra tu primera medición.
+      </div>
+    </div>
+  </div>
+
+</div><!-- /content -->
+</div><!-- /panelHistorial -->
+
+<!-- ── BOTTOM BAR (only in captura tab) ── -->
+<div class="bottombar" id="bottomBar">
+  <button class="btn-submit" id="btnSubmit" onclick="handleSubmit()">
+    💧 &nbsp;Guardar aforado
+  </button>
+</div>
+
+<!-- ── OVERLAY LOADING ── -->
+<div class="overlay-loading-bg" id="overlayLoading">
+  <div class="spinner"></div>
+  <div class="overlay-title">Guardando aforado...</div>
+</div>
+
+<!-- ── OVERLAY ÉXITO ── -->
+<div class="overlay-success-bg" id="overlaySuccess">
+  <div class="success-icon">💧</div>
+  <div class="overlay-title">¡Aforado guardado!</div>
+  <div class="success-msg" id="successMsg"></div>
+  <div class="success-btns">
+    <button class="btn-nuevo" onclick="resetForm()">＋ Nueva medición</button>
+    <a class="btn-inicio" href="index.html">← Inicio</a>
+  </div>
+</div>
+
+<!-- ── TOAST ── -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════════
+//  CONFIG
+// ══════════════════════════════════════════════════════
+const CONFIG = {
+  GAS_URL:      'https://script.google.com/macros/s/AKfycbydi5imjeA5bXY5TlA7MBVGkG6-Aq4XhYC0soXGPUMl41lEvdL8rc-xhjeRv9m0_aJg/exec',
+  ACCESS_TOKEN: 'LQ2026-Santina',
+  CUARTELES:    ['C2', 'C3', 'C4'],
+  N_HILERAS:    59,
+  UMBRAL_DESV:  15,   // % desviación para alerta
+  // Hileras representativas para medir (cada ~7 hileras)
+  HILERAS_MUESTRA: [1, 8, 15, 22, 29, 36, 43, 50, 59],
+};
+
+// Estado de la aplicación
+let state = {
+  tab:            'captura',
+  cuartel:        null,
+  tipoGotero:     '',
+  caudalNominal:  null,
+  presionNominal: null,
+  presionMedida:  null,
+  duracionMin:    5,
+  mediciones:     {},   // { 'hilera_N': valor_ml }
+  notas:          '',
+  // Resultados calculados
+  ud:             null,
+  caudalPromReal: null,
+  desviaciones:   {},
+};
+
+// Historial local (en sesión)
+let historial = [];
+
+// ── INIT ──────────────────────────────────────────────
+function init() {
+  actualizarReloj();
+  setInterval(actualizarReloj, 10000);
+  construirCuarteles();
+  // Duracion por defecto 5 min
+  document.getElementById('duracionMin').value = 5;
+  // Cargar historial si existe
+  cargarHistorialLocal();
+}
+
+function actualizarReloj() {
+  const now = new Date();
+  document.getElementById('hdrFecha').textContent =
+    now.toLocaleDateString('es-CL', { weekday: 'short', day: 'numeric', month: 'short' });
+  document.getElementById('hdrHora').textContent =
+    now.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+}
+
+// ── TABS ──────────────────────────────────────────────
+function setTab(tab) {
+  state.tab = tab;
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
+  document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
+
+  const bottomBar = document.getElementById('bottomBar');
+  bottomBar.style.display = tab === 'captura' ? 'block' : 'none';
+
+  if (tab === 'analisis') renderAnalisis();
+  if (tab === 'historial') renderHistorial();
+}
+
+// ── CUARTELES ─────────────────────────────────────────
+function construirCuarteles() {
+  const grid = document.getElementById('cuartelGrid');
+  CONFIG.CUARTELES.forEach(c => {
+    const btn = document.createElement('button');
+    btn.className   = 'sel-btn';
+    btn.textContent = c;
+    btn.dataset.val = c;
+    btn.onclick = () => seleccionarCuartel(c);
+    grid.appendChild(btn);
+  });
+}
+
+function seleccionarCuartel(c) {
+  state.cuartel    = c;
+  state.mediciones = {};
+  document.querySelectorAll('#cuartelGrid .sel-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.val === c);
+  });
+  document.getElementById('cardCuartel').classList.remove('error-card');
+  construirMediciones();
+}
+
+// ── SISTEMA ───────────────────────────────────────────
+function cambiarCaudalNom(delta) {
+  const inp = document.getElementById('caudalNominal');
+  const actual = parseFloat(inp.value) || 0;
+  inp.value = Math.max(0, Math.min(20, +(actual + delta).toFixed(1)));
+  onSistemaChange();
+}
+function cambiarPresionNom(delta) {
+  const inp = document.getElementById('presionNominal');
+  const actual = parseFloat(inp.value) || 0;
+  inp.value = Math.max(0, Math.min(10, +(actual + delta).toFixed(1)));
+  onSistemaChange();
+}
+function cambiarPresionMed(delta) {
+  const inp = document.getElementById('presionMedida');
+  const actual = parseFloat(inp.value) || 0;
+  inp.value = Math.max(0, Math.min(15, +(actual + delta).toFixed(1)));
+  calcularResultados();
+}
+function cambiarDuracion(delta) {
+  const inp = document.getElementById('duracionMin');
+  const actual = parseInt(inp.value) || 5;
+  inp.value = Math.max(1, Math.min(60, actual + delta));
+  onSistemaChange();
+}
+
+function onSistemaChange() {
+  state.caudalNominal  = parseFloat(document.getElementById('caudalNominal').value)  || null;
+  state.presionNominal = parseFloat(document.getElementById('presionNominal').value) || null;
+  state.duracionMin    = parseInt(document.getElementById('duracionMin').value)       || 5;
+
+  // Actualizar etiqueta de unidad
+  const dur = state.duracionMin;
+  document.getElementById('medUnidadTag').textContent = `ml / ${dur} min`;
+  document.getElementById('presNomDisplay').textContent = state.presionNominal ? state.presionNominal.toFixed(1) : '—';
+
+  calcularResultados();
+}
+
+// ── MEDICIONES ────────────────────────────────────────
+function construirMediciones() {
+  if (!state.cuartel) return;
+
+  const container = document.getElementById('medicionesContainer');
+  container.innerHTML = '';
+
+  const hileras = CONFIG.HILERAS_MUESTRA;
+
+  const title = document.createElement('div');
+  title.className = 'sublabel';
+  title.innerHTML = `Cuartel <strong style="color:var(--teal)">${state.cuartel}</strong> — Hileras representativas <span>(9 puntos de muestreo)</span>`;
+  container.appendChild(title);
+
+  hileras.forEach(h => {
+    const row = document.createElement('div');
+    row.className = 'medicion-row';
+    const dur = state.duracionMin || 5;
+    row.innerHTML = `
+      <div class="medicion-label">H${h}</div>
+      <input type="number" class="medicion-input" id="med_h${h}"
+        min="0" max="5000" step="1" placeholder="—" inputmode="numeric"
+        oninput="onMedicionInput(${h}, this.value)">
+      <div class="medicion-unit">ml</div>
+    `;
+    container.appendChild(row);
+  });
+}
+
+function onMedicionInput(hilera, val) {
+  const n = parseFloat(val);
+  if (!isNaN(n) && n >= 0) {
+    state.mediciones[`h${hilera}`] = n;
+  } else {
+    delete state.mediciones[`h${hilera}`];
+  }
+  calcularResultados();
+}
+
+// ── CÁLCULO UD% ───────────────────────────────────────
+function calcularResultados() {
+  const valores = Object.values(state.mediciones).filter(v => v > 0);
+  const dur = state.duracionMin || 5;
+  const nomLH = state.caudalNominal;
+
+  if (valores.length < 4) {
+    document.getElementById('cardResultados').style.display = 'none';
+    return;
+  }
+
+  // Convertir ml en duración → L/h
+  const lhValues = valores.map(ml => (ml / dur) * 60 / 1000);
+
+  // UD% = (promedio del cuartil inferior / promedio total) * 100
+  const sorted    = [...lhValues].sort((a, b) => a - b);
+  const q25count  = Math.max(1, Math.ceil(sorted.length * 0.25));
+  const q25vals   = sorted.slice(0, q25count);
+  const q25avg    = q25vals.reduce((s, v) => s + v, 0) / q25vals.length;
+  const totalAvg  = lhValues.reduce((s, v) => s + v, 0) / lhValues.length;
+  const ud        = (q25avg / totalAvg) * 100;
+
+  state.ud            = ud;
+  state.caudalPromReal = totalAvg;
+
+  // Desviaciones vs nominal
+  const desv = {};
+  if (nomLH) {
+    CONFIG.HILERAS_MUESTRA.forEach(h => {
+      const ml  = state.mediciones[`h${h}`];
+      if (ml !== undefined) {
+        const lh = (ml / dur) * 60 / 1000;
+        desv[`h${h}`] = ((lh - nomLH) / nomLH) * 100;
+      }
+    });
+  }
+  state.desviaciones = desv;
+
+  // Presión medida
+  state.presionMedida = parseFloat(document.getElementById('presionMedida').value) || null;
+
+  // Mostrar card de resultados
+  document.getElementById('cardResultados').style.display = 'block';
+  renderResultados(ud, totalAvg, nomLH, desv);
+}
+
+function renderResultados(ud, realLH, nomLH, desv) {
+  // UD badge
+  const udEl   = document.getElementById('udValue');
+  const udDesc = document.getElementById('udDesc');
+  udEl.textContent = ud.toFixed(1) + '%';
+  udEl.className   = 'ud-value ' + udClass(ud);
+
+  const desc = ud0>= 90 ? 'Excelente — uniformidad óptima' :
+               ud >= 80 ? 'Bueno — uniformidad aceptable' :
+               ud >= 70 ? 'Regular — revisar sectores bajos' :
+                          'Deficiente — acción correctiva requerida';
+  udDesc.textContent = desc;
+
+  // Comparación caudal
+  const compEl = document.getElementById('comparaciones');
+  if (nomLH) {
+    const desviacionProm = ((realLH - nomLH) / nomLH) * 100;
+    const clase = Math.abs(desviacionProm) <= CONFIG.UMBRAL_DESV ? 'ok' :
+                  Math.abs(desviacionProm) <= 25 ? 'warn' : 'bad';
+    const pctNom  = Math.min(100, (nomLH  / Math.max(nomLH, realLH)) * 100);
+    const pctReal = Math.min(100, (realLH / Math.max(nomLH, realLH)) * 100);
+    compEl.innerHTML = `
+      <div class="compare-row">
+        <div class="compare-header">
+          <span class="compare-label">Caudal promedio</span>
+          <span class="compare-values">Nominal: ${nomLH.toFixed(2)} L/h · Real: ${realLH.toFixed(2)} L/h (${desviacionProm >= 0 ? '+' : ''}${desviacionProm.toFixed(1)}%)</span>
+        </div>
+        <div class="compare-bar-bg">
+          <div class="compare-bar-nominal" style="width:${pctNom}%"></div>
+          <div class="compare-bar-real bar-${clase}" style="width:${pctReal}%"></div>
+        </div>
+      </div>
+    `;
+  } else {
+    compEl.innerHTML = `<div class="medicion-unit" style="padding:8px 0">Ingresa el caudal nominal para comparar</div>`;
+  }
+
+  // Alertas
+  const alertasEl = document.getElementById('alertasContainer');
+  const alertas   = [];
+
+  // UD alerta
+  if (ud < 70) {
+    alertas.push({ type: 'red', icon: '⛔', msg: `UD ${ud.toFixed(1)}% — Uniformidad deficiente. Inspeccionar goteros tapados y variaciones de presión.` });
+  } else if (ud < 80) {
+    alertas.push({ type: 'amber', icon: '⚠️', msg: `UD ${ud.toFixed(1)}% — Uniformidad regular. Verificar hileras con bajo caudal.` });
+  } else {
+    alertas.push({ type: 'green', icon: '✅', msg: `UD ${ud.toFixed(1)}% — Uniformidad ${ud >= 90 ? 'excelente' : 'aceptable'}.` });
+  }
+
+  // Alertas por hilera
+  const desvHileras = Object.entries(desv).filter(([, d]) => Math.abs(d) > CONFIG.UMBRAL_DESV);
+  if (desvHileras.length > 0) {
+    const names = desvHileras.map(([k, d]) => `${k.replace('h','H')} (${d >= 0 ? '+' : ''}${d.toFixed(1)}%)`).join(', ');
+    alertas.push({ type: 'amber', icon: '⚠️', msg: `Desviación >15% en: ${names}` });
+  }
+
+  // Alerta presión
+  if (state.presionMedida && state.presionNominal) {
+    const dpres = ((state.presionMedida - state.presionNominal) / state.presionNominal) * 100;
+    if (dpres < -15) {
+      alertas.push({ type: 'red', icon: '⛔', msg: `Subpresión ${dpres.toFixed(1)}% — Verificar filtros, caudal de bomba y pérdidas de carga.` });
+    } else if (dpres > 15) {
+      alertas.push({ type: 'amber', icon: '⚠️', msg: `Sobrepresión +${dpres.toFixed(1)}% — Ajustar regulador de presión.` });
+    }
+  }
+
+  alertasEl.innerHTML = alertas.map(a =>
+    `<div class="alert-row ${a.type}"><span class="alert-icon">${a.icon}</span>${a.msg}</div>`
+  ).join('');
+}
+
+function udClass(ud) {
+  if (ud >= 90) return 'excellent';
+  if (ud >= 80) return 'good';
+  if (ud >= 70) return 'fair';
+  return 'poor';
+}
+
+// ── ANÁLISIS / HEATMAP ────────────────────────────────
+function renderAnalisis() {
+  renderHeatmap();
+  renderBarras();
+  renderKPIs();
+}
+
+function renderHeatmap() {
+  const container  = document.getElementById('heatmapContainer');
+  const legendEl   = document.getElementById('heatmapLegend');
+  const N          = CONFIG.N_HILERAS;
+  const COLS       = 59;
+
+  if (historial.length === 0 && !state.cuartel) {
+    container.innerHTML = `<div class="empty-state"><span class="empty-icon">📊</span>Registra mediciones para ver el mapa de calor</div>`;
+    legendEl.style.display = 'none';
+    return;
+  }
+
+  legendEl.style.display = 'flex';
+  container.innerHTML = '';
+
+  CONFIG.CUARTELES.forEach(cuartel => {
+    const cuartelDiv = document.createElement('div');
+    cuartelDiv.className = 'heatmap-cuartel';
+    cuartelDiv.innerHTML = `<div class="heatmap-cuartel-label">${cuartel} — 59 hileras</div>`;
+
+    const grid = document.createElement('div');
+    grid.className = 'heatmap-grid';
+    grid.style.gridTemplateColumns = `repeat(${COLS}, 1fr)`;
+
+    // Construir mapa de desviaciones para este cuartel
+    const desvMap = buildDesvMap(cuartel);
+
+    for (let h = 1; h <= N; h++) {
+      const cell = document.createElement('div');
+      cell.className = 'heatmap-cell';
+
+      const desv = desvMap[h];
+      if (desv === undefined) {
+        cell.classList.add('hc-none');
+        cell.title = `H${h}: sin datos`;
+      } else {
+        const cls = desvToClass(desv);
+        cell.classList.add(cls);
+        cell.setAttribute('data-val', `H${h}: ${desv >= 0 ? '+' : ''}${desv.toFixed(1)}%`);
+        cell.title = `H${h}: ${desv >= 0 ? '+' : ''}${desv.toFixed(1)}%`;
+      }
+      grid.appendChild(cell);
+    }
+
+    cuartelDiv.appendChild(grid);
+    container.appendChild(cuartelDiv);
+  });
+}
+
+function buildDesvMap(cuartel) {
+  const map = {};
+  // Datos de historial
+  historial.filter(r => r.cuartel === cuartel).forEach(r => {
+    Object.entries(r.desviaciones || {}).forEach(([k, d]) => {
+      const h = parseInt(k.replace('h',''));
+      if (!isNaN(h)) map[h] = d;
+    });
+  });
+  // Datos actuales de sesión si coincide cuartel
+  if (state.cuartel === cuartel && Object.keys(state.desviaciones).length > 0) {
+    Object.entries(state.desviaciones).forEach(([k, d]) => {
+      const h = parseInt(k.replace('h',''));
+      if (!isNaN(h)) map[h] = d;
+    });
+  }
+  return map;
+}
+
+function desvToClass(desv) {
+  if (desv < -15) return 'hc-low';
+  if (desv < -5)  return 'hc-mid';
+  if (desv <= 15) return 'hc-ok';
+  return 'hc-high';
+}
+
+function renderBarras() {
+  const container = document.getElementById('barrasContainer');
+  if (!state.cuartel || Object.keys(state.desviaciones).length === 0) {
+    container.innerHTML = `<div class="empty-state"><span class="empty-icon">📏</span>Las comparaciones aparecerán tras registrar mediciones</div>`;
+    return;
+  }
+
+  const nomLH = state.caudalNominal;
+  const dur   = state.duracionMin || 5;
+  container.innerHTML = '';
+
+  CONFIG.HILERAS_MUESTRA.forEach(h => {
+    const ml = state.mediciones[`h${h}`];
+    if (ml === undefined) return;
+    const realLH = (ml / dur) * 60 / 1000;
+    const desv   = state.desviaciones[`h${h}`];
+    const clase  = desv === undefined || Math.abs(desv) <= CONFIG.UMBRAL_DESV ? 'ok' :
+                   Math.abs(desv) <= 25 ? 'warn' : 'bad';
+
+    const maxLH  = Math.max(nomLH || realLH, realLH) * 1.1;
+    const pctN   = nomLH  ? ((nomLH  / maxLH) * 100).toFixed(1) : null;
+    const pctR   = ((realLH / maxLH) * 100).toFixed(1);
+    const desvTxt = desv !== undefined ? `${desv >= 0 ? '+' : ''}${desv.toFixed(1)}%` : '';
+
+    const el = document.createElement('div');
+    el.className = 'compare-row';
+    el.innerHTML = `
+      <div class="compare-header">
+        <span class="compare-label">Hilera ${h}</span>
+        <span class="compare-values">${realLH.toFixed(2)} L/h ${desvTxt ? '· ' + desvTxt : ''}</span>
+      </div>
+      <div class="compare-bar-bg">
+        ${pctN ? `<div class="compare-bar-nominal" style="width:${pctN}%"></div>` : ''}
+        <div class="compare-bar-real bar-${clase}" style="width:${pctR}%"></div>
+      </div>
+    `;
+    container.appendChild(el);
+  });
+}
+
+function renderKPIs() {
+  if (state.ud) {
+    document.getElementById('kpiUdProm').textContent = state.ud.toFixed(1) + '%';
+    document.getElementById('kpiUdProm').style.color =
+      state.ud >= 90 ? 'var(--green)' : state.ud >= 80 ? 'var(--teal)' :
+      state.ud >= 70 ? 'var(--amber)' : 'var(--red)';
+  }
+  const desvs = Object.values(state.desviaciones);
+  if (desvs.length > 0) {
+    const maxDesv = Math.max(...desvs.map(Math.abs));
+    document.getElementById('kpiDesvMax').textContent = maxDesv.toFixed(1) + '%';
+    document.getElementById('kpiDesvMax').style.color =
+      maxDesv <= CONFIG.UMBRAL_DESV ? 'var(--green)' :
+      maxDesv <= 25 ? 'var(--amber)' : 'var(--red)';
+  }
+}
+
+// ── HISTORIAL ─────────────────────────────────────────
+function renderHistorial() {
+  const el = document.getElementById('historialContent');
+  if (historial.length === 0) {
+    el.innerHTML = `<div class="empty-state"><span class="empty-icon">📋</span>No hay registros de aforado aún.<br>Registra tu primera medición.</div>`;
+    return;
+  }
+  el.innerHTML = historial.slice().reverse().map(r => `
+    <div class="historial-item">
+      <div class="historial-fecha">${r.fecha}</div>
+      <div class="historial-cuartel">${r.cuartel}</div>
+      <div class="historial-ud" style="color:${r.ud >= 90 ? 'var(--green)' : r.ud >= 80 ? 'var(--teal)' : r.ud >= 70 ? 'var(--amber)' : 'var(--red)'}">${r.ud.toFixed(1)}%</div>
+      <div class="historial-notas">${r.notas || r.tipoGotero || '—'}</div>
+    </div>
+  `).join('');
+}
+
+function cargarHistorialLocal() {
+  try {
+    const saved = sessionStorage.getItem('aforado_historial_v1');
+    if (saved) historial = JSON.parse(saved);
+  } catch(_) {}
+}
+
+function guardarHistorialLocal() {
+  try {
+    sessionStorage.setItem('aforado_historial_v1', JSON.stringify(historial));
+  } catch(_) {}
+}
+
+// ── SUBMIT ────────────────────────────────────────────
+async function handleSubmit() {
+  if (!state.cuartel) {
+    document.getElementById('cardCuartel').classList.add('error-card');
+    document.getElementById('cardCuartel').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    showToast('Selecciona un cuartel');
+    return;
+  }
+  const vals = Object.values(state.mediciones).filter(v => v > 0);
+  if (vals.length < 4) {
+    showToast('Ingresa al menos 4 mediciones de caudal');
+    return;
+  }
+
+  const btn = document.getElementById('btnSubmit');
+  btn.disabled = true;
+  document.getElementById('overlayLoading').classList.add('visible');
+
+  const dur   = state.duracionMin || 5;
+  const notas = document.getElementById('notasAforado').value.trim();
+  const now   = new Date();
+
+  const payload = {
+    action:         'aforado',
+    token:          CONFIG.ACCESS_TOKEN,
+    cuartel:        state.cuartel,
+    tipo_gotero:    document.getElementById('tipoGotero').value,
+    caudal_nominal: state.caudalNominal || '',
+    presion_nom:    state.presionNominal || '',
+    presion_med:    parseFloat(document.getElementById('presionMedida').value) || '',
+    duracion_min:   dur,
+    ud_pct:         state.ud ? state.ud.toFixed(2) : '',
+    caudal_real_avg: state.caudalPromReal ? state.caudalPromReal.toFixed(3) : '',
+    mediciones:     JSON.stringify(state.mediciones),
+    desviaciones:   JSON.stringify(state.desviaciones),
+    notas:          notas,
+    ts:             now.toISOString(),
+    fecha:          now.toLocaleDateString('es-CL'),
+    hora:           now.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
+  };
+
+  // Guardar en historial local
+  historial.push({
+    fecha:        payload.fecha,
+    hora:         payload.hora,
+    cuartel:      state.cuartel,
+    ud:           state.ud || 0,
+    tipoGotero:   payload.tipo_gotero,
+    notas:        notas,
+    desviaciones: state.desviaciones,
+    mediciones:   state.mediciones,
+  });
+  guardarHistorialLocal();
+
+  try {
+    await fetch(CONFIG.GAS_URL, {
+      method:  'POST',
+      mode:    'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body:    JSON.stringify(payload),
+    });
+    mostrarExito(payload);
+  } catch(err) {
+    // Guardado local aunque falle el servidor
+    mostrarExito(payload);
+  }
+}
+
+function mostrarExito(payload) {
+  document.getElementById('overlayLoading').classList.remove('visible');
+  const ud = state.ud ? state.ud.toFixed(1) + '%' : '—';
+  const lines = [
+    `🌳 Cuartel ${payload.cuartel}`,
+    `💧 UD = ${ud} — ${state.ud >= 90 ? 'Excelente' : state.ud >= 80 ? 'Bueno' : state.ud >= 70 ? 'Regular' : 'Deficiente'}`,
+    state.caudalNominal ? `⚡ Caudal nominal: ${state.caudalNominal} L/h · Real: ${state.caudalPromReal ? state.caudalPromReal.toFixed(2) : '—'} L/h` : '',
+    `📏 ${Object.keys(state.mediciones).length} puntos medidos`,
+    payload.notas ? `📝 ${payload.notas.slice(0, 60)}` : '',
+  ].filter(Boolean).join('\n');
+  document.getElementById('successMsg').textContent = lines;
+  document.getElementById('overlaySuccess').classList.add('visible');
+}
+
+function resetForm() {
+  document.getElementById('overlaySuccess').classList.remove('visible');
+  state.mediciones   = {};
+  state.desviaciones = {};
+  state.ud           = null;
+  state.caudalPromReal = null;
+  state.cuartel      = null;
+
+  document.querySelectorAll('#cuartelGrid .sel-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('medicionesContainer').innerHTML = `<div class="empty-state"><span class="empty-icon">🌳</span>Selecciona un cuartel para ingresar las mediciones</div>`;
+  document.getElementById('cardResultados').style.display = 'none';
+  document.getElementById('notasAforado').value = '';
+  document.getElementById('presionMedida').value = '';
+  document.getElementById('btnSubmit').disabled = false;
+}
+
+// ── TOAST ─────────────────────────────────────────────
+let toastTimer;
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className   = 'toast visible' + (type === 'ok' ? ' ok' : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('visible'), 3200);
+}
+
+// ── START ─────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
