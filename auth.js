@@ -7,7 +7,7 @@
   'use strict';
 
   // ★ 1 — REEMPLAZA con tu Client ID de Google Cloud Console
-  var CLIENT_ID = 'PENDIENTE.apps.googleusercontent.com';
+  var CLIENT_ID = '138057048039-nnh75vmncbiv5ot481d5e4f27e11at14.apps.googleusercontent.com';
 
   // ★ 2 — AGREGA los correos de las personas con acceso a la app
   var EMAILS_EQUIPO = [

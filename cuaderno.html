@@ -926,6 +926,7 @@ async function handleSubmit() {
     hilera:      appState.hilera  || '',
     claro:       appState.claro   || '',
     planta:      appState.planta  || '',
+    operador:    (typeof window.lqGetUser === 'function' ? (window.lqGetUser() || {}).name || (window.lqGetUser() || {}).email || '' : '') || '',
     notas:       notas,
     gps_lat:     gpsData?.lat     || '',
     gps_lng:     gpsData?.lng     || '',

@@ -821,7 +821,7 @@
         list="operadoresList" autocomplete="name"
         placeholder="Tu nombre (ej. Luis)" oninput="onOperadorChange(this.value)">
       <datalist id="operadoresList"></datalist>
-      <div style="font-size:11px;color:var(--text3);margin-top:6px">El nombre queda registrado en cada foto para trazabilidad.</div>
+      <div id="operadorHint" style="font-size:11px;color:var(--text3);margin-top:6px">El nombre queda registrado en cada foto para trazabilidad.</div>
     </div>
   </div>
 
@@ -1432,13 +1432,45 @@ const OPERADOR_KEY = 'lq_operador_actual';
 const OPERADORES_LIST_KEY = 'lq_operadores_lista';
 
 function cargarOperador() {
-  // Operador actual
+  const inp = document.getElementById('operadorInput');
+
+  // Prioridad 1: usuario autenticado con Google (auth.js)
+  let usuarioGoogle = null;
+  try {
+    if (typeof window.lqGetUser === 'function') {
+      const u = window.lqGetUser();
+      if (u && (u.name || u.email)) usuarioGoogle = u;
+    }
+  } catch (_) {}
+
+  if (usuarioGoogle) {
+    // Auto-poblar y bloquear el input (no editable si hay login)
+    const nombre = usuarioGoogle.name || usuarioGoogle.email.split('@')[0];
+    appState.operador = nombre;
+    if (inp) {
+      inp.value = nombre;
+      inp.readOnly = true;
+      inp.style.opacity = '0.85';
+      inp.style.cursor  = 'not-allowed';
+      inp.title = 'Autenticado como ' + (usuarioGoogle.email || nombre);
+    }
+    const hint = document.getElementById('operadorHint');
+    if (hint) {
+      hint.innerHTML = '🔒 Autenticado como <b>' + (usuarioGoogle.email || nombre) + '</b>';
+      hint.style.color = 'var(--green)';
+    }
+    // Guardar también en localStorage por consistencia
+    try { localStorage.setItem(OPERADOR_KEY, nombre); } catch (_) {}
+    return;
+  }
+
+  // Prioridad 2: valor previo en localStorage (modo sin login)
   try {
     const actual = localStorage.getItem(OPERADOR_KEY) || '';
     appState.operador = actual;
-    const inp = document.getElementById('operadorInput');
     if (inp) inp.value = actual;
   } catch (_) {}
+
   // Datalist con operadores usados anteriormente
   try {
     const lista = JSON.parse(localStorage.getItem(OPERADORES_LIST_KEY) || '[]');
