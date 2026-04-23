@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
+  <title>Aforado de Riego · La Quinta</title>
+  <script>window.LQ_AUTH_MODE = 'admin';</script>
+  <script src="auth.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    :root{--bg:#0f1117;--bg2:#161b24;--bg3:#1e2534;--border:rgba(255,255,255,0.08);--text:#f0f2f5;--text2:#8b93a5;--text3:#555e70;--accent:#3b82f6;--green:#10b981;--amber:#f59e0b;--red:#ef4444;--blue:#3b82f6;--radius:10px}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{background:var(--bg);color:var(--text);font-family:-apple-system,'Segoe UI',sans-serif;font-size:14px;line-height:1.5;min-height:100vh}
+    ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+    header{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100}
+    .logo-block{display:flex;flex-direction:column;line-height:1.2}
+    .logo-empresa{font-size:15px;font-weight:700;letter-spacing:-0.3px}
+    .logo-empresa span{color:var(--blue)}
+    .logo-predio{font-size:11px;color:var(--text3)}
+    .header-right{display:flex;align-items:center;gap:10px}
+    #fechaHoy{font-size:12px;color:var(--text3)}
+    .btn-reload{font-size:12px;padding:5px 14px;border-radius:99px;cursor:pointer;background:transparent;border:1px solid var(--border);color:var(--text2);transition:all 0.12s}
+    .btn-reload:hover{border-color:rgba(255,255,255,0.2);color:var(--text)}
+    .controls-wrap{background:var(--bg2);border-bottom:1px solid var(--border);padding:10px 2rem}
+    .cuartel-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+    .cuartel-label{font-size:12px;color:var(--text3);margin-right:2px}
+    .cbtn{font-size:11px;padding:4px 10px;border-radius:99px;cursor:pointer;background:transparent;border:1px solid var(--border);color:var(--text3);transition:all 0.12s}
+    .cbtn.active{background:rgba(59,130,246,0.2);border-color:var(--blue);color:#93c5fd}
+    .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;padding:1.25rem 2rem 0}
+    .kpi{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.1rem}
+    .kpi-lbl{font-size:12px;color:var(--text2);margin-bottom:6px}
+    .kpi-val{font-size:22px;font-weight:600;letter-spacing:-0.5px;line-height:1.1}
+    .kpi-val.green{color:var(--green)}.kpi-val.amber{color:var(--amber)}.kpi-val.red{color:var(--red)}
+    .kpi-sub{font-size:11px;color:var(--text3);margin-top:5px}
+    .chart-section{padding:1.25rem 2rem 0}
+    .section-title{font-size:13px;font-weight:600;color:var(--text2);letter-spacing:0.3px;margin-bottom:12px}
+    .chart-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem}
+    .chart-canvas-wrap{position:relative;height:220px}
+    .table-section{padding:1.25rem 2rem 72px}
+    .table-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow-x:auto}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    thead th{padding:10px 12px;text-align:left;font-size:11px;font-weight:600;color:var(--text3);letter-spacing:0.4px;text-transform:uppercase;border-bottom:1px solid var(--border);white-space:nowrap}
+    tbody tr{border-bottom:1px solid var(--border)}
+    tbody tr:last-child{border-bottom:none}
+    tbody tr:hover{background:var(--bg3)}
+    tbody td{padding:9px 12px;color:var(--text2);white-space:nowrap}
+    tbody td:first-child{color:var(--text);font-weight:500}
+    .ud-badge{display:inline-block;font-size:12px;font-weight:700;padding:3px 10px;border-radius:99px}
+    .ud-green{background:rgba(16,185,129,0.15);color:#6ee7b7;border:1px solid rgba(16,185,129,0.3)}
+    .ud-amber{background:rgba(245,158,11,0.15);color:#fcd34d;border:1px solid rgba(245,158,11,0.3)}
+    .ud-red{background:rgba(239,68,68,0.15);color:#fca5a5;border:1px solid rgba(239,68,68,0.3)}
+    .btn-del{font-size:11px;padding:3px 8px;border-radius:6px;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text3);transition:all 0.12s}
+    .btn-del:hover{border-color:var(--red);color:var(--red)}
+    .state-box{text-align:center;padding:4rem 2rem;color:var(--text3)}
+    .state-box .icon{font-size:48px;margin-bottom:12px}
+    .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:10px 18px;font-size:13px;z-index:500;transition:transform 0.25s ease;pointer-events:none}
+    .toast.show{transform:translateX(-50%) translateY(0)}
+    .leyenda{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:10px}
+    .leyenda-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3)}
+    .leyenda-dot{width:10px;height:10px;border-radius:50%}
+  </style>
+</head>
+<body>
+<header>
+  <div class="logo-block">
+    <div class="logo-empresa">Agrícola <span>del Pedregal</span></div>
+    <div class="logo-predio">Aforado de Riego · La Quinta</div>
+  </div>
+  <div class="header-right">
+    <span id="fechaHoy"></span>
+    <button class="btn-reload" onclick="cargarDatos()">↻ Actualizar</button>
+  </div>
+</header>
+<div class="controls-wrap">
+  <div class="cuartel-row" id="cuartelRow">
+    <span class="cuartel-label">Cuartel:</span>
+    <button class="cbtn active" data-cuartel="todos" onclick="setFiltroCuartel(this)">Todos</button>
+  </div>
+</div>
+<div class="kpis">
+  <div class="kpi"><div class="kpi-lbl">Total aforos</div><div class="kpi-val" id="kTotal">—</div></div>
+  <div class="kpi"><div class="kpi-lbl">UD% promedio</div><div class="kpi-val" id="kUdProm">—</div><div class="kpi-sub">Uniformidad distribución</div></div>
+  <div class="kpi"><div class="kpi-lbl">Mejor cuartel</div><div class="kpi-val green" id="kMejor">—</div><div class="kpi-sub" id="kMejorSub"></div></div>
+  <div class="kpi"><div class="kpi-lbl">Peor cuartel</div><div class="kpi-val red" id="kPeor">—</div><div class="kpi-sub" id="kPeorSub"></div></div>
+</div>
+<div class="chart-section">
+  <div class="section-title">UNIFORMIDAD DE DISTRIBUCIÓN (UD%) POR CUARTEL</div>
+  <div class="chart-wrap">
+    <div class="leyenda">
+      <div class="leyenda-item"><div class="leyenda-dot" style="background:#10b981"></div> ≥ 90% Óptimo</div>
+      <div class="leyenda-item"><div class="leyenda-dot" style="background:#f59e0b"></div> 80–89% Aceptable</div>
+      <div class="leyenda-item"><div class="leyenda-dot" style="background:#ef4444"></div> &lt; 80% Deficiente</div>
+    </div>
+    <div class="chart-canvas-wrap"><canvas id="chartUD"></canvas></div>
+  </div>
+</div>
+<div class="table-section">
+  <div class="section-title" style="margin-top:1.25rem">REGISTROS DE AFORADO</div>
+  <div id="stateBox" class="state-box"><div class="icon">⏳</div><p>Cargando datos...</p></div>
+  <div class="table-wrap" id="tableWrap" style="display:none">
+    <table>
+      <thead><tr><th>Fecha</th><th>Cuartel</th><th>Gotero</th><th>Caudal nom.</th><th>Caudal real</th><th>P. nom.</th><th>P. med.</th><th>Duración</th><th>UD%</th><th>Notas</th><th></th></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const GAS_URL='https://script.google.com/macros/s/AKfycbydi5imjeA5bXY5TlA7MBVGkG6-Aq4XhYC0soXGPUMl41lEvdL8rc-xhjeRv9m0_aJg/exec';
+let todosAforos=[],filtroCuartel='todos',chartUD=null;
+const hoy=new Date();
+document.getElementById('fechaHoy').textContent=hoy.toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+function cargarDatos(){
+  document.getElementById('stateBox').style.display='';
+  document.getElementById('stateBox').innerHTML='<div class="icon">⏳</div><p>Cargando datos...</p>';
+  document.getElementById('tableWrap').style.display='none';
+  const ctrl=new AbortController();setTimeout(()=>ctrl.abort(),15000);
+  fetch(GAS_URL+'?action=list_aforado&_='+Date.now(),{signal:ctrl.signal})
+    .then(r=>r.json()).then(data=>{
+      if(data.error)throw new Error(data.error);
+      todosAforos=data.aforos||[];
+      construirFiltrosCuartel();aplicarFiltros();
+    }).catch(err=>{
+      document.getElementById('stateBox').innerHTML='<div class="icon">⚠️</div><p>Error: '+err.message+'</p>';
+    });
+}
+function setFiltroCuartel(btn){document.querySelectorAll('.cbtn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');filtroCuartel=btn.dataset.cuartel;aplicarFiltros();}
+function construirFiltrosCuartel(){
+  const row=document.getElementById('cuartelRow');
+  const cuarteles=[...new Set(todosAforos.map(a=>a.cuartel).filter(Boolean))].sort();
+  row.innerHTML='<span class="cuartel-label">Cuartel:</span><button class="cbtn active" data-cuartel="todos" onclick="setFiltroCuartel(this)">Todos</button>'+cuarteles.map(c=>'<button class="cbtn" data-cuartel="'+c+'" onclick="setFiltroCuartel(this)">'+c+'</button>').join('');
+}
+function aplicarFiltros(){
+  let lista=todosAforos;
+  if(filtroCuartel!=='todos')lista=lista.filter(a=>a.cuartel===filtroCuartel);
+  renderTabla(lista);renderKPIs(lista);renderGrafico(lista);
+}
+function colorClass(ud){return ud>=90?'green':ud>=80?'amber':'red';}
+function renderKPIs(lista){
+  document.getElementById('kTotal').textContent=lista.length;
+  const conUD=lista.filter(a=>a.ud_pct!=='');
+  if(!conUD.length){['kUdProm','kMejor','kPeor'].forEach(id=>document.getElementById(id).textContent='—');return;}
+  const udVals=conUD.map(a=>parseFloat(a.ud_pct));
+  const prom=udVals.reduce((s,v)=>s+v,0)/udVals.length;
+  const udEl=document.getElementById('kUdProm');
+  udEl.textContent=prom.toFixed(1)+'%';udEl.className='kpi-val '+colorClass(prom);
+  const porC={};conUD.forEach(a=>{if(!a.cuartel)return;if(!porC[a.cuartel])porC[a.cuartel]=[];porC[a.cuartel].push(parseFloat(a.ud_pct));});
+  const promedios=Object.entries(porC).map(([c,vals])=>({cuartel:c,avg:vals.reduce((s,v)=>s+v,0)/vals.length}));
+  promedios.sort((a,b)=>b.avg-a.avg);
+  if(promedios.length){
+    document.getElementById('kMejor').textContent=promedios[0].cuartel;
+    document.getElementById('kMejorSub').textContent=promedios[0].avg.toFixed(1)+'% UD';
+    const p=promedios[promedios.length-1];
+    document.getElementById('kPeor').textContent=p.cuartel;
+    document.getElementById('kPeorSub').textContent=p.avg.toFixed(1)+'% UD';
+  }
+}
+function renderGrafico(lista){
+  const conUD=lista.filter(a=>a.ud_pct!==''&&a.cuartel);
+  const porC={};conUD.forEach(a=>{if(!porC[a.cuartel])porC[a.cuartel]=[];porC[a.cuartel].push(parseFloat(a.ud_pct));});
+  const labels=Object.keys(porC).sort();
+  const data=labels.map(c=>{const v=porC[c];return(v.reduce((s,x)=>s+x,0)/v.length).toFixed(1);});
+  const colors=data.map(v=>v>=90?'#10b981':v>=80?'#f59e0b':'#ef4444');
+  const ctx=document.getElementById('chartUD').getContext('2d');
+  if(chartUD)chartUD.destroy();
+  chartUD=new Chart(ctx,{type:'bar',data:{labels:labels.length?labels:['Sin datos'],datasets:[{label:'UD% promedio',data:data.length?data:[0],backgroundColor:colors.length?colors:['#374151'],borderColor:colors.length?colors.map(c=>c):['#374151'],borderWidth:1,borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' UD% '+c.raw+'%'}}},scales:{x:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#8b93a5',font:{size:11}}},y:{min:0,max:100,grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#8b93a5',font:{size:11},callback:v=>v+'%'}}}}});
+}
+function udBadge(ud){if(ud===''||ud===null||ud===undefined)return'—';const v=parseFloat(ud);const cls=v>=90?'ud-green':v>=80?'ud-amber':'ud-red';return'<span class="ud-badge '+cls+'">'+v.toFixed(1)+'%</span>';}
+function renderTabla(lista){
+  const state=document.getElementById('stateBox'),wrap=document.getElementById('tableWrap');
+  if(!lista.length){state.style.display='';state.innerHTML='<div class="icon">📭</div><p>Sin registros.</p>';wrap.style.display='none';return;}
+  state.style.display='none';wrap.style.display='';
+  document.getElementById('tbody').innerHTML=lista.map(a=>'<tr><td>'+(a.fecha||'—')+'</td><td>'+(a.cuartel||'—')+'</td><td>'+(a.tipo_gotero||'—')+'</td><td>'+(a.caudal_nominal?a.caudal_nominal+' L/h':'—')+'</td><td>'+(a.caudal_real?a.caudal_real+' L/h':'—')+'</td><td>'+(a.presion_nom?a.presion_nom+' bar':'—')+'</td><td>'+(a.presion_med?a.presion_med+' bar':'—')+'</td><td>'+(a.duracion_min?a.duracion_min+' min':'—')+'</td><td>'+udBadge(a.ud_pct)+'</td><td style="max-width:180px;overflow:hidden;text-overflow:ellipsis">'+(a.notas||'—')+'</td><td><button class="btn-del" onclick="confirmarEliminar('+a.fila+')">🗑</button></td></tr>').join('');
+}
+function confirmarEliminar(fila){if(!confirm('¿Eliminar este registro?'))return;fetch(GAS_URL+'?action=deleterow_aforado&fila='+fila).then(()=>{mostrarToast('Eliminado');cargarDatos();}).catch(()=>mostrarToast('Error'));}
+function mostrarToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+cargarDatos();
+</script>
+</body>
+</html>
