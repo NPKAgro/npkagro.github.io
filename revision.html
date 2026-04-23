@@ -8,602 +8,163 @@
   <script src="auth.js"></script>
   <style>
     :root {
-      --bg:        #0f1117;
-      --bg2:       #161b24;
-      --bg3:       #1e2534;
-      --border:    rgba(255,255,255,0.08);
-      --text:      #f0f2f5;
-      --text2:     #8b93a5;
-      --text3:     #555e70;
-      --accent:    #3b82f6;
-      --accent2:   #1d4ed8;
-      --green:     #10b981;
-      --amber:     #f59e0b;
-      --red:       #ef4444;
-      --purple:    #8b5cf6;
-      --radius:    10px;
-      --radius-sm: 6px;
+      --bg:      #0f1117;
+      --bg2:     #161b24;
+      --bg3:     #1e2534;
+      --border:  rgba(255,255,255,0.08);
+      --text:    #f0f2f5;
+      --text2:   #8b93a5;
+      --text3:   #555e70;
+      --accent:  #3b82f6;
+      --accent2: #1d4ed8;
+      --green:   #10b981;
+      --amber:   #f59e0b;
+      --red:     #ef4444;
+      --radius:  12px;
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: -apple-system, 'Segoe UI', sans-serif; min-height: 100vh; }
+    ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: -apple-system, 'Segoe UI', sans-serif;
-      font-size: 14px;
-      line-height: 1.5;
-      min-height: 100vh;
-    }
-
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-
-    /* ── HEADER ── */
-    header {
-      background: var(--bg2);
-      border-bottom: 1px solid var(--border);
-      padding: 0 2rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      height: 56px;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
+    header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; height: 60px; position: sticky; top: 0; z-index: 100; }
     .logo-block { display: flex; flex-direction: column; line-height: 1.2; }
-    .logo-empresa { font-size: 15px; font-weight: 700; letter-spacing: -0.3px; }
-    .logo-empresa span { color: var(--accent); }
+    .logo-empresa { font-size: 16px; font-weight: 700; letter-spacing: -0.3px; }
+    .logo-empresa span { color: #3b82f6; }
     .logo-predio { font-size: 11px; color: var(--text3); }
-    .header-right { display: flex; align-items: center; gap: 10px; }
-    .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
+    .header-right { display: flex; align-items: center; gap: 12px; }
     #fechaHoy { font-size: 12px; color: var(--text3); }
 
-    /* ── CONTROLES + FILTROS ── */
-    .controls-wrap {
-      background: var(--bg2);
-      border-bottom: 1px solid var(--border);
-      padding: 10px 2rem;
-    }
-    .controls-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-    .filter-label { font-size: 12px; color: var(--text3); margin-right: 2px; }
+    .controls { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 10px 2rem; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .filter-label { font-size: 12px; color: var(--text3); }
+    .fbtn { font-size: 12px; padding: 5px 14px; border-radius: 99px; cursor: pointer; background: transparent; border: 1px solid var(--border); color: var(--text2); transition: all 0.12s; }
+    .fbtn:hover { border-color: rgba(255,255,255,0.2); }
+    .fbtn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .btn-reload { margin-left: auto; font-size: 12px; padding: 5px 14px; border-radius: 99px; cursor: pointer; background: transparent; border: 1px solid var(--border); color: var(--text2); transition: all 0.12s; }
+    .btn-reload:hover { border-color: rgba(255,255,255,0.2); }
 
-    .fbtn {
-      font-size: 12px;
-      padding: 5px 12px;
-      border-radius: 99px;
-      cursor: pointer;
-      background: transparent;
-      border: 1px solid var(--border);
-      color: var(--text2);
-      transition: all 0.12s;
-      white-space: nowrap;
-    }
-    .fbtn:hover { border-color: rgba(255,255,255,0.2); color: var(--text); }
-    .fbtn.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 500; }
-
-    .btn-reload {
-      margin-left: auto;
-      font-size: 12px;
-      padding: 5px 12px;
-      border-radius: 99px;
-      cursor: pointer;
-      background: transparent;
-      border: 1px solid var(--border);
-      color: var(--text2);
-      transition: all 0.12s;
-    }
-    .btn-reload:hover { border-color: rgba(255,255,255,0.2); color: var(--text); }
-
-    /* ── FILTRO CUARTEL (segunda fila) ── */
-    .cuartel-row {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      flex-wrap: wrap;
-      margin-top: 8px;
-    }
-    .cuartel-label { font-size: 11px; color: var(--text3); margin-right: 2px; }
-    .cbtn {
-      font-size: 11px;
-      padding: 4px 10px;
-      border-radius: 99px;
-      cursor: pointer;
-      background: transparent;
-      border: 1px solid var(--border);
-      color: var(--text3);
-      transition: all 0.12s;
-    }
-    .cbtn.active { background: rgba(139,92,246,0.2); border-color: var(--purple); color: #c4b5fd; }
-
-    .badge-count {
-      display: inline-block;
-      font-size: 10px;
-      padding: 1px 6px;
-      border-radius: 99px;
-      font-weight: 600;
-      margin-left: 4px;
-      background: rgba(245,158,11,0.2);
-      color: var(--amber);
-    }
-
-    /* ── KPIs ── */
-    .kpis {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 12px;
-      padding: 1.25rem 2rem 0;
-    }
-    .kpi {
-      background: var(--bg2);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 1rem 1.1rem;
-    }
+    .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; padding: 1.25rem 2rem 0; }
+    .kpi { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; }
     .kpi-lbl { font-size: 12px; color: var(--text2); margin-bottom: 6px; }
-    .kpi-val { font-size: 22px; font-weight: 600; letter-spacing: -0.5px; line-height: 1.1; }
-    .kpi-sub { font-size: 11px; color: var(--text3); margin-top: 5px; }
+    .kpi-val { font-size: 24px; font-weight: 600; letter-spacing: -0.5px; }
 
-    /* ── GRID CARDS ── */
-    .main-content { padding-bottom: 72px; }
-    .grid-container {
-      padding: 1.25rem 2rem;
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-      gap: 14px;
-    }
+    .grid-container { padding: 1.25rem 2rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 14px; }
 
-    /* ── CARD OBSERVACIÓN ── */
-    .obs-card {
-      background: var(--bg2);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
-      transition: border-color 0.15s;
-    }
+    .obs-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; transition: border-color 0.15s; }
     .obs-card:hover { border-color: rgba(255,255,255,0.14); }
-    .obs-card.aprobada { border-color: rgba(16,185,129,0.25); }
+    .card-photo { width: 100%; height: 220px; object-fit: cover; display: block; background: var(--bg3); cursor: zoom-in; }
+    .card-photo-placeholder { width: 100%; height: 120px; background: var(--bg3); display: flex; align-items: center; justify-content: center; font-size: 36px; color: var(--text3); }
+    .card-body { padding: 14px 16px; }
+    .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+    .card-loc { font-size: 15px; font-weight: 600; letter-spacing: -0.2px; }
+    .estado-badge { font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 99px; border: 1px solid; white-space: nowrap; }
+    .badge-pendiente  { background: rgba(245,158,11,0.15); color: #fcd34d; border-color: rgba(245,158,11,0.3); }
+    .badge-revisado   { background: rgba(16,185,129,0.15); color: #6ee7b7; border-color: rgba(16,185,129,0.3); }
+    .card-meta { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 8px; }
+    .meta-chip { font-size: 11px; color: var(--text3); display: flex; align-items: center; gap: 3px; }
+    .card-estado { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+    .card-notas { font-size: 12px; color: var(--text2); line-height: 1.45; margin-bottom: 10px; }
+    .card-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+    .btn-sm { font-size: 11px; padding: 5px 12px; border-radius: 8px; cursor: pointer; border: 1px solid var(--border); background: transparent; color: var(--text2); transition: all 0.12s; }
+    .btn-sm:hover { background: var(--bg3); color: var(--text); }
+    .btn-sm.green { border-color: rgba(16,185,129,0.4); color: #6ee7b7; }
+    .btn-sm.green:hover { background: rgba(16,185,129,0.1); }
+    .btn-sm.amber { border-color: rgba(245,158,11,0.4); color: #fcd34d; }
+    .btn-sm.amber:hover { background: rgba(245,158,11,0.1); }
+    .btn-sm.red { border-color: rgba(239,68,68,0.4); color: #fca5a5; }
+    .btn-sm.red:hover { background: rgba(239,68,68,0.1); }
+    .btn-sm.danger:hover { border-color: var(--red); color: var(--red); }
 
-    .card-photo {
-      width: 100%;
-      height: 230px;
-      object-fit: cover;
-      display: block;
-      background: var(--bg3);
-      cursor: zoom-in;
-    }
-    .card-photo-placeholder {
-      width: 100%;
-      height: 230px;
-      background: var(--bg3);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 36px;
-      color: var(--text3);
-    }
+    .estado-jp-badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 10px; border-radius: 99px; margin-left: 6px; }
+    .jp-aprobado    { background: rgba(16,185,129,0.15); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.3); }
+    .jp-con-reparos { background: rgba(245,158,11,0.15); color: #fcd34d; border: 1px solid rgba(245,158,11,0.3); }
+    .jp-rechazado   { background: rgba(239,68,68,0.15);  color: #fca5a5; border: 1px solid rgba(239,68,68,0.3); }
 
-    .card-body { padding: 12px 14px; display: flex; flex-direction: column; gap: 9px; }
+    .state-box { text-align: center; padding: 4rem 2rem; color: var(--text3); }
+    .state-box .icon { font-size: 48px; margin-bottom: 12px; }
+    .state-box p { font-size: 14px; }
 
-    .card-top-row {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 8px;
-    }
-    .card-fecha { font-size: 14px; font-weight: 600; }
-    .card-hora  { font-size: 11px; color: var(--text3); margin-top: 2px; }
+    .lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 999; justify-content: center; align-items: center; }
+    .lightbox.open { display: flex; }
+    .lightbox img { max-width: 94vw; max-height: 92vh; border-radius: 8px; object-fit: contain; }
+    .lightbox-close { position: absolute; top: 16px; right: 20px; font-size: 28px; color: #fff; cursor: pointer; line-height: 1; }
 
-    /* ── BADGES ── */
-    .badge {
-      display: inline-block;
-      font-size: 10px;
-      padding: 2px 8px;
-      border-radius: 99px;
-      font-weight: 500;
-      white-space: nowrap;
-      flex-shrink: 0;
-    }
-    .badge-pendiente { background: rgba(245,158,11,0.15); color: var(--amber); }
-    .badge-revisado  { background: rgba(16,185,129,0.15);  color: var(--green); }
+    .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 10px 18px; font-size: 13px; z-index: 500; transition: transform 0.25s ease; pointer-events: none; }
+    .toast.show { transform: translateX(-50%) translateY(0); }
 
-    /* ── CHIPS ── */
-    .chips-row { display: flex; gap: 5px; flex-wrap: wrap; }
-    .chip {
-      font-size: 11px;
-      padding: 2px 9px;
-      border-radius: var(--radius-sm);
-      font-weight: 500;
-    }
-    .chip-cuartel   { background: rgba(59,130,246,0.15);  color: var(--accent); }
-    .chip-ubicacion { background: rgba(139,92,246,0.15);  color: var(--purple); }
-    .chip-estado    { background: rgba(16,185,129,0.12);  color: var(--green); }
-    .chip-fotos     { background: rgba(245,158,11,0.12);  color: var(--amber); }
-
-    /* ── GPS LINK ── */
-    .gps-link {
-      font-size: 11px;
-      color: var(--text3);
-      text-decoration: none;
-      transition: color 0.12s;
-    }
-    .gps-link:hover { color: var(--accent); }
-
-    /* ── NOTAS ── */
-    .card-notas {
-      font-size: 12px;
-      color: var(--text2);
-      line-height: 1.5;
-      background: var(--bg3);
-      border-radius: var(--radius-sm);
-      padding: 7px 10px;
-      border-left: 2px solid var(--border);
-      font-style: italic;
-    }
-
-    /* ── SELECTOR ESTADO JP ── */
-    .estado-jp-row { display: flex; gap: 8px; align-items: stretch; }
-    .estado-select {
-      flex: 1;
-      padding: 8px 10px;
-      background: var(--bg3);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      color: var(--text);
-      font-size: 12px;
-      appearance: none;
-      -webkit-appearance: none;
-      outline: none;
-      cursor: pointer;
-      transition: border-color 0.12s;
-    }
-    .estado-select:focus { border-color: var(--accent); }
-    /* Resaltar en rojo si se intenta aprobar sin seleccionar */
-    .estado-select.sin-estado { border-color: rgba(239,68,68,0.6); }
-
-    .btn-aprobar {
-      background: var(--accent);
-      color: #fff;
-      border: none;
-      border-radius: var(--radius-sm);
-      padding: 8px 16px;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.12s;
-      white-space: nowrap;
-    }
-    .btn-aprobar:hover    { background: var(--accent2); }
-    .btn-aprobar:disabled { background: var(--bg3); color: var(--text3); cursor: not-allowed; }
-
-    .estado-error-hint {
-      font-size: 11px;
-      color: var(--red);
-      display: none;
-    }
-    .estado-error-hint.visible { display: block; }
-
-    .aprobado-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .aprobado-badge {
-      flex: 1;
-      background: rgba(16,185,129,0.1);
-      color: var(--green);
-      border-radius: var(--radius-sm);
-      padding: 8px 12px;
-      font-size: 12px;
-      font-weight: 600;
-      border: 1px solid rgba(16,185,129,0.2);
-    }
-    .btn-editar-estado {
-      font-size: 11px;
-      padding: 5px 10px;
-      background: transparent;
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      color: var(--text3);
-      cursor: pointer;
-      white-space: nowrap;
-      transition: all 0.12s;
-      flex-shrink: 0;
-    }
-    .btn-editar-estado:hover { border-color: var(--accent); color: var(--accent); }
-    /* Fila de edición inline */
-    .edit-estado-row {
-      display: none;
-      gap: 8px;
-      align-items: stretch;
-    }
-    .edit-estado-row.visible { display: flex; }
-    .btn-cancelar-edicion {
-      font-size: 11px;
-      padding: 6px 10px;
-      background: transparent;
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      color: var(--text3);
-      cursor: pointer;
-      white-space: nowrap;
-      transition: all 0.12s;
-      flex-shrink: 0;
-    }
-    .btn-cancelar-edicion:hover { border-color: var(--text2); color: var(--text2); }
-    .btn-guardar-edicion {
-      font-size: 12px;
-      padding: 6px 14px;
-      background: var(--green);
-      border: none;
-      border-radius: var(--radius-sm);
-      color: #fff;
-      font-weight: 600;
-      cursor: pointer;
-      white-space: nowrap;
-      flex-shrink: 0;
-      transition: opacity 0.12s;
-    }
-    .btn-guardar-edicion:hover   { opacity: 0.85; }
-    .btn-guardar-edicion:disabled { background: var(--bg3); color: var(--text3); cursor: not-allowed; }
-
-    /* ── FOTO ACCIONES ── */
-    .foto-acciones { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-    .btn-ver-foto, .btn-elim-foto, .btn-elim-registro {
-      font-size: 11px;
-      padding: 4px 10px;
-      background: transparent;
-      border-radius: var(--radius-sm);
-      cursor: pointer;
-      text-decoration: none;
-      display: inline-block;
-      transition: all 0.12s;
-    }
-    .btn-ver-foto { border: 1px solid var(--border); color: var(--text3); }
-    .btn-ver-foto:hover { border-color: var(--accent); color: var(--accent); }
-    .btn-elim-foto { border: 1px solid rgba(239,68,68,0.3); color: var(--text3); }
-    .btn-elim-foto:hover { border-color: var(--red); color: var(--red); }
-    .btn-elim-registro { border: 1px solid rgba(239,68,68,0.15); color: var(--text3); }
-    .btn-elim-registro:hover { border-color: var(--red); color: var(--red); }
-
-    .confirm-elim {
-      display: none;
-      align-items: center;
-      gap: 8px;
-      font-size: 11px;
-      color: var(--text2);
-    }
-    .confirm-elim.visible { display: flex; }
-    .confirm-elim .btn-si {
-      font-size: 11px; padding: 3px 10px; border-radius: var(--radius-sm);
-      background: var(--red); color: #fff; border: none; cursor: pointer; font-weight: 600;
-    }
-    .confirm-elim .btn-no {
-      font-size: 11px; padding: 3px 10px; border-radius: var(--radius-sm);
-      background: transparent; color: var(--text3); border: 1px solid var(--border); cursor: pointer;
-    }
-
-    /* ── ESTADOS VACÍOS ── */
-    .state-box {
-      grid-column: 1/-1;
-      text-align: center;
-      padding: 60px 20px;
-      color: var(--text3);
-    }
-    .state-icon { font-size: 48px; margin-bottom: 14px; }
-    .state-msg  { font-size: 16px; font-weight: 500; color: var(--text2); }
-    .state-sub  { font-size: 13px; margin-top: 8px; line-height: 1.6; max-width: 480px; margin-left: auto; margin-right: auto; }
-
-    .spinner-wrap {
-      grid-column: 1/-1;
-      text-align: center;
-      padding: 60px 20px;
-      color: var(--text2);
-    }
-    .spinner {
-      display: inline-block;
-      width: 28px; height: 28px;
-      border: 2px solid var(--border);
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spin 0.6s linear infinite;
-      margin-bottom: 14px;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* ── CAROUSEL ── */
-    .photo-carousel { position: relative; width: 100%; overflow: hidden; }
-    .carousel-btn {
-      position: absolute;
-      top: 50%; transform: translateY(-50%);
-      background: rgba(0,0,0,0.52);
-      color: #fff; border: none;
-      border-radius: 50%;
-      width: 34px; height: 34px;
-      font-size: 22px; line-height: 1;
-      cursor: pointer; z-index: 10;
-      display: flex; align-items: center; justify-content: center;
-      transition: background 0.12s; padding: 0; user-select: none;
-    }
-    .carousel-btn:hover { background: rgba(0,0,0,0.80); }
-    .carousel-prev { left: 8px; }
-    .carousel-next { right: 8px; }
-    .carousel-counter {
-      position: absolute;
-      bottom: 8px; right: 8px;
-      background: rgba(0,0,0,0.55); color: #fff;
-      font-size: 11px; padding: 2px 8px;
-      border-radius: 99px; pointer-events: none;
-    }
-
-    /* ── LIGHTBOX ── */
-    .lightbox {
-      display: none;
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,0.96);
-      z-index: 1000;
-      align-items: center;
-      justify-content: center;
-    }
-    .lightbox.visible { display: flex; }
-    .lightbox img { max-width: 94vw; max-height: 92vh; border-radius: var(--radius); object-fit: contain; }
-    .lightbox-close {
-      position: absolute; top: 18px; right: 22px;
-      color: var(--text2); font-size: 28px; cursor: pointer;
-      transition: color 0.12s;
-    }
-    .lightbox-close:hover { color: var(--text); }
-    .lightbox-nav {
-      position: absolute; top: 50%; transform: translateY(-50%);
-      background: rgba(255,255,255,0.12); color: #fff; border: none;
-      border-radius: 50%; width: 44px; height: 44px;
-      font-size: 26px; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      transition: background 0.12s;
-    }
-    .lightbox-nav:hover { background: rgba(255,255,255,0.25); }
-    .lightbox-prev { left: 18px; }
-    .lightbox-next { right: 18px; }
-    .lightbox-indicator {
-      position: absolute; bottom: 18px;
-      left: 50%; transform: translateX(-50%);
-      color: rgba(255,255,255,0.6); font-size: 13px;
-    }
-
-    /* ── BOTTOM BAR ── */
-    .bottombar {
-      position: fixed; bottom: 0; left: 0; right: 0;
-      background: var(--bg2);
-      border-top: 1px solid var(--border);
-      padding: 12px 2rem;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      z-index: 40;
-    }
-    .bottombar-info { flex: 1; font-size: 12px; color: var(--text3); }
-    .bottombar-info strong { color: var(--text2); font-weight: 600; }
-    .btn-export {
-      font-size: 12px; padding: 7px 16px;
-      background: var(--accent); border: none;
-      border-radius: var(--radius-sm);
-      color: #fff; font-weight: 500; cursor: pointer;
-      transition: background 0.12s;
-    }
-    .btn-export:hover { background: var(--accent2); }
-
-    /* ── TOAST ── */
-    .toast {
-      display: none;
-      position: fixed;
-      bottom: 72px; left: 50%; transform: translateX(-50%);
-      background: var(--bg3); border: 1px solid var(--border);
-      color: var(--text);
-      padding: 9px 20px; border-radius: var(--radius-sm);
-      font-size: 13px; font-weight: 500;
-      z-index: 500; white-space: nowrap;
-    }
-    .toast.ok    { border-color: rgba(16,185,129,0.4); color: var(--green); }
-    .toast.error { border-color: rgba(239,68,68,0.4);  color: var(--red); }
-    .toast.visible { display: block; }
+    .approve-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 998; align-items: center; justify-content: center; }
+    .approve-modal-overlay.open { display: flex; }
+    .approve-modal { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 2rem; max-width: 420px; width: 90%; }
+    .approve-modal h3 { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+    .approve-modal p { font-size: 13px; color: var(--text2); margin-bottom: 1.5rem; }
+    .approve-modal .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .approve-modal .btn-row button { flex: 1; min-width: 100px; }
   </style>
 </head>
 <body>
 
-<!-- ── HEADER ── -->
 <header>
   <div class="logo-block">
     <div class="logo-empresa">Agrícola <span>del Pedregal</span></div>
-    <div class="logo-predio">La Quinta &nbsp;·&nbsp; Registro Estados Fenológicos</div>
+    <div class="logo-predio">Panel de Revisión · La Quinta</div>
   </div>
   <div class="header-right">
-    <div class="status-dot"></div>
     <span id="fechaHoy"></span>
   </div>
 </header>
 
-<!-- ── KPIs ── -->
+<div class="controls">
+  <span class="filter-label">Filtro:</span>
+  <button class="fbtn active" data-filtro="todos"      onclick="setFiltro(this)">Todos</button>
+  <button class="fbtn"        data-filtro="Pendiente"  onclick="setFiltro(this)">⏳ Pendientes</button>
+  <button class="fbtn"        data-filtro="Revisado"   onclick="setFiltro(this)">✅ Revisados</button>
+  <button class="btn-reload"  onclick="cargar()">↻ Actualizar</button>
+</div>
+
 <div class="kpis">
-  <div class="kpi">
-    <div class="kpi-lbl">⏳ Pendientes</div>
-    <div class="kpi-val" id="kpiPendientes">—</div>
-    <div class="kpi-sub">Por asignar estado</div>
-  </div>
-  <div class="kpi">
-    <div class="kpi-lbl">✅ Revisadas</div>
-    <div class="kpi-val" id="kpiRevisadas">—</div>
-    <div class="kpi-sub">Estado JP asignado</div>
-  </div>
-  <div class="kpi">
-    <div class="kpi-lbl">📷 Total registros</div>
-    <div class="kpi-val" id="kpiTotal">—</div>
-    <div class="kpi-sub">Temporada 2025–2026</div>
-  </div>
+  <div class="kpi"><div class="kpi-lbl">Total</div><div class="kpi-val" id="kTotal">—</div></div>
+  <div class="kpi"><div class="kpi-lbl">Pendientes</div><div class="kpi-val" id="kPend">—</div></div>
+  <div class="kpi"><div class="kpi-lbl">Revisados</div><div class="kpi-val" id="kRev">—</div></div>
+  <div class="kpi"><div class="kpi-lbl">Con foto</div><div class="kpi-val" id="kFotos">—</div></div>
 </div>
 
-<!-- ── CONTROLES ── -->
-<div class="controls-wrap">
-  <!-- Filtro estado de revisión -->
-  <div class="controls-row">
-    <span class="filter-label">Estado:</span>
-    <button class="fbtn active" data-filtro="Pendiente" onclick="setFiltroEstado('Pendiente', this)">
-      Pendientes <span class="badge-count" id="countPendiente">—</span>
-    </button>
-    <button class="fbtn" data-filtro="Revisado" onclick="setFiltroEstado('Revisado', this)">Revisadas</button>
-    <button class="fbtn" data-filtro="todos" onclick="setFiltroEstado('todos', this)">Todas</button>
-    <button class="btn-reload" onclick="cargarObservaciones()">↻ Actualizar</button>
-  </div>
-
-  <!-- Filtro cuartel -->
-  <div class="cuartel-row">
-    <span class="cuartel-label">Cuartel:</span>
-    <button class="cbtn active" data-cuartel="todos" onclick="setFiltroCuartel('todos', this)">Todos</button>
-    <button class="cbtn" data-cuartel="C2" onclick="setFiltroCuartel('C2', this)">C2</button>
-    <button class="cbtn" data-cuartel="C3" onclick="setFiltroCuartel('C3', this)">C3</button>
-    <button class="cbtn" data-cuartel="C4" onclick="setFiltroCuartel('C4', this)">C4</button>
-  </div>
+<div id="gridContainer">
+  <div class="state-box"><div class="icon">⏳</div><p>Cargando observaciones...</p></div>
 </div>
 
-<!-- ── GRID ── -->
-<div class="main-content">
-  <div class="grid-container" id="gridContainer">
-    <div class="spinner-wrap">
-      <div class="spinner"></div>
-      <div>Cargando observaciones...</div>
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <span class="lightbox-close">✕</span>
+  <img id="lightboxImg" src="" alt="">
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="approve-modal-overlay" id="approveModal">
+  <div class="approve-modal">
+    <h3>Revisión JP</h3>
+    <p>Selecciona el resultado de tu revisión para esta observación:</p>
+    <div class="btn-row">
+      <button class="btn-sm green" onclick="confirmarAprobacion('Aprobado')">✅ Aprobado</button>
+      <button class="btn-sm amber" onclick="confirmarAprobacion('Con reparos')">⚠️ Con reparos</button>
+      <button class="btn-sm red"   onclick="confirmarAprobacion('Rechazado')">❌ Rechazado</button>
+      <button class="btn-sm"       onclick="cerrarModal()">Cancelar</button>
     </div>
   </div>
 </div>
 
-<!-- ── BOTTOM BAR ── -->
-<div class="bottombar">
-  <div class="bottombar-info">
-    <strong id="resumenAprobadas">—</strong> revisadas &nbsp;·&nbsp;
-    <strong id="resumenTotal">—</strong> total
-  </div>
-  <button class="btn-export" onclick="exportarJSON()">⬇ Exportar JSON</button>
-</div>
-
-<!-- ── LIGHTBOX ── -->
-<div class="lightbox" id="lightbox" onclick="cerrarLightbox()">
-  <span class="lightbox-close" onclick="cerrarLightbox()">✕</span>
-  <button class="lightbox-nav lightbox-prev" id="lbPrev" onclick="event.stopPropagation();lightboxNav(-1)" style="display:none">&#8249;</button>
-  <img id="lightboxImg" src="" alt="Foto ampliada" onclick="event.stopPropagation()">
-  <button class="lightbox-nav lightbox-next" id="lbNext" onclick="event.stopPropagation();lightboxNav(1)" style="display:none">&#8250;</button>
-  <div class="lightbox-indicator" id="lbIndicator" style="display:none"></div>
-</div>
-
-<!-- ── TOAST ── -->
-<div class="toast" id="toast"></div>
-
 <script>
 // ── Config ──────────────────────────────────────────────────────────
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbydi5imjeA5bXY5TlA7MBVGkG6-Aq4XhYC0soXGPUMl41lEvdL8rc-xhjeRv9m0_aJg/exec';
+const GAS_TOKEN = 'LQ2026-Santina';
+
+// ── Escape XSS: usar en todo dato del sheet que va a innerHTML ────
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 const ESTADOS = [
   'Yema dormida', 'Yema hinchada', 'Ramillete expuesto',
@@ -613,580 +174,185 @@ const ESTADOS = [
 ];
 
 // ── Estado de filtros ────────────────────────────────────────────────
-let filtroEstado   = 'Pendiente';
-let filtroCuartel  = 'todos';
-let observaciones  = [];
-let _retryCount    = 0;
+let filtroActual = 'todos';
+let obsData      = [];
+let filaEnRevision = null;
 
-// ── Init ─────────────────────────────────────────────────────────────
-function init() {
-  document.getElementById('fechaHoy').textContent =
-    new Date().toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-  cargarObservaciones();
-}
+// ── Fecha ────────────────────────────────────────────────────────────
+const hoy = new Date();
+document.getElementById('fechaHoy').textContent =
+  hoy.toLocaleDateString('es-CL', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
 
-// ── Cargar (modo dual) ───────────────────────────────────────────────
-function cargarObservaciones() {
-  showLoading();
-  _retryCount = 0;
+// ── Carga de datos ───────────────────────────────────────────────────
+function cargar() {
+  document.getElementById('gridContainer').innerHTML =
+    '<div class="state-box"><div class="icon">⏳</div><p>Cargando...</p></div>';
 
-  if (typeof google !== 'undefined' && google.script) {
-    _llamarGAS();
-  } else {
-    // Timeout de 15s para evitar spinner infinito
-    const controller = new AbortController();
-    const timeoutId  = setTimeout(() => controller.abort(), 15000);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
 
-    fetch(`${GAS_URL}?action=list&filtro=todos&_=${Date.now()}`, { signal: controller.signal })
-      .then(r => {
-        clearTimeout(timeoutId);
-        // Verificar content-type — GAS sin doGet devuelve HTML, no JSON
-        const ct = r.headers.get('content-type') || '';
-        if (!ct.includes('json') && !ct.includes('text/plain')) {
-          throw new Error('GAS_NO_DOGET');
-        }
-        return r.text();
-      })
-      .then(txt => {
-        try {
-          const data = JSON.parse(txt);
-          observaciones = data.observaciones || [];
-          actualizarContadores();
-          aplicarFiltros();
-        } catch(_) {
-          throw new Error('GAS_NO_DOGET');
-        }
-      })
-      .catch(err => {
-        clearTimeout(timeoutId);
-        if (err.name === 'AbortError' || (err.message && err.message.includes('GAS_NO_DOGET'))) {
-          mostrarError(
-            '<b>El backend GAS necesita una actualización.</b><br><br>'
-            + 'Agrega la función <code>doGet()</code> al script de Apps Script y '
-            + 'vuelve a publicarlo (Deploy → Manage deployments → New version).<br><br>'
-            + '<span style="color:var(--text3);font-size:11px">Ver instrucciones en backend_gas_doget.gs</span>'
-          );
-        } else {
-          mostrarError(
-            'Error de conexión. Verifica tu red e intenta con ↻ Actualizar.<br>'
-            + `<code style="font-size:11px;word-break:break-all">${err.message || 'Network error'}</code>`
-          );
-        }
-      });
-  }
-}
-
-function _llamarGAS() {
-  const TIMEOUT_MS = 22000;
-  const timeout    = setTimeout(() => {
-    mostrarError('El servidor tardó demasiado. Haz clic en "↻ Actualizar" para reintentar.');
-  }, TIMEOUT_MS);
-
-  google.script.run
-    .withSuccessHandler(function(jsonStr) {
+  fetch(`${GAS_URL}?action=list&filtro=todos&_=${Date.now()}`, { signal: controller.signal })
+    .then(r => r.json())
+    .then(data => {
       clearTimeout(timeout);
-      try {
-        const data = typeof jsonStr === 'string' ? JSON.parse(jsonStr) : jsonStr;
-        observaciones = data?.observaciones || [];
-      } catch(_) { observaciones = []; }
-      actualizarContadores();
-      aplicarFiltros();
+      obsData = data.observaciones || [];
+      actualizarKPIs();
+      renderGrid();
     })
-    .withFailureHandler(function(err) {
+    .catch(err => {
       clearTimeout(timeout);
-      const msg = err?.message ? err.message : String(err);
-
-      // Auto-reintento una vez por cold start de Drive
-      if (_retryCount === 0 && (
-        msg.toLowerCase().includes('drive') ||
-        msg.toLowerCase().includes('servicio') ||
-        msg.toLowerCase().includes('service')
-      )) {
-        _retryCount++;
-        const spinnerTxt = document.querySelector('#gridContainer .spinner-wrap div:last-child');
-        if (spinnerTxt) spinnerTxt.textContent = '⚡ Reintentando (Google se estaba iniciando)...';
-        setTimeout(_llamarGAS, 2500);
-        return;
-      }
-
-      if (msg.includes('not defined') || msg.includes('listarObservaciones')) {
-        mostrarError('⚠️ Backend desactualizado — la función <code>listarObservaciones</code> no existe. Actualiza el script GAS.');
-      } else {
-        mostrarError('Error al cargar: ' + msg + '<br><small>Haz clic en "↻ Actualizar" para reintentar.</small>');
-      }
-    })
-    .listarObservaciones('todos');
+      document.getElementById('gridContainer').innerHTML =
+        `<div class="state-box"><div class="icon">⚠️</div><p>Error al cargar: ${esc(err.message)}<br><small>Revisa tu conexión y recarga.</small></p></div>`;
+    });
 }
 
-// ── Filtros ──────────────────────────────────────────────────────────
-function setFiltroEstado(filtro, btn) {
-  filtroEstado = filtro;
+// ── KPIs ─────────────────────────────────────────────────────────────
+function actualizarKPIs() {
+  document.getElementById('kTotal').textContent  = obsData.length;
+  document.getElementById('kPend').textContent   = obsData.filter(o => o.estado_revision === 'Pendiente').length;
+  document.getElementById('kRev').textContent    = obsData.filter(o => o.estado_revision === 'Revisado').length;
+  document.getElementById('kFotos').textContent  = obsData.filter(o => o.url_foto).length;
+}
+
+// ── Filtro ───────────────────────────────────────────────────────────
+function setFiltro(btn) {
   document.querySelectorAll('.fbtn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  aplicarFiltros();
+  filtroActual = btn.dataset.filtro;
+  renderGrid();
 }
 
-function setFiltroCuartel(cuartel, btn) {
-  filtroCuartel = cuartel;
-  document.querySelectorAll('.cbtn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  aplicarFiltros();
-}
+// ── Render ───────────────────────────────────────────────────────────
+function renderGrid() {
+  const lista = filtroActual === 'todos'
+    ? obsData
+    : obsData.filter(o => o.estado_revision === filtroActual);
 
-function aplicarFiltros() {
-  let lista = observaciones;
-
-  // Filtro por estado de revisión
-  if (filtroEstado !== 'todos') {
-    lista = lista.filter(o => o.estado_revision === filtroEstado);
-  }
-
-  // Filtro por cuartel
-  if (filtroCuartel !== 'todos') {
-    lista = lista.filter(o => o.cuartel === filtroCuartel);
-  }
-
-  renderObservaciones(lista);
-}
-
-function actualizarContadores() {
-  const pendientes = observaciones.filter(o => o.estado_revision === 'Pendiente').length;
-  const revisadas  = observaciones.filter(o => o.estado_revision !== 'Pendiente').length;
-  document.getElementById('countPendiente').textContent  = pendientes;
-  document.getElementById('kpiPendientes').textContent   = pendientes;
-  document.getElementById('kpiRevisadas').textContent    = revisadas;
-  document.getElementById('kpiTotal').textContent        = observaciones.length;
-  document.getElementById('resumenAprobadas').textContent = revisadas;
-  document.getElementById('resumenTotal').textContent    = observaciones.length;
-}
-
-// ── Helpers de foto ──────────────────────────────────────────────────
-function urlAThumb(u) {
-  const m = u.match(/\/d\/([a-zA-Z0-9_-]+)\//);
-  return m ? 'https://drive.google.com/thumbnail?id=' + m[1] + '&sz=w480' : '';
-}
-
-function construirCarruselHtml(obs) {
-  const todasUrls = obs.url_foto ? obs.url_foto.split('\n').filter(Boolean) : [];
-  const thumbsArr = todasUrls.map(urlAThumb).filter(Boolean);
-  const primerThumb = thumbsArr[0] || obs.thumb_url || '';
-
-  if (!primerThumb) {
-    return { html: '<div class="card-photo-placeholder">📷</div>', urls: todasUrls, thumbs: thumbsArr };
-  }
-
-  const urlsJson   = JSON.stringify(todasUrls).replace(/'/g, '&#39;');
-  const thumbsJson = JSON.stringify(thumbsArr).replace(/'/g, '&#39;');
-  const fila       = obs.fila;
-
-  let html = `<div class="photo-carousel" id="carousel_${fila}" data-urls='${urlsJson}' data-thumbs='${thumbsJson}' data-idx="0">`
-    + `<img class="card-photo" src="${primerThumb}" onclick="abrirLightboxCarousel(${fila})" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
-    + `<div class="card-photo-placeholder" style="display:none">📷</div>`;
-
-  if (thumbsArr.length > 1) {
-    html += `<button class="carousel-btn carousel-prev" onclick="carouselNav(event,-1,${fila})">&#8249;</button>`
-          + `<button class="carousel-btn carousel-next" onclick="carouselNav(event,1,${fila})">&#8250;</button>`
-          + `<div class="carousel-counter" id="ctr_${fila}">1/${thumbsArr.length}</div>`;
-  }
-  html += '</div>';
-
-  return { html, urls: todasUrls, thumbs: thumbsArr };
-}
-
-// ── Render principal ─────────────────────────────────────────────────
-function renderObservaciones(lista) {
   const grid = document.getElementById('gridContainer');
 
-  if (!lista.length) {
-    grid.innerHTML = '<div class="state-box"><div class="state-icon">🌿</div>'
-      + '<div class="state-msg">Sin observaciones</div>'
-      + '<div class="state-sub">No hay registros con los filtros aplicados</div></div>';
+  if (lista.length === 0) {
+    grid.innerHTML = '<div class="state-box"><div class="icon">📭</div><p>Sin observaciones para este filtro.</p></div>';
     return;
   }
 
-  grid.innerHTML = lista.map(obs => {
-    const pendiente = obs.estado_revision === 'Pendiente';
-    const badgeCls  = pendiente ? 'badge-pendiente' : 'badge-revisado';
-    const badgeTxt  = pendiente ? '⏳ Pendiente'   : '✅ Revisado';
-
-    const carrusel  = construirCarruselHtml(obs);
-    const nFotos    = (obs.url_foto || '').split('\n').filter(Boolean).length;
-
-    const chips = [
-      obs.cuartel      ? `<span class="chip chip-cuartel">${obs.cuartel}</span>`         : '',
-      obs.hilera       ? `<span class="chip chip-ubicacion">H ${obs.hilera}</span>`      : '',
-      obs.claro        ? `<span class="chip chip-ubicacion">C ${obs.claro}</span>`       : '',
-      obs.planta       ? `<span class="chip chip-ubicacion">P ${obs.planta}</span>`      : '',
-      obs.estado_campo ? `<span class="chip chip-estado">${obs.estado_campo}</span>`     : '',
-      nFotos > 1       ? `<span class="chip chip-fotos">📷 ${nFotos} fotos</span>`       : '',
-    ].filter(Boolean).join('');
-
-    const gpsHtml   = obs.maps_link
-      ? `<a class="gps-link" href="${obs.maps_link}" target="_blank">📍 Ver en mapa &nbsp;±${obs.gps_acc}m</a>`
-      : '';
-
-    const notasHtml = obs.notas
-      ? `<div class="card-notas">${obs.notas}</div>` : '';
-
-    const verFotoUrl = obs.url_foto ? obs.url_foto.split('\n')[0] : '';
-    const verFoto    = verFotoUrl
-      ? `<a href="${verFotoUrl}" target="_blank" class="btn-ver-foto">↗ Ver en Drive</a>` : '';
-
-    const tieneUrlFoto = obs.url_foto && obs.url_foto.trim();
-    const elimFotoHtml = tieneUrlFoto
-      ? `<button class="btn-elim-foto" onclick="confirmarEliminarFoto(${obs.fila})">🗑 Quitar foto</button>`
-        + `<div class="confirm-elim" id="confirmElim_${obs.fila}">`
-        + `<span>¿Desvinc. foto?</span>`
-        + `<button class="btn-si" onclick="ejecutarEliminarFoto(${obs.fila})">Sí</button>`
-        + `<button class="btn-no" onclick="cancelarEliminarFoto(${obs.fila})">No</button>`
-        + `</div>`
-      : '';
-
-    const elimRegistroHtml =
-        `<button class="btn-elim-registro" onclick="confirmarEliminarRegistro(${obs.fila})">✕ Eliminar</button>`
-        + `<div class="confirm-elim" id="confirmElimReg_${obs.fila}">`
-        + `<span>¿Eliminar registro completo?</span>`
-        + `<button class="btn-si" onclick="ejecutarEliminarRegistro(${obs.fila})">Sí</button>`
-        + `<button class="btn-no" onclick="cancelarEliminarRegistro(${obs.fila})">No</button>`
-        + `</div>`;
-
-    const optsEstado = ESTADOS.map(e => `<option value="${e}">${e}</option>`).join('');
-
-    // ─ Bloque de acción según estado ─
-    const accionHtml = pendiente
-      ? `<div>
-           <div class="estado-jp-row">
-             <select class="estado-select" id="sel_${obs.fila}">
-               <option value="">— Seleccionar estado fenológico —</option>
-               ${optsEstado}
-             </select>
-             <button class="btn-aprobar" onclick="aprobar(${obs.fila})">Aprobar</button>
-           </div>
-           <div class="estado-error-hint" id="hint_${obs.fila}">⚠️ Selecciona un estado antes de aprobar</div>
-         </div>
-         <div class="foto-acciones">${verFoto}${elimFotoHtml}${elimRegistroHtml}</div>`
-      : `<div class="aprobado-row">
-           <div class="aprobado-badge" id="badge_${obs.fila}">🌱 ${obs.estado_jp || '(sin estado)'}</div>
-           <button class="btn-editar-estado" onclick="editarEstado(${obs.fila})">✎ Editar</button>
-         </div>
-         <div class="edit-estado-row" id="editRow_${obs.fila}">
-           <select class="estado-select" id="editSel_${obs.fila}">
-             ${ESTADOS.map(e => `<option value="${e}"${e === obs.estado_jp ? ' selected' : ''}>${e}</option>`).join('')}
-           </select>
-           <button class="btn-cancelar-edicion" onclick="cancelarEdicion(${obs.fila})">✕</button>
-           <button class="btn-guardar-edicion" id="btnGuardar_${obs.fila}" onclick="guardarEdicion(${obs.fila})">Guardar</button>
-         </div>
-         <div class="foto-acciones">${verFoto}${elimFotoHtml}${elimRegistroHtml}</div>`;
-
-    return `<div class="obs-card ${pendiente ? '' : 'aprobada'}" id="card_${obs.fila}">`
-      + carrusel.html
-      + `<div class="card-body">`
-      + `<div class="card-top-row">`
-      + `<div><div class="card-fecha">📅 ${formatFecha(obs.fecha)}</div><div class="card-hora">🕐 ${formatHora(obs.hora)}</div></div>`
-      + `<span class="badge ${badgeCls}">${badgeTxt}</span>`
-      + `</div>`
-      + `<div class="chips-row">${chips}</div>`
-      + gpsHtml
-      + notasHtml
-      + accionHtml
-      + `</div></div>`;
-  }).join('');
+  grid.innerHTML = '<div class="grid-container">' + lista.map(obs => renderCard(obs)).join('') + '</div>';
 }
 
-// ── Aprobar ──────────────────────────────────────────────────────────
-function aprobar(fila) {
-  const sel      = document.getElementById(`sel_${fila}`);
-  const hint     = document.getElementById(`hint_${fila}`);
-  const estadoJP = sel ? sel.value : '';
+function renderCard(obs) {
+  const fotos = obs.url_foto ? obs.url_foto.split('\n').filter(Boolean) : [];
+  const fotoThumb = fotos.length > 0
+    ? fotos[0].replace('https://drive.google.com/file/d/', 'https://drive.google.com/thumbnail?id=')
+               .replace('/view?usp=drivesdk','&sz=w600').replace('/view','&sz=w600')
+    : null;
+  const fotoUrl = fotos.length > 0
+    ? fotos[0].replace('/view?usp=drivesdk', '/preview').replace('/view', '/preview')
+    : null;
 
-  // ★ NUEVO: validar que se seleccionó un estado antes de aprobar
-  if (!estadoJP) {
-    if (sel)  sel.classList.add('sin-estado');
-    if (hint) hint.classList.add('visible');
-    // Quitar highlight después de 3s o al seleccionar algo
-    if (sel) sel.addEventListener('change', () => {
-      sel.classList.remove('sin-estado');
-      hint.classList.remove('visible');
-    }, { once: true });
-    showToast('⚠️ Selecciona un estado fenológico antes de aprobar', 'error');
-    return;
-  }
+  const badgeClass = obs.estado_revision === 'Revisado' ? 'badge-revisado' : 'badge-pendiente';
+  const jpBadge = obs.estado_jp
+    ? `<span class="estado-jp-badge ${obs.estado_jp === 'Aprobado' ? 'jp-aprobado' : obs.estado_jp === 'Con reparos' ? 'jp-con-reparos' : 'jp-rechazado'}">${esc(obs.estado_jp)}</span>`
+    : '';
 
-  const btn = document.querySelector(`#card_${fila} .btn-aprobar`);
-  if (btn) btn.disabled = true;
-
-  function onExito() {
-    const obs = observaciones.find(o => o.fila === fila);
-    if (obs) { obs.estado_revision = 'Revisado'; obs.estado_jp = estadoJP; }
-    actualizarContadores();
-    showToast(`✅ Aprobada: ${estadoJP}`, 'ok');
-    if (filtroEstado === 'Pendiente') {
-      const card = document.getElementById(`card_${fila}`);
-      if (card) {
-        card.style.transition = 'opacity 0.3s, transform 0.3s';
-        card.style.opacity    = '0';
-        card.style.transform  = 'scale(0.97)';
-        setTimeout(() => aplicarFiltros(), 320);
-      }
-    } else {
-      aplicarFiltros();
-    }
-  }
-  function onError(err) {
-    if (btn) btn.disabled = false;
-    showToast('Error: ' + (err?.message || err), 'error');
-  }
-
-  if (typeof google !== 'undefined' && google.script) {
-    google.script.run
-      .withSuccessHandler(onExito)
-      .withFailureHandler(onError)
-      .aprobarObservacion(fila, estadoJP);
-  } else {
-    fetch(`${GAS_URL}?action=update&fila=${fila}&estado_aprobado=${encodeURIComponent(estadoJP)}&estado_revision=Revisado`)
-      .then(() => onExito())
-      .catch(onError);
-  }
-}
-
-// ── Carousel ─────────────────────────────────────────────────────────
-function carouselNav(event, dir, fila) {
-  event.stopPropagation();
-  const car = document.getElementById(`carousel_${fila}`);
-  if (!car) return;
-  const thumbs = JSON.parse(car.dataset.thumbs || '[]');
-  if (thumbs.length < 2) return;
-  let idx = (parseInt(car.dataset.idx || '0') + dir + thumbs.length) % thumbs.length;
-  car.dataset.idx = idx;
-  const img = car.querySelector('.card-photo');
-  if (img) {
-    img.style.opacity = '0.5';
-    const restore = () => { img.style.opacity = '1'; };
-    img.onload  = restore;
-    img.onerror = restore;
-    img.src = thumbs[idx];
-  }
-  const ctr = document.getElementById(`ctr_${fila}`);
-  if (ctr) ctr.textContent = `${idx + 1}/${thumbs.length}`;
+  return `<div class="obs-card">
+    ${fotoThumb
+      ? `<img class="card-photo" src="${esc(fotoThumb)}" loading="lazy"
+             onclick="openLightbox('${esc(fotoUrl || fotoThumb)}')"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+      : ''}
+    <div class="card-photo-placeholder" style="${fotoThumb ? 'display:none' : ''}">🌸</div>
+    <div class="card-body">
+      <div class="card-top">
+        <div class="card-loc">C${esc(obs.cuartel)} · H${esc(obs.hilera)} · P${esc(obs.planta)}</div>
+        <span class="estado-badge ${badgeClass}">${esc(obs.estado_revision)}</span>
+      </div>
+      <div class="card-meta">
+        <span class="meta-chip">📅 ${esc(obs.fecha)}</span>
+        <span class="meta-chip">🕐 ${esc(obs.hora)}</span>
+        <span class="meta-chip">🍒 ${esc(obs.variedad)}</span>
+        ${obs.maps_link ? `<a href="${esc(obs.maps_link)}" target="_blank" class="meta-chip" style="color:var(--accent);text-decoration:none">📍 GPS</a>` : ''}
+        ${fotos.length > 1 ? `<span class="meta-chip">🖼 ${fotos.length} fotos</span>` : ''}
+      </div>
+      <div class="card-estado">Estado: ${esc(obs.estado_campo)}${jpBadge}</div>
+      ${obs.notas ? `<div class="card-notas">${esc(obs.notas)}</div>` : ''}
+      <div class="card-actions">
+        ${obs.maps_link ? `<a href="${esc(obs.maps_link)}" target="_blank"><button class="btn-sm">🗺 Mapa</button></a>` : ''}
+        ${obs.url_foto ? `<button class="btn-sm" onclick="eliminarFoto(${obs.fila})">🗑 Foto</button>` : ''}
+        <button class="btn-sm green" onclick="abrirModal(${obs.fila})">✅ Revisar</button>
+        <button class="btn-sm danger" onclick="eliminarObs(${obs.fila})">🗑 Eliminar</button>
+      </div>
+    </div>
+  </div>`;
 }
 
 // ── Lightbox ─────────────────────────────────────────────────────────
-let _lbUrls = [], _lbIdx = 0;
+function openLightbox(url) {
+  document.getElementById('lightboxImg').src = url;
+  document.getElementById('lightbox').classList.add('open');
+}
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('open');
+  document.getElementById('lightboxImg').src = '';
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeLightbox(); cerrarModal(); } });
 
-function abrirLightboxCarousel(fila) {
-  const car = document.getElementById(`carousel_${fila}`);
-  if (!car) { return; }
-  _lbUrls = JSON.parse(car.dataset.urls || '[]');
-  _lbIdx  = parseInt(car.dataset.idx || '0');
-  _mostrarLightboxImg();
+// ── Modal de aprobación ───────────────────────────────────────────────
+function abrirModal(fila) {
+  filaEnRevision = fila;
+  document.getElementById('approveModal').classList.add('open');
+}
+function cerrarModal() {
+  document.getElementById('approveModal').classList.remove('open');
+  filaEnRevision = null;
 }
 
-function _mostrarLightboxImg() {
-  const url = _lbUrls[_lbIdx] || '';
-  const id  = url.match(/\/d\/([a-zA-Z0-9_-]+)\//)?.[1] || '';
-  const src = id ? `https://drive.google.com/thumbnail?id=${id}&sz=w1600` : url;
-  document.getElementById('lightboxImg').src = src;
-  document.getElementById('lightbox').classList.add('visible');
-  const multi = _lbUrls.length > 1;
-  document.getElementById('lbPrev').style.display      = multi ? 'flex' : 'none';
-  document.getElementById('lbNext').style.display      = multi ? 'flex' : 'none';
-  document.getElementById('lbIndicator').style.display = multi ? 'block' : 'none';
-  if (multi) document.getElementById('lbIndicator').textContent = `${_lbIdx + 1} / ${_lbUrls.length}`;
-}
-function lightboxNav(dir) {
-  if (_lbUrls.length < 2) return;
-  _lbIdx = (_lbIdx + dir + _lbUrls.length) % _lbUrls.length;
-  _mostrarLightboxImg();
-}
-function cerrarLightbox() {
-  document.getElementById('lightbox').classList.remove('visible');
+function confirmarAprobacion(estadoJP) {
+  if (!filaEnRevision) return;
+  const fila = filaEnRevision;
+  cerrarModal();
+  fetch(`${GAS_URL}?action=update&fila=${fila}&estado_aprobado=${encodeURIComponent(estadoJP)}&estado_revision=Revisado&token=${GAS_TOKEN}`)
+    .then(() => { mostrarToast('Revisión guardada: ' + estadoJP); cargar(); })
+    .catch(() => mostrarToast('Error al guardar revisión'));
 }
 
 // ── Eliminar foto ────────────────────────────────────────────────────
-function confirmarEliminarFoto(fila) {
-  document.getElementById(`confirmElim_${fila}`).classList.add('visible');
-}
-function cancelarEliminarFoto(fila) {
-  document.getElementById(`confirmElim_${fila}`).classList.remove('visible');
-}
-function ejecutarEliminarFoto(fila) {
-  cancelarEliminarFoto(fila);
-  function onExito() {
-    showToast('🗑 Foto eliminada del registro', 'ok');
-    // Recargar panel para reflejar estado real del servidor
-    setTimeout(() => cargarObservaciones(), 400);
-  }
-  function onError(err) {
-    showToast('Error al eliminar foto: ' + (err?.message || err), 'error');
-  }
-
-  if (typeof google !== 'undefined' && google.script) {
-    google.script.run
-      .withSuccessHandler(onExito)
-      .withFailureHandler(onError)
-      .eliminarFoto(fila);
-  } else {
-    fetch(`${GAS_URL}?action=deletefoto&fila=${fila}`)
-      .then(() => onExito()).catch(onError);
-  }
+function eliminarFoto(fila) {
+  if (!confirm('¿Eliminar la foto de esta observación?')) return;
+  fetch(`${GAS_URL}?action=deletefoto&fila=${fila}&token=${GAS_TOKEN}`)
+    .then(() => { mostrarToast('Foto eliminada'); cargar(); })
+    .catch(() => mostrarToast('Error al eliminar foto'));
 }
 
-// ── Editar estado aprobado ───────────────────────────────────────────
-function editarEstado(fila) {
-  const obs = observaciones.find(o => o.fila === fila);
-  if (!obs) return;
-  // Preseleccionar estado actual
-  const sel = document.getElementById(`editSel_${fila}`);
-  if (sel && obs.estado_jp) sel.value = obs.estado_jp;
-  // Mostrar fila de edición, ocultar badge
-  document.getElementById(`badge_${fila}`)?.closest('.aprobado-row')?.style.setProperty('display','none');
-  document.getElementById(`editRow_${fila}`)?.classList.add('visible');
+// ── Cambiar estado JP desde select ───────────────────────────────────
+function cambiarEstadoJP(fila, nuevoEstado) {
+  fetch(`${GAS_URL}?action=update&fila=${fila}&estado_aprobado=${encodeURIComponent(nuevoEstado)}&estado_revision=Revisado&token=${GAS_TOKEN}`)
+    .then(() => { mostrarToast('Estado actualizado: ' + nuevoEstado); cargar(); })
+    .catch(() => mostrarToast('Error al actualizar'));
 }
 
-function cancelarEdicion(fila) {
-  document.getElementById(`badge_${fila}`)?.closest('.aprobado-row')?.style.removeProperty('display');
-  document.getElementById(`editRow_${fila}`)?.classList.remove('visible');
+// ── Eliminar observación ──────────────────────────────────────────────
+function eliminarObs(fila) {
+  if (!confirm('¿Eliminar esta observación permanentemente?')) return;
+  fetch(`${GAS_URL}?action=deleterow&fila=${fila}&token=${GAS_TOKEN}`)
+    .then(() => { mostrarToast('Observación eliminada'); cargar(); })
+    .catch(() => mostrarToast('Error al eliminar'));
 }
 
-function guardarEdicion(fila) {
-  const sel      = document.getElementById(`editSel_${fila}`);
-  const nuevoEstado = sel ? sel.value : '';
-  if (!nuevoEstado) return;
-
-  const btn = document.getElementById(`btnGuardar_${fila}`);
-  if (btn) btn.disabled = true;
-
-  function onExito() {
-    const obs = observaciones.find(o => o.fila === fila);
-    if (obs) obs.estado_jp = nuevoEstado;
-    // Actualizar badge
-    const badge = document.getElementById(`badge_${fila}`);
-    if (badge) badge.textContent = `🌱 ${nuevoEstado}`;
-    cancelarEdicion(fila);
-    if (btn) btn.disabled = false;
-    showToast(`✅ Estado actualizado: ${nuevoEstado}`, 'ok');
-  }
-  function onError(err) {
-    if (btn) btn.disabled = false;
-    showToast('Error: ' + (err?.message || err), 'error');
-  }
-
-  if (typeof google !== 'undefined' && google.script) {
-    google.script.run
-      .withSuccessHandler(onExito)
-      .withFailureHandler(onError)
-      .aprobarObservacion(fila, nuevoEstado);
-  } else {
-    fetch(`${GAS_URL}?action=update&fila=${fila}&estado_aprobado=${encodeURIComponent(nuevoEstado)}&estado_revision=Revisado`)
-      .then(() => onExito()).catch(onError);
-  }
+// ── Toast ────────────────────────────────────────────────────────────
+function mostrarToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
 }
 
-// ── Eliminar registro completo ───────────────────────────────────────
-function confirmarEliminarRegistro(fila) {
-  document.getElementById(`confirmElimReg_${fila}`).classList.add('visible');
-}
-function cancelarEliminarRegistro(fila) {
-  document.getElementById(`confirmElimReg_${fila}`).classList.remove('visible');
-}
-function ejecutarEliminarRegistro(fila) {
-  cancelarEliminarRegistro(fila);
-  function onExito() {
-    showToast('🗑 Registro eliminado', 'ok');
-    const card = document.getElementById(`card_${fila}`);
-    if (card) {
-      card.style.transition = 'opacity 0.3s, transform 0.3s';
-      card.style.opacity    = '0';
-      card.style.transform  = 'scale(0.97)';
-      // Recargar desde servidor: tras deleteRow los índices cambian
-      setTimeout(() => cargarObservaciones(), 350);
-    } else {
-      cargarObservaciones();
-    }
-  }
-  function onError(err) {
-    showToast('Error al eliminar: ' + (err?.message || err), 'error');
-  }
-  if (typeof google !== 'undefined' && google.script) {
-    google.script.run
-      .withSuccessHandler(onExito)
-      .withFailureHandler(onError)
-      .eliminarRegistro(fila);
-  } else {
-    fetch(`${GAS_URL}?action=deleterow&fila=${fila}`)
-      .then(() => onExito()).catch(onError);
-  }
-}
+// ── Toast notificaciones por toast ───────────────────────────────────
+function t(msg) { mostrarToast(msg); }
 
-// ── Export JSON ──────────────────────────────────────────────────────
-function exportarJSON() {
-  const data = observaciones
-    .filter(o => o.estado_revision !== 'Pendiente' && o.estado_jp)
-    .map(o => ({
-      fecha:     o.fecha,
-      cuartel:   o.cuartel,
-      hilera:    o.hilera  || '',
-      claro:     o.claro   || '',
-      planta:    o.planta  || '',
-      variedad:  o.variedad || '',
-      estado:    o.estado_jp,
-      notas:     o.notas   || '',
-      foto_url:  o.url_foto ? o.url_foto.split('\n')[0] : '',
-      gps_lat:   o.gps_lat || '',
-      gps_lng:   o.gps_lng || '',
-    }));
+// ── Notificaciones de toast helper ───────────────────────────────────
+document.getElementById('gridContainer').innerHTML =
+  '<div class="state-box"><div class="icon">⏳</div><p>Cargando observaciones...</p></div>';
 
-  if (!data.length) {
-    showToast('No hay observaciones revisadas para exportar', 'error');
-    return;
-  }
-
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  const a    = document.createElement('a');
-  a.href     = URL.createObjectURL(blob);
-  a.download = `fenologia_LQ_${new Date().toISOString().slice(0, 10)}.json`;
-  a.click();
-  showToast(`⬇ ${data.length} observaciones exportadas`, 'ok');
-}
-
-// ── Utilidades ───────────────────────────────────────────────────────
-function formatFecha(fecha) {
-  if (!fecha) return '—';
-  const p = String(fecha).split('-');
-  if (p.length < 3) return fecha;
-  const m = ['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-  return `${parseInt(p[2])} ${m[parseInt(p[1])]} ${p[0]}`;
-}
-function formatHora(hora) {
-  if (!hora) return '—';
-  const s = String(hora);
-  // Google Sheets envía la hora como "1899-12-30T23:56:45.000Z"
-  // Solo necesitamos HH:MM
-  const m = s.match(/T(\d{2}:\d{2})/);
-  return m ? m[1] : s;
-}
-function showLoading() {
-  document.getElementById('gridContainer').innerHTML =
-    '<div class="spinner-wrap"><div class="spinner"></div><div>Cargando observaciones...</div></div>';
-}
-function mostrarError(msg) {
-  document.getElementById('gridContainer').innerHTML =
-    `<div class="state-box"><div class="state-icon">⚠️</div><div class="state-msg">Error de conexión</div><div class="state-sub">${msg}</div></div>`;
-}
-function showToast(msg, type) {
-  const t  = document.getElementById('toast');
-  t.innerHTML = msg;
-  t.className = `toast visible${type ? ' ' + type : ''}`;
-  clearTimeout(t._t);
-  t._t = setTimeout(() => t.classList.remove('visible'), 3800);
-}
-
-// ── Teclado: Escape cierra lightbox ──────────────────────────────────
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') cerrarLightbox();
-});
-
-init();
+cargar();
 </script>
 </body>
 </html>
