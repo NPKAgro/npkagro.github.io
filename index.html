@@ -117,6 +117,9 @@
     .panel-card.fenologia::before  { background: #3b82f6; }
     .panel-card.cuaderno::before   { background: #14b8a6; }
     .panel-card.aforado::before    { background: #8b5cf6; }
+    .panel-card.inventario::before { background: #f59e0b; }
+    .panel-card.compra::before     { background: #10b981; }
+    .panel-card.petroleo::before   { background: #f97316; }
 
     .panel-card:hover {
       border-color: rgba(255,255,255,0.16);
@@ -152,6 +155,9 @@
     .panel-card.fenologia .card-link { border-color: rgba(59,130,246,0.4); color: #93c5fd; }
     .panel-card.cuaderno  .card-link { border-color: rgba(20,184,166,0.4); color: #5eead4; }
     .panel-card.aforado   .card-link { border-color: rgba(139,92,246,0.4); color: #c4b5fd; }
+    .panel-card.inventario .card-link { border-color: rgba(245,158,11,0.4); color: #fbbf24; }
+    .panel-card.compra     .card-link { border-color: rgba(16,185,129,0.4); color: #6ee7b7; }
+    .panel-card.petroleo   .card-link { border-color: rgba(249,115,22,0.4); color: #fdba74; }
 
     .divider {
       width: 100%;
@@ -161,6 +167,7 @@
       margin: 3rem 0 2rem;
     }
 
+    /* Link to field portal */
     .portal-link-box {
       width: 100%;
       max-width: 900px;
@@ -229,6 +236,35 @@
       <div class="card-title">Aforado de Riego</div>
       <div class="card-desc">Mediciones de caudal y uniformidad de distribución (UD%) por cuartel. Gráficos y tabla comparativa.</div>
       <span class="card-link">Ver aforados →</span>
+    </a>
+
+  </div>
+
+  <hr class="divider">
+
+  <div class="section-label">Inventario y combustible</div>
+
+  <div class="cards">
+
+    <a class="panel-card inventario" href="inventario_admin.html">
+      <span class="card-icon">📦</span>
+      <div class="card-title">Inventario</div>
+      <div class="card-desc">Stock de productos agrícolas, alertas de stock bajo, historial de movimientos, configuración de umbrales.</div>
+      <span class="card-link">Ver inventario →</span>
+    </a>
+
+    <a class="panel-card compra" href="compra.html">
+      <span class="card-icon">🧾</span>
+      <div class="card-title">Registrar Compra</div>
+      <div class="card-desc">Cargar factura de compra, adjuntar foto, ingresar productos nuevos al catálogo si hace falta.</div>
+      <span class="card-link">Nueva compra →</span>
+    </a>
+
+    <a class="panel-card petroleo" href="petroleo.html">
+      <span class="card-icon">⛽</span>
+      <div class="card-title">Combustibles</div>
+      <div class="card-desc">Stock de diésel, registro de cargas con boleta y uso por máquina/actividad. Alertas de stock mínimo.</div>
+      <span class="card-link">Ver combustibles →</span>
     </a>
 
   </div>

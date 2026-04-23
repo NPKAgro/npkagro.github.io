@@ -359,6 +359,40 @@
     .field-textarea:focus { border-color: var(--accent); }
     .field-textarea::placeholder { color: var(--text3); }
 
+    /* ── TEXT INPUT (para operador) ── */
+    .text-input {
+      width: 100%;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 11px 14px;
+      font-size: 15px;
+      font-family: inherit;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.12s;
+    }
+    .text-input:focus { border-color: var(--accent); }
+    .text-input::placeholder { color: var(--text3); }
+    /* Badge de operador en fotos */
+    .foto-operador {
+      position: absolute;
+      bottom: 4px;
+      left: 4px;
+      right: 4px;
+      background: rgba(15,17,23,0.85);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 3px 6px;
+      border-radius: 3px;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      pointer-events: none;
+    }
+
     /* ── RESUMEN UBICACIÓN ── */
     .ubicacion-resumen {
       display: none;
@@ -779,11 +813,15 @@
     El formulario funciona pero el envío fallará. Abre esta app desde la URL del GAS (termina en /exec) o desde un servidor HTTPS.
   </div>
 
-  <!-- ── CUARTEL ── -->
-  <div class="card" id="cardCuartel">
-    <div class="card-header"><span class="card-label">🌳 Cuartel</span></div>
+  <!-- ── OPERADOR ── -->
+  <div class="card" id="cardOperador">
+    <div class="card-header"><span class="card-label">👤 Operador</span></div>
     <div class="card-body">
-      <div class="btn-grid-3" id="cuartelGrid"></div>
+      <input type="text" id="operadorInput" class="text-input"
+        list="operadoresList" autocomplete="name"
+        placeholder="Tu nombre (ej. Luis)" oninput="onOperadorChange(this.value)">
+      <datalist id="operadoresList"></datalist>
+      <div style="font-size:11px;color:var(--text3);margin-top:6px">El nombre queda registrado en cada foto para trazabilidad.</div>
     </div>
   </div>
 
@@ -801,7 +839,15 @@
         <button type="button" class="map-btn" onclick="verCuartel()">🎯 Ver cuartel</button>
         <button type="button" class="map-btn" onclick="verTodos()">🔍 Ver todos</button>
       </div>
-      <div class="map-hint">Referencia visual · hilera/claro calculados de forma aproximada.</div>
+      <div class="map-hint">Referencia visual · detección exacta de hilera y claro desde los KMZ del campo.</div>
+    </div>
+  </div>
+
+  <!-- ── CUARTEL ── -->
+  <div class="card" id="cardCuartel">
+    <div class="card-header"><span class="card-label">🌳 Cuartel</span></div>
+    <div class="card-body">
+      <div class="btn-grid-3" id="cuartelGrid"></div>
     </div>
   </div>
 
@@ -822,8 +868,8 @@
         </div>
       </div>
 
-      <div>
-        <div class="sublabel">Claro <span style="font-weight:400;text-transform:none;opacity:0.65;font-size:0.85em">(Opcional)</span></div>
+      <div id="cardClaroWrap">
+        <div class="sublabel">Claro <span>(1–<span id="lblMaxClaro">5</span>)</span></div>
         <div class="btn-grid-5" id="claroGrid"></div>
       </div>
 
@@ -1261,7 +1307,7 @@ function toggleMapa() {
 const STATE_KEY = 'fenolq_state_v3';
 let appState = {
   cuartel: null, hilera: null, claro: null, planta: null,
-  fotos: [], gps: null,
+  fotos: [], fotos_operadores: [], gps: null, operador: '',
 };
 let gpsData = null;
 let _submitPending = null; // callback de envío pendiente post-confirm
@@ -1283,6 +1329,11 @@ function init() {
   // Labels de rango
   document.getElementById('lblMaxHilera').textContent = CONFIG.N_HILERAS;
   document.getElementById('lblMaxPlanta').textContent = CONFIG.N_PLANTAS;
+  const lblMaxClaro = document.getElementById('lblMaxClaro');
+  if (lblMaxClaro) lblMaxClaro.textContent = CONFIG.N_CLAROS;
+
+  // Operador: cargar desde localStorage y poblar datalist
+  cargarOperador();
 
   // Construir cuarteles
   const cGrid = document.getElementById('cuartelGrid');
@@ -1376,6 +1427,45 @@ function pedirGPS() {
   );
 }
 
+// ── OPERADOR (persiste en localStorage entre sesiones) ────────────
+const OPERADOR_KEY = 'lq_operador_actual';
+const OPERADORES_LIST_KEY = 'lq_operadores_lista';
+
+function cargarOperador() {
+  // Operador actual
+  try {
+    const actual = localStorage.getItem(OPERADOR_KEY) || '';
+    appState.operador = actual;
+    const inp = document.getElementById('operadorInput');
+    if (inp) inp.value = actual;
+  } catch (_) {}
+  // Datalist con operadores usados anteriormente
+  try {
+    const lista = JSON.parse(localStorage.getItem(OPERADORES_LIST_KEY) || '[]');
+    const dl = document.getElementById('operadoresList');
+    if (dl) dl.innerHTML = lista.map(n => `<option value="${n.replace(/"/g, '&quot;')}">`).join('');
+  } catch (_) {}
+}
+
+function onOperadorChange(val) {
+  const trimmed = (val || '').trim();
+  appState.operador = trimmed;
+  guardarEstado();
+  try { localStorage.setItem(OPERADOR_KEY, trimmed); } catch (_) {}
+  // Agregar a lista histórica si es nuevo y no vacío
+  if (trimmed) {
+    try {
+      const lista = JSON.parse(localStorage.getItem(OPERADORES_LIST_KEY) || '[]');
+      if (!lista.includes(trimmed)) {
+        lista.push(trimmed);
+        localStorage.setItem(OPERADORES_LIST_KEY, JSON.stringify(lista.slice(-20)));
+        const dl = document.getElementById('operadoresList');
+        if (dl) dl.innerHTML = lista.map(n => `<option value="${n.replace(/"/g, '&quot;')}">`).join('');
+      }
+    } catch (_) {}
+  }
+}
+
 // ── PERSISTENCIA ESTADO (fix iOS camera) ─────────────
 function guardarEstado() {
   sessionStorage.setItem(STATE_KEY, JSON.stringify(appState));
@@ -1390,6 +1480,8 @@ function restaurarEstado() {
     if (s.claro)            seleccionarClaro(s.claro);
     if (s.planta)           setPlanta(s.planta);
     if (s.fotos?.length)    { appState.fotos = s.fotos; }
+    if (s.fotos_operadores?.length) { appState.fotos_operadores = s.fotos_operadores; }
+    if (s.operador) { appState.operador = s.operador; const inp = document.getElementById('operadorInput'); if (inp) inp.value = s.operador; }
     if (s.gps) {
       gpsData = s.gps;
       const bar = document.getElementById('gpsBar');
@@ -1568,6 +1660,7 @@ async function handleFileSelect(e) {
   const blob = await compressImage(file, 1280, 0.72);
   const b64  = await blobToBase64(blob);
   appState.fotos.push(b64);
+  appState.fotos_operadores.push(appState.operador || '');
   guardarEstado();
   renderFotos();
   limpiarError('cardFotos');
@@ -1586,13 +1679,16 @@ function renderFotos() {
   // Clase adaptativa para el grid
   grid.className = 'fotos-grid' + (n > 0 ? ` n${Math.min(n, 4)}` : '');
 
-  grid.innerHTML = appState.fotos.map((b64, i) => `
+  grid.innerHTML = appState.fotos.map((b64, i) => {
+    const op = (appState.fotos_operadores && appState.fotos_operadores[i]) || '';
+    return `
     <div class="foto-thumb">
       <img src="${b64}" alt="Foto ${i + 1}">
       <button class="foto-delete" onclick="eliminarFoto(${i})" title="Eliminar">✕</button>
       <span class="foto-num">📷 ${i + 1}</span>
+      ${op ? `<span class="foto-operador">👤 ${op}</span>` : ''}
     </div>
-  `).join('');
+  `;}).join('');
 
   btn.style.display = n >= CONFIG.MAX_FOTOS ? 'none' : 'flex';
   document.getElementById('btnAddFotoTxt').textContent = n === 0 ? 'Tomar foto' : 'Agregar otra foto';
@@ -1600,6 +1696,7 @@ function renderFotos() {
 
 function eliminarFoto(idx) {
   appState.fotos.splice(idx, 1);
+  if (appState.fotos_operadores) appState.fotos_operadores.splice(idx, 1);
   guardarEstado();
   renderFotos();
 }
@@ -1635,25 +1732,30 @@ function blobToBase64(blob) {
 async function handleSubmit() {
   const { cuartel, hilera, claro, planta, fotos } = appState;
 
-  // Campos obligatorios: cuartel y al menos 1 foto
+  // Campos obligatorios: cuartel, claro y al menos 1 foto
   let errores = [];
-  if (!cuartel)    errores.push('cuartel');
+  if (!cuartel)      errores.push('cuartel');
+  if (!claro)        errores.push('claro');
   if (!fotos.length) errores.push('foto');
 
   if (errores.length) {
     // Destacar la card con error
     if (!cuartel)      marcarError('cardCuartel');
+    if (!claro)        marcarError('cardUbicacion');
     if (!fotos.length) marcarError('cardFotos');
-    toast(errores.includes('cuartel')
-      ? 'Selecciona un cuartel'
-      : 'Toma al menos una foto');
+    const primerError = errores[0];
+    const mensajes = {
+      cuartel: 'Selecciona un cuartel',
+      claro:   'Selecciona el claro',
+      foto:    'Toma al menos una foto'
+    };
+    toast(mensajes[primerError] || 'Faltan datos obligatorios');
     return;
   }
 
   // Campos informativos opcionales: avisar pero no bloquear
   const faltantes = [
     !hilera && 'hilera',
-    !claro  && 'claro',
     !planta && 'planta',
   ].filter(Boolean);
 
@@ -1690,6 +1792,8 @@ async function enviarObservacion() {
     estado, notas,
     fotos,      // array de base64
     filenames,
+    fotos_operadores: appState.fotos_operadores || [], // nombre del operador por foto
+    operador: appState.operador || '',                 // operador del formulario (último)
     predio:   CONFIG.PREDIO,
     variedad: CONFIG.VARIEDAD,
     gps_lat:  gpsData?.lat       ?? '',
@@ -1790,7 +1894,9 @@ function limpiarError(cardId) {
 // ── RESET ────────────────────────────────────────────
 function resetForm() {
   gpsData  = null;
-  appState = { cuartel: null, hilera: null, claro: null, planta: null, fotos: [], gps: null };
+  // Preservar operador entre envíos (lo más normal es que el mismo operador haga varias observaciones)
+  const operadorActual = appState.operador || '';
+  appState = { cuartel: null, hilera: null, claro: null, planta: null, fotos: [], fotos_operadores: [], gps: null, operador: operadorActual };
   sessionStorage.removeItem(STATE_KEY);
 
   document.querySelectorAll('.sel-btn').forEach(b => b.classList.remove('active'));

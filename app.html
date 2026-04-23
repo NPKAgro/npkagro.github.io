@@ -117,6 +117,9 @@
     .app-card.fenologia::before  { background: #3b82f6; }
     .app-card.cuaderno::before   { background: #14b8a6; }
     .app-card.aforado::before    { background: #8b5cf6; }
+    .app-card.inventario::before { background: #f59e0b; }
+    .app-card.compra::before     { background: #10b981; }
+    .app-card.petroleo::before   { background: #f97316; }
 
     .app-card:hover {
       border-color: rgba(255,255,255,0.16);
@@ -137,6 +140,9 @@
     .app-card.fenologia .app-arrow { color: #93c5fd; }
     .app-card.cuaderno  .app-arrow { color: #5eead4; }
     .app-card.aforado   .app-arrow { color: #c4b5fd; }
+    .app-card.inventario .app-arrow { color: #fbbf24; }
+    .app-card.compra     .app-arrow { color: #6ee7b7; }
+    .app-card.petroleo   .app-arrow { color: #fdba74; }
 
     footer {
       text-align: center;
@@ -187,6 +193,33 @@
       <div class="app-info">
         <div class="app-name">Aforado de Riego</div>
         <div class="app-sub">Medición de caudal y uniformidad de distribución por cuartel.</div>
+      </div>
+      <span class="app-arrow">→</span>
+    </a>
+
+    <a class="app-card inventario" href="inventario.html">
+      <span class="app-icon">📦</span>
+      <div class="app-info">
+        <div class="app-name">Inventario</div>
+        <div class="app-sub">Stock de productos, registrar consumo en terreno.</div>
+      </div>
+      <span class="app-arrow">→</span>
+    </a>
+
+    <a class="app-card compra" href="compra.html">
+      <span class="app-icon">🧾</span>
+      <div class="app-info">
+        <div class="app-name">Ingreso de productos</div>
+        <div class="app-sub">📸 Sacá foto de la factura y registrá la compra → entra al inventario automáticamente.</div>
+      </div>
+      <span class="app-arrow">→</span>
+    </a>
+
+    <a class="app-card petroleo" href="petroleo.html">
+      <span class="app-icon">⛽</span>
+      <div class="app-info">
+        <div class="app-name">Combustibles</div>
+        <div class="app-sub">Stock de diésel, registrar cargas y uso por máquina/actividad.</div>
       </div>
       <span class="app-arrow">→</span>
     </a>
