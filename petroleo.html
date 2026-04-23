@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Combustibles LQ">
+  <meta name="theme-color" content="#0f1117">
+  <meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
+  <title>Combustibles · La Quinta</title>
+  <script>window.LQ_AUTH_MODE = 'equipo'; window.LQ_AUTH_SHOW_BAR = false;</script>
+  <script src="auth.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:      #0f1117;
+      --bg2:     #161b24;
+      --bg3:     #1e2534;
+      --border:  rgba(255,255,255,0.08);
+      --text:    #f0f2f5;
+      --text2:   #8b93a5;
+      --text3:   #555e70;
+      --accent:  #f97316;
+      --green:   #10b981;
+      --amber:   #f59e0b;
+      --red:     #ef4444;
+      --radius:  10px;
+    }
+    html, body { height: 100%; }
+    body {
+      font-family: -apple-system, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+      padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .header {
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 18px;
+      display: flex; align-items: center; gap: 12px;
+      position: sticky; top: 0; z-index: 50;
+    }
+    .header-back {
+      width: 36px; height: 36px;
+      border-radius: 8px; background: var(--bg3);
+      border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; color: var(--text2);
+      text-decoration: none; flex-shrink: 0;
+    }
+    .header-brand { display: flex; flex-direction: column; line-height: 1.25; flex: 1; }
+    .header-empresa { font-size: 15px; font-weight: 700; }
+    .header-empresa span { color: var(--accent); }
+    .header-predio { font-size: 11px; color: var(--text3); }
+
+    .content { padding: 16px; max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+
+    /* Tank status card */
+    .tank-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+      position: relative;
+      overflow: hidden;
+    }
+    .tank-title { font-size: 12px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; }
+    .tank-stock {
+      font-size: 42px; font-weight: 800; font-variant-numeric: tabular-nums;
+      color: var(--accent); line-height: 1; margin-top: 4px;
+    }
+    .tank-unit { font-size: 16px; color: var(--text3); margin-left: 6px; }
+    .tank-meta { font-size: 12px; color: var(--text2); margin-top: 4px; }
+    .tank-bar-wrap {
+      height: 10px; background: var(--bg3); border-radius: 99px;
+      margin-top: 14px; overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .tank-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), #ea580c);
+      border-radius: 99px;
+      transition: width 0.3s;
+    }
+    .tank-bar.bajo { background: linear-gradient(90deg, var(--amber), #d97706); }
+    .tank-bar.agotado { background: linear-gradient(90deg, var(--red), #b91c1c); }
+    .tank-status {
+      display: inline-block;
+      font-size: 11px; font-weight: 700;
+      padding: 3px 8px; border-radius: 99px;
+      text-transform: uppercase; letter-spacing: 0.4px;
+      margin-top: 10px;
+    }
+    .tank-status.OK { background: rgba(16,185,129,0.15); color: #6ee7b7; }
+    .tank-status.BAJO { background: rgba(245,158,11,0.15); color: #fbbf24; }
+    .tank-status.AGOTADO { background: rgba(239,68,68,0.15); color: #fca5a5; }
+
+    /* Action buttons */
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .action-btn {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.12s, transform 0.12s;
+      color: inherit;
+    }
+    .action-btn:active { transform: scale(0.97); }
+    .action-btn .icon { font-size: 28px; margin-bottom: 6px; }
+    .action-btn .lbl  { font-size: 14px; font-weight: 700; }
+    .action-btn .sub  { font-size: 11px; color: var(--text3); margin-top: 2px; }
+    .action-btn.carga:active { border-color: var(--green); }
+    .action-btn.uso:active   { border-color: var(--accent); }
+
+    /* Section */
+    .section {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+    }
+    .section-title {
+      font-size: 12px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.4px;
+      color: var(--text2); margin-bottom: 10px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+
+    .mov-item {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 6px;
+    }
+    .mov-row1 {
+      display: flex; justify-content: space-between; align-items: baseline;
+      margin-bottom: 3px;
+    }
+    .mov-tipo {
+      font-size: 11px; font-weight: 700;
+      padding: 2px 8px; border-radius: 99px;
+      text-transform: uppercase; letter-spacing: 0.3px;
+    }
+    .mov-tipo.CARGA { background: rgba(16,185,129,0.15); color: #6ee7b7; }
+    .mov-tipo.USO   { background: rgba(249,115,22,0.15); color: #fdba74; }
+    .mov-litros {
+      font-size: 16px; font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+    .mov-litros.in  { color: #6ee7b7; }
+    .mov-litros.out { color: #fdba74; }
+    .mov-row2 { font-size: 11px; color: var(--text3); }
+
+    /* Modal */
+    .overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.75);
+      display: none; align-items: flex-end; justify-content: center;
+      z-index: 100;
+    }
+    .overlay.visible { display: flex; }
+    .modal {
+      width: 100%; max-width: 560px;
+      background: var(--bg2);
+      border-radius: 16px 16px 0 0;
+      padding: 18px;
+      max-height: 90vh; overflow-y: auto;
+      animation: slideUp 0.2s ease-out;
+    }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    .modal-title { font-size: 17px; font-weight: 700; margin-bottom: 14px; }
+    .field { margin-bottom: 10px; }
+    .field label {
+      font-size: 11px; color: var(--text3);
+      text-transform: uppercase; letter-spacing: 0.3px;
+      display: block; margin-bottom: 4px;
+    }
+    .field input, .field select, .field textarea {
+      width: 100%;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 14px;
+      padding: 10px 12px;
+      font-family: inherit;
+    }
+    .field textarea { resize: none; min-height: 56px; }
+    .field input:focus, .field select:focus, .field textarea:focus {
+      outline: none; border-color: var(--accent);
+    }
+    .row { display: flex; gap: 8px; }
+    .row > * { flex: 1; }
+    .photo-slot {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      color: var(--text3);
+      margin-bottom: 10px;
+    }
+    .photo-slot.has-photo { border-style: solid; padding: 0; overflow: hidden; }
+    .photo-slot img { display: block; width: 100%; max-height: 250px; object-fit: contain; }
+
+    .modal-actions { display: flex; gap: 8px; margin-top: 14px; }
+    .btn-cancel, .btn-ok {
+      flex: 1; padding: 12px; border-radius: var(--radius);
+      border: none; font-size: 14px; font-weight: 700; cursor: pointer;
+    }
+    .btn-cancel { background: var(--bg3); color: var(--text); border: 1px solid var(--border); }
+    .btn-ok     { background: var(--accent); color: #000; }
+    .btn-ok:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .config-link {
+      font-size: 11px; color: var(--text3); cursor: pointer;
+      text-decoration: underline;
+    }
+    .config-link:hover { color: var(--accent); }
+
+    .toast {
+      position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+      background: var(--bg3); border: 1px solid var(--border); color: var(--text);
+      padding: 10px 16px; border-radius: 99px; font-size: 13px;
+      z-index: 200; opacity: 0; transition: opacity 0.2s;
+      pointer-events: none;
+    }
+    .toast.visible { opacity: 1; }
+    .toast.ok    { border-color: var(--green); color: #6ee7b7; }
+    .toast.error { border-color: var(--red);   color: #fca5a5; }
+
+    .loader {
+      text-align: center; padding: 30px; color: var(--text3); font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <a class="header-back" href="app.html">←</a>
+  <div class="header-brand">
+    <div class="header-empresa">La <span>Quinta</span></div>
+    <div class="header-predio">Combustible · Diésel</div>
+  </div>
+</div>
+
+<div class="content">
+
+  <div class="tank-card" id="tankCard">
+    <div class="tank-title">⛽ Stock actual</div>
+    <div>
+      <span class="tank-stock" id="tankVal">—</span><span class="tank-unit">L</span>
+    </div>
+    <div class="tank-meta" id="tankMeta">Cargando...</div>
+    <div class="tank-bar-wrap"><div class="tank-bar" id="tankBar" style="width:0%"></div></div>
+    <span class="tank-status OK" id="tankStatus">—</span>
+    <span class="config-link" style="float:right; margin-top:10px" onclick="abrirConfig()">⚙️ Configurar</span>
+  </div>
+
+  <div class="actions">
+    <div class="action-btn carga" onclick="abrirModalCarga()">
+      <div class="icon">⬆️</div>
+      <div class="lbl">Nueva carga</div>
+      <div class="sub">Agregar litros al tanque</div>
+    </div>
+    <div class="action-btn uso" onclick="abrirModalUso()">
+      <div class="icon">⬇️</div>
+      <div class="lbl">Registrar uso</div>
+      <div class="sub">Descontar litros consumidos</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">
+      <span>Últimos movimientos</span>
+      <span id="totalMov" style="color:var(--text3); font-weight:400">—</span>
+    </div>
+    <div id="movList">
+      <div class="loader">⏳ Cargando...</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal CARGA -->
+<div class="overlay" id="ovCarga" onclick="cerrarOv(event, 'ovCarga')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-title">⬆️ Nueva carga de petróleo</div>
+
+    <div class="photo-slot" id="photoSlot" onclick="document.getElementById('photoInput').click()">
+      📸 Sacá foto de la boleta (opcional)
+    </div>
+    <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none" onchange="onPhoto(this)">
+
+    <div class="row">
+      <div class="field">
+        <label>Litros cargados</label>
+        <input type="number" step="0.1" min="0" id="cLitros" inputmode="decimal">
+      </div>
+      <div class="field">
+        <label>Precio/L CLP</label>
+        <input type="number" step="1" min="0" id="cPrecio" inputmode="decimal">
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>Fecha</label>
+        <input type="date" id="cFecha">
+      </div>
+      <div class="field">
+        <label>N° Boleta</label>
+        <input type="text" id="cBoleta">
+      </div>
+    </div>
+    <div class="field">
+      <label>Proveedor</label>
+      <select id="cProveedor">
+        <option value="">— seleccionar —</option>
+        <option>Copec</option>
+        <option>Shell</option>
+        <option>Petrobras</option>
+        <option>Esmax</option>
+        <option>Otro</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Notas (opcional)</label>
+      <textarea id="cNotas"></textarea>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="cerrarOv(null, 'ovCarga')">Cancelar</button>
+      <button class="btn-ok" id="btnGCarga" onclick="guardarCarga()">Guardar carga</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal USO -->
+<div class="overlay" id="ovUso" onclick="cerrarOv(event, 'ovUso')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-title">⬇️ Registrar uso</div>
+    <div class="field">
+      <label>Litros usados</label>
+      <input type="number" step="0.1" min="0" id="uLitros" inputmode="decimal">
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>Fecha</label>
+        <input type="date" id="uFecha">
+      </div>
+      <div class="field">
+        <label>Horómetro (opcional)</label>
+        <input type="number" step="0.1" min="0" id="uHorom" inputmode="decimal">
+      </div>
+    </div>
+    <div class="field">
+      <label>Máquina</label>
+      <select id="uEquipo">
+        <option value="">— seleccionar —</option>
+        <option>Tractor John Deere 5676</option>
+        <option>Camioneta Administrador</option>
+        <option>Otros</option>
+      </select>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>Cuartel (opcional)</label>
+        <select id="uCuartel">
+          <option value="">—</option>
+          <option>C2</option><option>C3</option><option>C4</option><option>General</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Actividad</label>
+        <select id="uOperacion">
+          <option value="">— seleccionar —</option>
+          <option>Aplicación fitosanitaria</option>
+          <option>Cosecha</option>
+          <option>Mantenimiento</option>
+          <option>Otros</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label>Notas (opcional)</label>
+      <textarea id="uNotas"></textarea>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="cerrarOv(null, 'ovUso')">Cancelar</button>
+      <button class="btn-ok" id="btnGUso" onclick="guardarUso()">Guardar uso</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal CONFIG -->
+<div class="overlay" id="ovConfig" onclick="cerrarOv(event, 'ovConfig')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-title">⚙️ Configurar tanque</div>
+    <div class="field">
+      <label>Capacidad total (L)</label>
+      <input type="number" step="1" min="0" id="cfgCap" inputmode="decimal">
+    </div>
+    <div class="field">
+      <label>Stock mínimo para alerta (L)</label>
+      <input type="number" step="1" min="0" id="cfgMin" inputmode="decimal">
+    </div>
+    <div class="field">
+      <label>Stock actual (solo para corrección) (L)</label>
+      <input type="number" step="0.1" min="0" id="cfgActual" inputmode="decimal">
+      <div style="font-size:11px; color:var(--text3); margin-top:4px">Solo si querés corregir manualmente. Normalmente se actualiza con carga/uso.</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="cerrarOv(null, 'ovConfig')">Cancelar</button>
+      <button class="btn-ok" id="btnGConfig" onclick="guardarConfig()">Guardar config</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const GAS_URL   = 'https://script.google.com/macros/s/AKfycbydi5imjeA5bXY5TlA7MBVGkG6-Aq4XhYC0soXGPUMl41lEvdL8rc-xhjeRv9m0_aJg/exec';
+const GAS_TOKEN = 'LQ2026-Santina';
+
+const state = { stock: null, mov: [], fotoB64: null, fotoName: null, gps: null };
+
+function esc(s){ return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fmtNum(n){ const x = Number(n)||0; return Number.isInteger(x) ? x.toString() : x.toFixed(1); }
+function fmtCLP(n){ return '$ ' + (Math.round(Number(n)||0)).toLocaleString('es-CL'); }
+function fmtFecha(f){
+  if (!f) return '';
+  const d = new Date(f);
+  if (isNaN(d.getTime())) return String(f).substring(0,10);
+  return d.toLocaleDateString('es-CL');
+}
+function toast(msg, tipo){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast visible ' + (tipo||'');
+  clearTimeout(t._to);
+  t._to = setTimeout(()=> t.classList.remove('visible'), 3200);
+}
+
+async function cargarDatos(){
+  try {
+    const [stRes, mvRes] = await Promise.all([
+      fetch(`${GAS_URL}?action=get_petroleo&_=${Date.now()}`),
+      fetch(`${GAS_URL}?action=list_petroleo_mov&limit=30&_=${Date.now()}`)
+    ]);
+    state.stock = await stRes.json();
+    state.mov   = (await mvRes.json()).movimientos || [];
+    render();
+  } catch(err) {
+    toast('Error: '+err.message, 'error');
+  }
+}
+
+function render(){
+  const s = state.stock || {};
+  document.getElementById('tankVal').textContent = fmtNum(s.stock_actual_l);
+  const cap = Number(s.capacidad_total_l)||0;
+  const stock = Number(s.stock_actual_l)||0;
+  const pct = cap > 0 ? Math.min(100, Math.max(0, (stock / cap) * 100)) : 0;
+  const bar = document.getElementById('tankBar');
+  bar.style.width = pct + '%';
+  bar.className = 'tank-bar' + (s.estado === 'BAJO' ? ' bajo' : s.estado === 'AGOTADO' ? ' agotado' : '');
+
+  const meta = [];
+  if (cap > 0) meta.push(fmtNum(pct) + '% del tanque ('+ fmtNum(cap) +' L)');
+  if (s.stock_minimo_l) meta.push('Mín: '+ fmtNum(s.stock_minimo_l) +' L');
+  if (s.costo_promedio_l) meta.push('Costo prom: '+fmtCLP(s.costo_promedio_l)+'/L');
+  document.getElementById('tankMeta').textContent = meta.join(' · ');
+
+  const status = document.getElementById('tankStatus');
+  status.textContent = s.estado || 'OK';
+  status.className = 'tank-status ' + (s.estado || 'OK');
+
+  // Historia
+  const list = document.getElementById('movList');
+  document.getElementById('totalMov').textContent = state.mov.length + ' movimientos';
+  if (!state.mov.length) {
+    list.innerHTML = '<div class="loader">Sin movimientos registrados</div>';
+    return;
+  }
+  list.innerHTML = state.mov.map(m => `
+    <div class="mov-item">
+      <div class="mov-row1">
+        <span class="mov-tipo ${esc(m.tipo)}">${esc(m.tipo)}</span>
+        <span class="mov-litros ${m.tipo==='CARGA'?'in':'out'}">${m.tipo==='CARGA'?'+':'−'}${fmtNum(m.litros)} L</span>
+      </div>
+      <div class="mov-row2">
+        ${esc(fmtFecha(m.fecha))}
+        ${m.tipo==='CARGA' ? ' · '+esc(m.proveedor||'—')+(m.precio_por_litro?' · '+fmtCLP(m.precio_total):'') : ''}
+        ${m.tipo==='USO' ? ' · '+esc(m.equipo||'—')+(m.operacion?' · '+esc(m.operacion):'')+(m.cuartel?' · '+esc(m.cuartel):'') : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+function abrirOv(id){ document.getElementById(id).classList.add('visible'); }
+function cerrarOv(e, id){ if (e && e.target !== e.currentTarget) return; document.getElementById(id).classList.remove('visible'); }
+
+function abrirModalCarga(){
+  document.getElementById('cLitros').value  = '';
+  document.getElementById('cPrecio').value  = '';
+  document.getElementById('cBoleta').value  = '';
+  document.getElementById('cProveedor').value = '';
+  document.getElementById('cNotas').value   = '';
+  document.getElementById('cFecha').value   = new Date().toISOString().slice(0,10);
+  state.fotoB64 = null; state.fotoName = null;
+  document.getElementById('photoSlot').classList.remove('has-photo');
+  document.getElementById('photoSlot').innerHTML = '📸 Sacá foto de la boleta (opcional)';
+  abrirOv('ovCarga');
+}
+function abrirModalUso(){
+  document.getElementById('uLitros').value = '';
+  document.getElementById('uFecha').value  = new Date().toISOString().slice(0,10);
+  document.getElementById('uHorom').value  = '';
+  document.getElementById('uEquipo').value = '';
+  document.getElementById('uCuartel').value = '';
+  document.getElementById('uOperacion').value = '';
+  document.getElementById('uNotas').value = '';
+  abrirOv('ovUso');
+}
+function abrirConfig(){
+  const s = state.stock || {};
+  document.getElementById('cfgCap').value    = s.capacidad_total_l || '';
+  document.getElementById('cfgMin').value    = s.stock_minimo_l || '';
+  document.getElementById('cfgActual').value = '';
+  abrirOv('ovConfig');
+}
+
+function onPhoto(input){
+  const file = input.files && input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    state.fotoB64  = reader.result;
+    state.fotoName = file.name || ('boleta_petroleo_'+Date.now()+'.jpg');
+    const slot = document.getElementById('photoSlot');
+    slot.classList.add('has-photo');
+    slot.innerHTML = '<img src="'+reader.result+'" alt="boleta">';
+  };
+  reader.readAsDataURL(file);
+}
+
+async function guardarCarga(){
+  const litros    = parseFloat(document.getElementById('cLitros').value);
+  const precio    = parseFloat(document.getElementById('cPrecio').value);
+  const fecha     = document.getElementById('cFecha').value;
+  const proveedor = document.getElementById('cProveedor').value;
+  const boleta    = document.getElementById('cBoleta').value.trim();
+  const notas     = document.getElementById('cNotas').value.trim();
+
+  if (!litros || litros <= 0) { toast('Litros inválidos', 'error'); return; }
+  if (!fecha) { toast('Falta fecha', 'error'); return; }
+
+  const btn = document.getElementById('btnGCarga');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+
+  const payload = {
+    token: GAS_TOKEN, action: 'add_carga_petroleo',
+    litros, precio_por_litro: precio || 0, fecha, proveedor,
+    boleta_n: boleta, notas, usuario: (window.LQ_AUTH_USER || 'admin')
+  };
+  if (state.fotoB64) {
+    payload.foto_boleta = state.fotoB64;
+    payload.filename_boleta = state.fotoName;
+  }
+  if (state.gps) { payload.gps_lat = state.gps.lat; payload.gps_lng = state.gps.lng; }
+
+  try {
+    await fetch(GAS_URL, {
+      method: 'POST', mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(payload)
+    });
+    toast('✅ Carga guardada (+'+fmtNum(litros)+' L)', 'ok');
+    cerrarOv(null, 'ovCarga');
+    setTimeout(cargarDatos, 1000);
+  } catch(err) {
+    toast('Error: '+err.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Guardar carga';
+  }
+}
+
+async function guardarUso(){
+  const litros    = parseFloat(document.getElementById('uLitros').value);
+  const fecha     = document.getElementById('uFecha').value;
+  const equipo    = document.getElementById('uEquipo').value;
+  const cuartel   = document.getElementById('uCuartel').value;
+  const operacion = document.getElementById('uOperacion').value.trim();
+  const horom     = parseFloat(document.getElementById('uHorom').value) || '';
+  const notas     = document.getElementById('uNotas').value.trim();
+
+  if (!litros || litros <= 0) { toast('Litros inválidos', 'error'); return; }
+  if (!fecha) { toast('Falta fecha', 'error'); return; }
+  if (!equipo) { toast('Falta máquina', 'error'); return; }
+
+  const btn = document.getElementById('btnGUso');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+
+  const payload = {
+    token: GAS_TOKEN, action: 'add_uso_petroleo',
+    litros, fecha, equipo, cuartel, operacion, horometro: horom,
+    notas, usuario: (window.LQ_AUTH_USER || 'equipo')
+  };
+  if (state.gps) { payload.gps_lat = state.gps.lat; payload.gps_lng = state.gps.lng; }
+
+  try {
+    await fetch(GAS_URL, {
+      method: 'POST', mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(payload)
+    });
+    toast('✅ Uso registrado (−'+fmtNum(litros)+' L)', 'ok');
+    cerrarOv(null, 'ovUso');
+    setTimeout(cargarDatos, 1000);
+  } catch(err) {
+    toast('Error: '+err.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Guardar uso';
+  }
+}
+
+async function guardarConfig(){
+  const cap    = parseFloat(document.getElementById('cfgCap').value);
+  const min    = parseFloat(document.getElementById('cfgMin').value);
+  const actual = parseFloat(document.getElementById('cfgActual').value);
+  const btn    = document.getElementById('btnGConfig');
+  btn.disabled = true;
+
+  const payload = { token: GAS_TOKEN, action: 'config_petroleo' };
+  if (!isNaN(cap))    payload.capacidad_total_l = cap;
+  if (!isNaN(min))    payload.stock_minimo_l   = min;
+  if (!isNaN(actual)) payload.stock_actual_l   = actual;
+
+  try {
+    await fetch(GAS_URL, {
+      method: 'POST', mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(payload)
+    });
+    toast('✅ Configuración guardada', 'ok');
+    cerrarOv(null, 'ovConfig');
+    setTimeout(cargarDatos, 1000);
+  } catch(err) {
+    toast('Error: '+err.message, 'error');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+if (navigator.geolocation) {
+  navigator.geolocation.getCurrentPosition(
+    pos => { state.gps = { lat: pos.coords.latitude, lng: pos.coords.longitude }; },
+    err => {}, { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
+  );
+}
+cargarDatos();
+</script>
+
+</body>
+</html>
