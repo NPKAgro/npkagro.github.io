@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Inventario LQ">
+  <meta name="theme-color" content="#0f1117">
+  <meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
+  <title>Inventario · La Quinta</title>
+  <script>window.LQ_AUTH_MODE = 'equipo'; window.LQ_AUTH_SHOW_BAR = false;</script>
+  <script src="auth.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:      #0f1117;
+      --bg2:     #161b24;
+      --bg3:     #1e2534;
+      --border:  rgba(255,255,255,0.08);
+      --text:    #f0f2f5;
+      --text2:   #8b93a5;
+      --text3:   #555e70;
+      --accent:  #f59e0b;
+      --green:   #10b981;
+      --amber:   #f59e0b;
+      --red:     #ef4444;
+      --radius:  10px;
+    }
+    html, body { height: 100%; }
+    body {
+      font-family: -apple-system, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+      padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .header {
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 18px;
+      display: flex; align-items: center; gap: 12px;
+      position: sticky; top: 0; z-index: 50;
+    }
+    .header-back {
+      width: 36px; height: 36px;
+      border-radius: 8px; background: var(--bg3);
+      border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; color: var(--text2);
+      text-decoration: none; flex-shrink: 0;
+    }
+    .header-brand { display: flex; flex-direction: column; line-height: 1.25; flex: 1; }
+    .header-empresa { font-size: 15px; font-weight: 700; }
+    .header-empresa span { color: var(--accent); }
+    .header-predio { font-size: 11px; color: var(--text3); }
+
+    .summary {
+      padding: 14px 16px 0;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .sum-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 8px;
+      text-align: center;
+    }
+    .sum-val { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .sum-lbl { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.3px; margin-top: 2px; }
+    .sum-card.bajo .sum-val  { color: var(--amber); }
+    .sum-card.agot .sum-val  { color: var(--red); }
+
+    .searchbar {
+      padding: 12px 16px;
+      display: flex; gap: 8px;
+    }
+    .searchbar input {
+      flex: 1;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-size: 14px;
+      padding: 10px 12px;
+    }
+    .searchbar input:focus {
+      outline: none; border-color: var(--accent);
+    }
+    .filter-chips {
+      display: flex; gap: 6px; padding: 0 16px 12px; overflow-x: auto;
+    }
+    .chip {
+      flex-shrink: 0;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      color: var(--text2);
+      background: var(--bg2);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .chip.active {
+      background: var(--accent);
+      color: #000;
+      border-color: var(--accent);
+    }
+
+    .list {
+      padding: 0 16px;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .prod-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 14px;
+      cursor: pointer;
+      transition: border-color 0.12s;
+    }
+    .prod-card:active { border-color: var(--accent); }
+    .prod-head {
+      display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;
+    }
+    .prod-name {
+      font-size: 14px; font-weight: 700; flex: 1; line-height: 1.3;
+    }
+    .prod-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 7px;
+      border-radius: 99px;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+    .prod-badge.OK { background: rgba(16,185,129,0.15); color: #6ee7b7; }
+    .prod-badge.BAJO { background: rgba(245,158,11,0.15); color: #fbbf24; }
+    .prod-badge.AGOTADO { background: rgba(239,68,68,0.15); color: #fca5a5; }
+    .prod-badge.DESCUADRE { background: rgba(239,68,68,0.25); color: #fca5a5; }
+
+    .prod-meta {
+      display: flex; gap: 12px; margin-top: 6px; font-size: 11px; color: var(--text3);
+      flex-wrap: wrap;
+    }
+    .prod-stock {
+      display: flex; justify-content: space-between; align-items: baseline;
+      margin-top: 6px;
+    }
+    .prod-stock-val {
+      font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums;
+    }
+    .prod-stock-unit { font-size: 12px; color: var(--text3); margin-left: 4px; }
+    .prod-stock-min { font-size: 11px; color: var(--text3); }
+
+    .empty {
+      text-align: center; padding: 40px 20px; color: var(--text3); font-size: 13px;
+    }
+
+    /* ── FAB / bottom actions ── */
+    .fab-bar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: var(--bg2);
+      border-top: 1px solid var(--border);
+      padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
+      display: flex; gap: 8px; z-index: 40;
+    }
+    .fab-btn {
+      flex: 1;
+      background: var(--accent);
+      color: #000;
+      border: none;
+      border-radius: var(--radius);
+      padding: 12px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .fab-btn.secondary {
+      background: var(--bg3);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    /* ── Modal ── */
+    .overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.7);
+      display: none; align-items: flex-end; justify-content: center;
+      z-index: 100;
+    }
+    .overlay.visible { display: flex; }
+    .modal {
+      width: 100%; max-width: 560px;
+      background: var(--bg2);
+      border-radius: 16px 16px 0 0;
+      padding: 18px;
+      max-height: 90vh;
+      overflow-y: auto;
+      animation: slideUp 0.2s ease-out;
+    }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    .modal-title { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+    .modal-sub   { font-size: 12px; color: var(--text3); margin-bottom: 14px; }
+    .modal-field { margin-bottom: 10px; }
+    .modal-field label {
+      font-size: 11px; color: var(--text3); text-transform: uppercase;
+      letter-spacing: 0.3px; display: block; margin-bottom: 4px;
+    }
+    .modal-field input, .modal-field select, .modal-field textarea {
+      width: 100%;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 14px;
+      padding: 9px 12px;
+    }
+    .modal-field textarea { resize: none; min-height: 60px; font-family: inherit; }
+    .modal-field input:focus, .modal-field select:focus, .modal-field textarea:focus {
+      outline: none; border-color: var(--accent);
+    }
+    .modal-actions { display: flex; gap: 8px; margin-top: 14px; }
+    .btn-cancel, .btn-ok {
+      flex: 1; padding: 12px; border-radius: var(--radius);
+      border: none; font-size: 14px; font-weight: 700; cursor: pointer;
+    }
+    .btn-cancel { background: var(--bg3); color: var(--text); border: 1px solid var(--border); }
+    .btn-ok     { background: var(--accent); color: #000; }
+    .btn-ok:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .toast {
+      position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+      background: var(--bg3); border: 1px solid var(--border); color: var(--text);
+      padding: 10px 16px; border-radius: 99px; font-size: 13px;
+      z-index: 200;
+      opacity: 0; transition: opacity 0.2s;
+      pointer-events: none;
+    }
+    .toast.visible { opacity: 1; }
+    .toast.ok    { border-color: var(--green); color: #6ee7b7; }
+    .toast.error { border-color: var(--red);   color: #fca5a5; }
+
+    .loader {
+      text-align: center; padding: 30px; color: var(--text3); font-size: 13px;
+    }
+    .spin { display: inline-block; animation: spin 1s linear infinite; }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <a class="header-back" href="app.html">←</a>
+  <div class="header-brand">
+    <div class="header-empresa">La <span>Quinta</span></div>
+    <div class="header-predio">Inventario · Stock de productos</div>
+  </div>
+</div>
+
+<div class="summary">
+  <div class="sum-card">
+    <div class="sum-val" id="sumTotal">—</div>
+    <div class="sum-lbl">Productos</div>
+  </div>
+  <div class="sum-card bajo">
+    <div class="sum-val" id="sumBajo">—</div>
+    <div class="sum-lbl">Stock bajo</div>
+  </div>
+  <div class="sum-card agot">
+    <div class="sum-val" id="sumAgot">—</div>
+    <div class="sum-lbl">Agotados</div>
+  </div>
+</div>
+
+<div class="searchbar">
+  <input type="text" id="searchInput" placeholder="Buscar producto..." />
+</div>
+
+<div class="filter-chips" id="chips">
+  <div class="chip active" data-cat="todos">Todos</div>
+  <div class="chip" data-cat="bajo_stock">⚠️ Bajo stock</div>
+  <div class="chip" data-cat="Fungicida">Fungicidas</div>
+  <div class="chip" data-cat="Insecticida">Insecticidas</div>
+  <div class="chip" data-cat="Acaricida">Acaricidas</div>
+  <div class="chip" data-cat="Herbicida">Herbicidas</div>
+  <div class="chip" data-cat="Nematicida">Nematicidas</div>
+  <div class="chip" data-cat="Regulador">Reguladores</div>
+  <div class="chip" data-cat="Post-cosecha">Post-cosecha</div>
+  <div class="chip" data-cat="Fertilizante Foliar">Foliar</div>
+  <div class="chip" data-cat="Fertirriego">Fertirriego</div>
+  <div class="chip" data-cat="Bioestimulante">Bioestimulantes</div>
+  <div class="chip" data-cat="Biológico">Biológicos</div>
+  <div class="chip" data-cat="Coadyuvante">Coadyuvantes</div>
+  <div class="chip" data-cat="Otro">Otros</div>
+</div>
+
+<div class="list" id="listContainer">
+  <div class="loader"><span class="spin">⏳</span> Cargando inventario...</div>
+</div>
+
+<div class="fab-bar">
+  <button class="fab-btn secondary" onclick="abrirHistorial()">📋 Historial</button>
+  <button class="fab-btn secondary" style="background:rgba(16,185,129,0.15); color:#6ee7b7; border-color:rgba(16,185,129,0.4);" onclick="location.href='compra.html'">📸 Ingreso</button>
+  <button class="fab-btn" id="btnNuevoConsumo" onclick="abrirModalConsumoLibre()">➖ Consumo</button>
+</div>
+
+<!-- Modal consumo -->
+<div class="overlay" id="modalOverlay" onclick="cerrarModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-title" id="modalTitle">Registrar consumo</div>
+    <div class="modal-sub"   id="modalSub">—</div>
+
+    <div class="modal-field">
+      <label>Producto</label>
+      <select id="mProducto"></select>
+    </div>
+    <div class="modal-field">
+      <label>Cantidad consumida</label>
+      <input type="number" step="0.01" min="0" id="mCantidad" placeholder="0.00" inputmode="decimal">
+    </div>
+    <div class="modal-field">
+      <label>Fecha</label>
+      <input type="date" id="mFecha">
+    </div>
+    <div class="modal-field">
+      <label>Cuartel</label>
+      <select id="mCuartel">
+        <option value="">— seleccionar —</option>
+        <option>C2</option>
+        <option>C3</option>
+        <option>C4</option>
+        <option>General</option>
+      </select>
+    </div>
+    <div class="modal-field">
+      <label>Operación</label>
+      <select id="mOperacion">
+        <option value="">— seleccionar —</option>
+        <option>Fitosanitario</option>
+        <option>Fertirriego</option>
+        <option>Foliar</option>
+        <option>Herbicida</option>
+        <option>Aplicación biológica</option>
+        <option>Bioestimulante</option>
+        <option>Regulador crecimiento</option>
+        <option>Post-cosecha</option>
+        <option>Otro</option>
+      </select>
+    </div>
+    <div class="modal-field">
+      <label>Notas (opcional)</label>
+      <textarea id="mNotas" placeholder="Mezcla, dosis aplicada, etc."></textarea>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn-ok" id="btnGuardarConsumo" onclick="guardarConsumo()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const GAS_URL     = 'https://script.google.com/macros/s/AKfycbydi5imjeA5bXY5TlA7MBVGkG6-Aq4XhYC0soXGPUMl41lEvdL8rc-xhjeRv9m0_aJg/exec';
+const GAS_TOKEN   = 'LQ2026-Santina';
+
+const state = {
+  inventario: [],
+  productos:  [],
+  filtroCat:  'todos',
+  busqueda:   '',
+  seleccionado: null,
+  gps: null
+};
+
+function esc(s){
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function toast(msg, tipo){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast visible ' + (tipo||'');
+  clearTimeout(t._to);
+  t._to = setTimeout(()=> t.classList.remove('visible'), 3000);
+}
+
+async function cargarDatos(){
+  try {
+    const [invRes, prodRes] = await Promise.all([
+      fetch(`${GAS_URL}?action=list_inventario&_=${Date.now()}`),
+      fetch(`${GAS_URL}?action=list_productos&_=${Date.now()}`)
+    ]);
+    const inv  = await invRes.json();
+    const prod = await prodRes.json();
+    state.inventario = inv.inventario || [];
+    state.productos  = prod.productos  || [];
+    // Merge: productos del catálogo sin stock → mostrar con stock=0
+    const codigosConStock = new Set(state.inventario.map(i => i.codigo));
+    state.productos.forEach(p => {
+      if (!codigosConStock.has(p.codigo)) {
+        state.inventario.push({
+          codigo: p.codigo,
+          nombre_comercial: p.nombre_comercial,
+          unidad: p.unidad,
+          stock_actual: 0,
+          stock_minimo: 0,
+          ultima_entrada: '',
+          ultima_salida: '',
+          ubicacion: '',
+          estado: 'SIN_STOCK',
+          costo_promedio: 0,
+          categoria: p.categoria
+        });
+      } else {
+        // Adjuntar categoría al item de inventario para filtrar
+        const item = state.inventario.find(i => i.codigo === p.codigo);
+        if (item) item.categoria = p.categoria;
+      }
+    });
+    render();
+  } catch(err) {
+    document.getElementById('listContainer').innerHTML =
+      '<div class="empty">⚠️ Error al cargar. Revisa conexión.<br><br>'+esc(err.toString())+'</div>';
+  }
+}
+
+function render(){
+  let items = state.inventario.slice();
+
+  // Filtro categoría
+  if (state.filtroCat === 'bajo_stock') {
+    items = items.filter(i => i.estado === 'BAJO' || i.estado === 'AGOTADO' || i.estado === 'DESCUADRE');
+  } else if (state.filtroCat !== 'todos') {
+    items = items.filter(i => (i.categoria||'') === state.filtroCat);
+  }
+
+  // Búsqueda
+  const q = state.busqueda.toLowerCase().trim();
+  if (q) {
+    items = items.filter(i =>
+      (i.nombre_comercial||'').toLowerCase().includes(q) ||
+      (i.codigo||'').toLowerCase().includes(q)
+    );
+  }
+
+  // Orden: BAJO/AGOTADO primero, luego nombre
+  items.sort((a,b) => {
+    const rank = { AGOTADO: 0, DESCUADRE: 0, BAJO: 1, OK: 2, SIN_STOCK: 3 };
+    const ra = rank[a.estado] ?? 2, rb = rank[b.estado] ?? 2;
+    if (ra !== rb) return ra - rb;
+    return (a.nombre_comercial||'').localeCompare(b.nombre_comercial||'');
+  });
+
+  // Resumen
+  document.getElementById('sumTotal').textContent = state.inventario.length;
+  document.getElementById('sumBajo').textContent  =
+    state.inventario.filter(i => i.estado === 'BAJO').length;
+  document.getElementById('sumAgot').textContent  =
+    state.inventario.filter(i => i.estado === 'AGOTADO' || i.estado === 'DESCUADRE').length;
+
+  const cont = document.getElementById('listContainer');
+  if (!items.length) {
+    cont.innerHTML = '<div class="empty">📭 Sin productos para mostrar</div>';
+    return;
+  }
+
+  cont.innerHTML = items.map(i => `
+    <div class="prod-card" onclick="abrirModalConsumo('${esc(i.codigo)}')">
+      <div class="prod-head">
+        <div class="prod-name">${esc(i.nombre_comercial)}</div>
+        <div class="prod-badge ${esc(i.estado)}">${esc(i.estado)}</div>
+      </div>
+      <div class="prod-meta">
+        <span>${esc(i.codigo)}</span>
+        ${i.categoria ? '<span>· '+esc(i.categoria)+'</span>' : ''}
+        ${i.ultima_salida ? '<span>· Último uso: '+esc(fmtFecha(i.ultima_salida))+'</span>' : ''}
+      </div>
+      <div class="prod-stock">
+        <div>
+          <span class="prod-stock-val">${fmtNum(i.stock_actual)}</span><span class="prod-stock-unit">${esc(i.unidad)}</span>
+        </div>
+        ${i.stock_minimo > 0 ? '<div class="prod-stock-min">Mín: '+fmtNum(i.stock_minimo)+' '+esc(i.unidad)+'</div>' : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+function fmtNum(n){
+  const x = Number(n) || 0;
+  return Number.isInteger(x) ? x.toString() : x.toFixed(2);
+}
+
+function fmtFecha(f){
+  if (!f) return '';
+  const d = new Date(f);
+  if (isNaN(d.getTime())) return String(f).substring(0,10);
+  return d.toLocaleDateString('es-CL');
+}
+
+function abrirModalConsumo(codigo){
+  const item = state.inventario.find(i => i.codigo === codigo);
+  state.seleccionado = codigo;
+  llenarProductosSelect(codigo);
+  document.getElementById('modalTitle').textContent = 'Registrar consumo';
+  document.getElementById('modalSub').textContent   =
+    item ? `Stock actual: ${fmtNum(item.stock_actual)} ${item.unidad}` : '';
+  document.getElementById('mCantidad').value = '';
+  document.getElementById('mFecha').value    = new Date().toISOString().slice(0,10);
+  document.getElementById('mCuartel').value  = '';
+  document.getElementById('mOperacion').value = '';
+  document.getElementById('mNotas').value    = '';
+  document.getElementById('modalOverlay').classList.add('visible');
+}
+
+function abrirModalConsumoLibre(){
+  abrirModalConsumo(state.inventario[0]?.codigo || '');
+}
+
+function llenarProductosSelect(codigoSel){
+  const sel = document.getElementById('mProducto');
+  const opts = state.inventario.slice().sort((a,b)=> (a.nombre_comercial||'').localeCompare(b.nombre_comercial||''));
+  sel.innerHTML = opts.map(i =>
+    `<option value="${esc(i.codigo)}" ${i.codigo===codigoSel?'selected':''}>${esc(i.nombre_comercial)} (${fmtNum(i.stock_actual)} ${esc(i.unidad)})</option>`
+  ).join('');
+}
+
+function cerrarModal(e){
+  if (e && e.target !== e.currentTarget) return;
+  document.getElementById('modalOverlay').classList.remove('visible');
+}
+
+async function guardarConsumo(){
+  const btn = document.getElementById('btnGuardarConsumo');
+  const codigo = document.getElementById('mProducto').value;
+  const cantidad = parseFloat(document.getElementById('mCantidad').value);
+  const fecha = document.getElementById('mFecha').value;
+  const cuartel = document.getElementById('mCuartel').value;
+  const operacion = document.getElementById('mOperacion').value;
+  const notas = document.getElementById('mNotas').value.trim();
+
+  if (!codigo) { toast('Selecciona un producto', 'error'); return; }
+  if (!cantidad || cantidad <= 0) { toast('Cantidad inválida', 'error'); return; }
+  if (!fecha) { toast('Falta la fecha', 'error'); return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Guardando...';
+
+  const payload = {
+    token: GAS_TOKEN,
+    action: 'add_consumo',
+    codigo, cantidad, fecha, cuartel, operacion, notas,
+    usuario: (window.LQ_AUTH_USER || 'equipo')
+  };
+  if (state.gps) {
+    payload.gps_lat = state.gps.lat;
+    payload.gps_lng = state.gps.lng;
+  }
+
+  try {
+    await fetch(GAS_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(payload)
+    });
+    toast('✅ Consumo registrado', 'ok');
+    cerrarModal();
+    setTimeout(cargarDatos, 800);
+  } catch(err) {
+    toast('Error: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Guardar';
+  }
+}
+
+function abrirHistorial(){
+  window.location.href = 'inventario_historial.html';
+}
+
+// GPS silencioso en segundo plano
+if (navigator.geolocation) {
+  navigator.geolocation.getCurrentPosition(
+    pos => { state.gps = { lat: pos.coords.latitude, lng: pos.coords.longitude }; },
+    err => {},
+    { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
+  );
+}
+
+// Eventos
+document.getElementById('searchInput').addEventListener('input', e => {
+  state.busqueda = e.target.value;
+  render();
+});
+document.querySelectorAll('.chip').forEach(c => {
+  c.addEventListener('click', () => {
+    document.querySelectorAll('.chip').forEach(x => x.classList.remove('active'));
+    c.classList.add('active');
+    state.filtroCat = c.dataset.cat;
+    render();
+  });
+});
+
+cargarDatos();
+</script>
+
+</body>
+</html>

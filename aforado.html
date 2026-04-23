@@ -42,7 +42,7 @@
       background: var(--bg);
       color: var(--text);
       min-height: 100dvh;
-      padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 140px);
+      padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
       -webkit-tap-highlight-color: transparent;
     }
     ::-webkit-scrollbar { width: 4px; }
@@ -531,6 +531,17 @@
       color: var(--text3); font-size: 14px; line-height: 1.8;
     }
     .empty-icon { font-size: 48px; display: block; margin-bottom: 12px; opacity: 0.5; }
+
+    /* ── Ajustes móviles ── */
+    @media (max-width: 480px) {
+      .grid-2 { grid-template-columns: 1fr; gap: 12px; }
+      .stepper-input { font-size: 20px; padding: 10px 2px; }
+      .stepper-btn   { font-size: 22px; padding: 8px 12px; }
+      .stepper-unit  { font-size: 11px; padding-right: 8px; }
+      .presion-row   { flex-direction: column; gap: 8px; align-items: stretch; }
+      .presion-arrow { transform: rotate(90deg); text-align: center; }
+      .medicion-row { grid-template-columns: 30px 1fr 70px; }
+    }
   </style>
 </head>
 <body>
@@ -708,7 +719,12 @@
     </div>
   </div>
 
-  <div style="height:8px"></div>
+  <!-- ── BOTÓN GUARDAR (dentro del scroll, como en fenología) ── -->
+  <button class="btn-submit" id="btnSubmit" onclick="handleSubmit()" style="width:100%;padding:16px;border-radius:var(--radius);border:none;background:var(--teal);color:#fff;font-size:16px;font-weight:700;cursor:pointer;letter-spacing:-0.2px;margin-top:8px">
+    💧 &nbsp;Guardar aforado
+  </button>
+
+  <div style="height:24px"></div>
 </div><!-- /content -->
 </div><!-- /panelCaptura -->
 
@@ -781,12 +797,8 @@
 </div><!-- /content -->
 </div><!-- /panelHistorial -->
 
-<!-- ── BOTTOM BAR (only in captura tab) ── -->
-<div class="bottombar" id="bottomBar">
-  <button class="btn-submit" id="btnSubmit" onclick="handleSubmit()">
-    💧 &nbsp;Guardar aforado
-  </button>
-</div>
+<!-- bottombar fijo removido - el botón ahora va dentro del scroll del panel -->
+<div id="bottomBar" style="display:none"></div>
 
 <!-- ── OVERLAY LOADING ── -->
 <div class="overlay-loading-bg" id="overlayLoading">

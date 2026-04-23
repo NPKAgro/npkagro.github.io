@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
+  <title>Inventario Admin · La Quinta</title>
+  <script>window.LQ_AUTH_MODE = 'admin';</script>
+  <script src="auth.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:      #0f1117;
+      --bg2:     #161b24;
+      --bg3:     #1e2534;
+      --border:  rgba(255,255,255,0.08);
+      --text:    #f0f2f5;
+      --text2:   #8b93a5;
+      --text3:   #555e70;
+      --accent:  #f59e0b;
+      --green:   #10b981;
+      --amber:   #f59e0b;
+      --red:     #ef4444;
+      --blue:    #3b82f6;
+      --radius:  10px;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, 'Segoe UI', sans-serif;
+      min-height: 100vh;
+    }
+    header {
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 24px;
+      display: flex; align-items: center; gap: 14px;
+      position: sticky; top: 0; z-index: 50;
+    }
+    .back-btn {
+      width: 36px; height: 36px;
+      border-radius: 8px; background: var(--bg3);
+      border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; color: var(--text2); text-decoration: none;
+    }
+    .brand { display: flex; flex-direction: column; line-height: 1.2; flex: 1; }
+    .brand-empresa { font-size: 16px; font-weight: 700; }
+    .brand-empresa span { color: var(--accent); }
+    .brand-predio { font-size: 11px; color: var(--text3); }
+
+    .content { max-width: 1200px; margin: 0 auto; padding: 24px; }
+
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+    .kpi {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      border-left: 3px solid var(--blue);
+    }
+    .kpi.amber { border-left-color: var(--amber); }
+    .kpi.red   { border-left-color: var(--red); }
+    .kpi.green { border-left-color: var(--green); }
+    .kpi-val { font-size: 28px; font-weight: 800; font-variant-numeric: tabular-nums; margin-top: 4px; }
+    .kpi-lbl { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.4px; }
+    .kpi-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+    .tabs {
+      display: flex; gap: 4px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 4px;
+      margin-bottom: 16px;
+      width: fit-content;
+    }
+    .tab {
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text3);
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .tab.active { background: var(--accent); color: #000; }
+
+    .toolbar {
+      display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap;
+    }
+    .toolbar input, .toolbar select {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text); font-size: 13px;
+      padding: 8px 12px;
+      min-width: 160px;
+    }
+    .toolbar input:focus, .toolbar select:focus {
+      outline: none; border-color: var(--accent);
+    }
+
+    .pane { display: none; }
+    .pane.active { display: block; }
+
+    .table-wrap {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    th {
+      text-align: left;
+      padding: 10px 12px;
+      background: var(--bg3);
+      font-size: 11px;
+      color: var(--text3);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    tr:hover td { background: var(--bg3); }
+    .num { text-align: right; font-variant-numeric: tabular-nums; }
+    .badge {
+      display: inline-block;
+      font-size: 10px; font-weight: 700;
+      padding: 2px 7px; border-radius: 99px;
+      text-transform: uppercase; letter-spacing: 0.3px;
+    }
+    .badge.OK       { background: rgba(16,185,129,0.15); color: #6ee7b7; }
+    .badge.BAJO     { background: rgba(245,158,11,0.15); color: #fbbf24; }
+    .badge.AGOTADO  { background: rgba(239,68,68,0.15);  color: #fca5a5; }
+    .badge.DESCUADRE{ background: rgba(239,68,68,0.3);   color: #fca5a5; }
+    .badge.ENTRADA  { background: rgba(16,185,129,0.15); color: #6ee7b7; }
+    .badge.SALIDA   { background: rgba(249,115,22,0.15); color: #fdba74; }
+    .badge.AJUSTE   { background: rgba(139,92,246,0.15); color: #c4b5fd; }
+    .badge.tox-muy    { background: rgba(239,68,68,0.2);  color: #fca5a5; }
+    .badge.tox-mod    { background: rgba(249,115,22,0.15); color: #fdba74; }
+    .badge.tox-lig    { background: rgba(245,158,11,0.15); color: #fbbf24; }
+    .badge.tox-virt   { background: rgba(16,185,129,0.15); color: #6ee7b7; }
+    .badge.tox-other  { background: rgba(139,92,246,0.10); color: #a78bfa; }
+    .sag-pill { font-size: 10px; color: var(--text3); font-variant-numeric: tabular-nums; margin-left: 6px; }
+
+    .min-input {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 6px; color: var(--text);
+      width: 70px; padding: 4px 6px;
+      font-size: 12px; text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    .min-input:focus { outline: none; border-color: var(--accent); }
+
+    .action-link {
+      background: none; border: none; color: var(--red);
+      cursor: pointer; font-size: 13px;
+      padding: 2px 6px;
+    }
+    .action-link:hover { text-decoration: underline; }
+
+    .empty, .loader {
+      padding: 40px; text-align: center; color: var(--text3); font-size: 13px;
+    }
+
+    .toast {
+      position: fixed; bottom: 30px; right: 30px;
+      background: var(--bg2); border: 1px solid var(--border);
+      color: var(--text);
+      padding: 12px 18px; border-radius: 8px;
+      font-size: 13px; opacity: 0; transition: opacity 0.2s;
+      pointer-events: none; z-index: 100;
+    }
+    .toast.visible { opacity: 1; }
+    .toast.ok    { border-color: var(--green); }
+    .toast.error { border-color: var(--red); }
+  </style>
+</head>
+<body>
+
+<header>
+  <a class="back-btn" href="index.html">←</a>
+  <div class="brand">
+    <div class="brand-empresa">Agrícola <span>del Pedregal</span></div>
+    <div class="brand-predio">La Quinta · Inventario administración</div>
+  </div>
+  <a class="back-btn" style="width:auto; padding:0 14px; font-size:13px; font-weight:700" href="compra.html">🧾 Nueva compra</a>
+</header>
+
+<div class="content">
+
+  <div class="kpis">
+    <div class="kpi blue">
+      <div class="kpi-lbl">Productos catálogo</div>
+      <div class="kpi-val" id="kpiTotal">—</div>
+      <div class="kpi-sub" id="kpiActivos">—</div>
+    </div>
+    <div class="kpi amber">
+      <div class="kpi-lbl">Stock bajo</div>
+      <div class="kpi-val" id="kpiBajo">—</div>
+      <div class="kpi-sub">Productos bajo el mínimo</div>
+    </div>
+    <div class="kpi red">
+      <div class="kpi-lbl">Agotados</div>
+      <div class="kpi-val" id="kpiAgot">—</div>
+      <div class="kpi-sub">Stock en cero o descuadre</div>
+    </div>
+    <div class="kpi green">
+      <div class="kpi-lbl">Valor de inventario</div>
+      <div class="kpi-val" id="kpiValor">—</div>
+      <div class="kpi-sub">CLP (costo promedio × stock)</div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" data-pane="stock">📦 Stock</div>
+    <div class="tab"         data-pane="bajos">⚠️ Bajo stock</div>
+    <div class="tab"         data-pane="movs">📋 Movimientos</div>
+    <div class="tab"         data-pane="catalogo">📚 Catálogo</div>
+  </div>
+
+  <!-- Stock -->
+  <div class="pane active" id="paneStock">
+    <div class="toolbar">
+      <input type="text" id="stockSearch" placeholder="Buscar producto...">
+      <select id="stockCat">
+        <option value="">Todas las categorías</option>
+      </select>
+      <select id="stockEstado">
+        <option value="">Todos los estados</option>
+        <option value="OK">OK</option>
+        <option value="BAJO">BAJO</option>
+        <option value="AGOTADO">AGOTADO</option>
+      </select>
+    </div>
+    <div class="table-wrap">
+      <table id="tblStock">
+        <thead>
+          <tr>
+            <th>Código</th><th>Producto</th><th>Categoría</th>
+            <th class="num">Stock</th><th>Unidad</th>
+            <th class="num">Mínimo</th>
+            <th>Estado</th>
+            <th>Últ. entrada</th><th>Últ. salida</th>
+            <th class="num">Costo prom.</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Bajos -->
+  <div class="pane" id="paneBajos">
+    <div class="table-wrap">
+      <table id="tblBajos">
+        <thead>
+          <tr>
+            <th>Código</th><th>Producto</th><th class="num">Stock</th>
+            <th class="num">Mínimo</th><th>Unidad</th><th>Estado</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Movimientos -->
+  <div class="pane" id="paneMovs">
+    <div class="toolbar">
+      <input type="date" id="mvDesde">
+      <input type="date" id="mvHasta">
+      <select id="mvTipo">
+        <option value="">Todos los tipos</option>
+        <option value="ENTRADA">Entradas</option>
+        <option value="SALIDA">Salidas</option>
+      </select>
+      <select id="mvEstado">
+        <option value="">Todos</option>
+        <option value="Activo">Activos</option>
+        <option value="Anulado">Anulados</option>
+      </select>
+      <input type="text" id="mvSearch" placeholder="Buscar producto/proveedor...">
+    </div>
+    <div class="table-wrap">
+      <table id="tblMovs">
+        <thead>
+          <tr>
+            <th>Fecha</th><th>Tipo</th><th>Producto</th>
+            <th class="num">Cantidad</th><th>Unidad</th>
+            <th>Cuartel/Operación</th><th>Proveedor/Factura</th>
+            <th class="num">Total CLP</th>
+            <th>Estado</th><th></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Catálogo -->
+  <div class="pane" id="paneCat">
+    <div class="toolbar">
+      <input type="text" id="catSearch" placeholder="Buscar en catálogo...">
+      <select id="catCat">
+        <option value="">Todas las categorías</option>
+      </select>
+    </div>
+    <div class="table-wrap">
+      <table id="tblCat">
+        <thead>
+          <tr>
+            <th>Código</th><th>Nº SAG</th><th>Producto</th><th>Ing. activo</th>
+            <th>Categoría</th><th>Unidad</th><th>Proveedor</th>
+            <th class="num">Precio ref.</th>
+            <th>🐝 Toxicidad abejas</th>
+            <th>Uso</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const GAS_URL   = 'https://script.google.com/macros/s/AKfycbydi5imjeA5bXY5TlA7MBVGkG6-Aq4XhYC0soXGPUMl41lEvdL8rc-xhjeRv9m0_aJg/exec';
+const GAS_TOKEN = 'LQ2026-Santina';
+
+const state = { inventario: [], productos: [], movimientos: [] };
+
+function esc(s){ return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fmtNum(n){ const x = Number(n)||0; return Number.isInteger(x) ? x.toString() : x.toFixed(2); }
+function fmtCLP(n){ return '$ ' + (Math.round(Number(n)||0)).toLocaleString('es-CL'); }
+function fmtFecha(f){ if (!f) return ''; const d = new Date(f); return isNaN(d.getTime()) ? String(f).substring(0,10) : d.toLocaleDateString('es-CL'); }
+function toast(msg, tipo){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast visible ' + (tipo||'');
+  clearTimeout(t._to);
+  t._to = setTimeout(()=> t.classList.remove('visible'), 3000);
+}
+
+async function cargarTodo(){
+  try {
+    const [inv, prod, movs] = await Promise.all([
+      fetch(`${GAS_URL}?action=list_inventario&_=${Date.now()}`).then(r=>r.json()),
+      fetch(`${GAS_URL}?action=list_productos&_=${Date.now()}`).then(r=>r.json()),
+      fetch(`${GAS_URL}?action=list_movimientos&limit=500&_=${Date.now()}`).then(r=>r.json())
+    ]);
+    state.inventario  = inv.inventario   || [];
+    state.productos   = prod.productos   || [];
+    state.movimientos = movs.movimientos || [];
+
+    // Merge categoría en inventario
+    const catMap = {};
+    state.productos.forEach(p => catMap[p.codigo] = p.categoria);
+    state.inventario.forEach(i => { if (!i.categoria) i.categoria = catMap[i.codigo] || ''; });
+
+    renderKPIs();
+    renderStock();
+    renderBajos();
+    renderMovs();
+    renderCatalogo();
+    llenarSelects();
+  } catch(err) {
+    toast('Error al cargar: '+err.message, 'error');
+  }
+}
+
+function renderKPIs(){
+  const tot = state.productos.length;
+  const activos = state.productos.filter(p => p.activo !== false).length;
+  const bajos   = state.inventario.filter(i => i.estado === 'BAJO').length;
+  const agot    = state.inventario.filter(i => i.estado === 'AGOTADO' || i.estado === 'DESCUADRE').length;
+  const valor   = state.inventario.reduce((s, i) => s + (Number(i.stock_actual)||0) * (Number(i.costo_promedio)||0), 0);
+  document.getElementById('kpiTotal').textContent = tot;
+  document.getElementById('kpiActivos').textContent = activos + ' activos';
+  document.getElementById('kpiBajo').textContent  = bajos;
+  document.getElementById('kpiAgot').textContent  = agot;
+  document.getElementById('kpiValor').textContent = fmtCLP(valor);
+}
+
+function llenarSelects(){
+  const cats = [...new Set(state.productos.map(p => p.categoria).filter(Boolean))].sort();
+  ['stockCat','catCat'].forEach(id => {
+    const s = document.getElementById(id);
+    const current = s.value;
+    s.innerHTML = '<option value="">Todas las categorías</option>' +
+      cats.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+    s.value = current;
+  });
+}
+
+function renderStock(){
+  const q       = (document.getElementById('stockSearch').value||'').toLowerCase().trim();
+  const cat     = document.getElementById('stockCat').value;
+  const estado  = document.getElementById('stockEstado').value;
+  let items = state.inventario.slice();
+  if (cat)    items = items.filter(i => i.categoria === cat);
+  if (estado) items = items.filter(i => i.estado   === estado);
+  if (q) items = items.filter(i =>
+    (i.nombre_comercial||'').toLowerCase().includes(q) ||
+    (i.codigo||'').toLowerCase().includes(q)
+  );
+  items.sort((a,b) => {
+    const rank = { AGOTADO:0, DESCUADRE:0, BAJO:1, OK:2 };
+    const ra = rank[a.estado] ?? 2, rb = rank[b.estado] ?? 2;
+    return ra - rb || (a.nombre_comercial||'').localeCompare(b.nombre_comercial||'');
+  });
+  const tb = document.querySelector('#tblStock tbody');
+  if (!items.length) { tb.innerHTML = '<tr><td colspan="10" class="empty">Sin productos</td></tr>'; return; }
+  tb.innerHTML = items.map(i => `
+    <tr>
+      <td>${esc(i.codigo)}</td>
+      <td><strong>${esc(i.nombre_comercial)}</strong></td>
+      <td>${esc(i.categoria||'—')}</td>
+      <td class="num">${fmtNum(i.stock_actual)}</td>
+      <td>${esc(i.unidad)}</td>
+      <td class="num">
+        <input class="min-input" type="number" step="0.1" min="0" value="${Number(i.stock_minimo)||0}"
+               onchange="actualizarMin('${esc(i.codigo)}', this.value)">
+      </td>
+      <td><span class="badge ${esc(i.estado)}">${esc(i.estado)}</span></td>
+      <td>${esc(fmtFecha(i.ultima_entrada))}</td>
+      <td>${esc(fmtFecha(i.ultima_salida))}</td>
+      <td class="num">${i.costo_promedio ? fmtCLP(i.costo_promedio) : '—'}</td>
+    </tr>
+  `).join('');
+}
+
+function renderBajos(){
+  const items = state.inventario.filter(i => i.estado==='BAJO' || i.estado==='AGOTADO' || i.estado==='DESCUADRE');
+  const tb = document.querySelector('#tblBajos tbody');
+  if (!items.length) { tb.innerHTML = '<tr><td colspan="6" class="empty">🎉 Ningún producto bajo el mínimo</td></tr>'; return; }
+  tb.innerHTML = items.sort((a,b)=>(a.stock_actual||0)-(b.stock_actual||0)).map(i => `
+    <tr>
+      <td>${esc(i.codigo)}</td>
+      <td><strong>${esc(i.nombre_comercial)}</strong></td>
+      <td class="num">${fmtNum(i.stock_actual)}</td>
+      <td class="num">${fmtNum(i.stock_minimo)}</td>
+      <td>${esc(i.unidad)}</td>
+      <td><span class="badge ${esc(i.estado)}">${esc(i.estado)}</span></td>
+    </tr>
+  `).join('');
+}
+
+function renderMovs(){
+  const desde  = document.getElementById('mvDesde').value;
+  const hasta  = document.getElementById('mvHasta').value;
+  const tipo   = document.getElementById('mvTipo').value;
+  const estado = document.getElementById('mvEstado').value;
+  const q      = (document.getElementById('mvSearch').value||'').toLowerCase().trim();
+
+  let items = state.movimientos.slice();
+  if (tipo)   items = items.filter(m => m.tipo   === tipo);
+  if (estado) items = items.filter(m => m.estado === estado);
+  if (desde)  items = items.filter(m => String(m.fecha||'').substring(0,10) >= desde);
+  if (hasta)  items = items.filter(m => String(m.fecha||'').substring(0,10) <= hasta);
+  if (q) items = items.filter(m =>
+    (m.nombre_comercial||'').toLowerCase().includes(q) ||
+    (m.proveedor||'').toLowerCase().includes(q) ||
+    (m.factura_n||'').toLowerCase().includes(q) ||
+    (m.codigo||'').toLowerCase().includes(q)
+  );
+
+  const tb = document.querySelector('#tblMovs tbody');
+  if (!items.length) { tb.innerHTML = '<tr><td colspan="10" class="empty">Sin movimientos</td></tr>'; return; }
+  tb.innerHTML = items.map(m => `
+    <tr style="${m.estado==='Anulado'?'opacity:0.5; text-decoration:line-through':''}">
+      <td>${esc(fmtFecha(m.fecha))}</td>
+      <td><span class="badge ${esc(m.tipo)}">${esc(m.tipo)}</span></td>
+      <td><strong>${esc(m.nombre_comercial)}</strong><br><span style="color:var(--text3); font-size:11px">${esc(m.codigo)}</span></td>
+      <td class="num">${m.tipo==='SALIDA'?'−':'+'}${fmtNum(m.cantidad)}</td>
+      <td>${esc(m.unidad)}</td>
+      <td>${m.tipo==='SALIDA' ? esc(m.cuartel||'')+(m.operacion?' · '+esc(m.operacion):'') : '—'}</td>
+      <td>${m.tipo==='ENTRADA' ? esc(m.proveedor||'')+(m.factura_n?' · '+esc(m.factura_n):'') : '—'}</td>
+      <td class="num">${m.precio_total?fmtCLP(m.precio_total):'—'}</td>
+      <td>${esc(m.estado||'Activo')}</td>
+      <td>${m.estado==='Activo' ? `<button class="action-link" onclick="anular(${m.fila})">Anular</button>` : ''}</td>
+    </tr>
+  `).join('');
+}
+
+function renderCatalogo(){
+  const q   = (document.getElementById('catSearch').value||'').toLowerCase().trim();
+  const cat = document.getElementById('catCat').value;
+  let items = state.productos.slice();
+  if (cat) items = items.filter(p => p.categoria === cat);
+  if (q) items = items.filter(p =>
+    (p.nombre_comercial||'').toLowerCase().includes(q) ||
+    (p.codigo||'').toLowerCase().includes(q) ||
+    (p.ingrediente_activo||'').toLowerCase().includes(q) ||
+    (p.sag_n||'').toLowerCase().includes(q)
+  );
+  items.sort((a,b) => (a.nombre_comercial||'').localeCompare(b.nombre_comercial||''));
+  const tb = document.querySelector('#tblCat tbody');
+  if (!items.length) { tb.innerHTML = '<tr><td colspan="10" class="empty">Sin productos</td></tr>'; return; }
+  tb.innerHTML = items.map(p => `
+    <tr>
+      <td>${esc(p.codigo)}</td>
+      <td><span class="sag-pill">${esc(p.sag_n||'—')}</span></td>
+      <td><strong>${esc(p.nombre_comercial)}</strong></td>
+      <td>${esc(p.ingrediente_activo||'—')}</td>
+      <td>${esc(p.categoria||'—')}</td>
+      <td>${esc(p.unidad)}</td>
+      <td>${esc(p.proveedor||'—')}</td>
+      <td class="num">${p.precio_ref_clp?fmtCLP(p.precio_ref_clp):'—'}</td>
+      <td>${toxBadge(p.toxicidad_abejas)}</td>
+      <td>${esc(p.uso_principal||'—')}</td>
+    </tr>
+  `).join('');
+}
+
+function toxBadge(tox){
+  if (!tox) return '—';
+  const t = tox.toLowerCase();
+  let cls = 'tox-other', icon = '';
+  if (t.includes('muy tóxico')) { cls = 'tox-muy'; icon = '🔴 '; }
+  else if (t.includes('moderadamente')) { cls = 'tox-mod'; icon = '🟠 '; }
+  else if (t.includes('ligeramente')) { cls = 'tox-lig'; icon = '🟡 '; }
+  else if (t.includes('virtualmente')) { cls = 'tox-virt'; icon = '🟢 '; }
+  else if (t.includes('proceso')) { cls = 'tox-other'; icon = '⏳ '; }
+  else if (t.includes('no aplica')) { cls = 'tox-other'; icon = '—'; }
+  return `<span class="badge ${cls}" title="${esc(tox)}">${icon}${esc(tox.length>20?tox.substring(0,18)+'…':tox)}</span>`;
+}
+
+async function actualizarMin(codigo, valor){
+  try {
+    await fetch(`${GAS_URL}?action=update_stock_minimo&codigo=${encodeURIComponent(codigo)}&stock_minimo=${encodeURIComponent(valor)}&token=${GAS_TOKEN}&_=${Date.now()}`);
+    const item = state.inventario.find(i => i.codigo === codigo);
+    if (item) { item.stock_minimo = parseFloat(valor)||0; }
+    toast('✅ Mínimo actualizado', 'ok');
+    setTimeout(cargarTodo, 600);
+  } catch(err) { toast('Error: '+err.message, 'error'); }
+}
+
+async function anular(fila){
+  if (!confirm('¿Anular este movimiento? Se revierte el stock.')) return;
+  try {
+    await fetch(`${GAS_URL}?action=anular_movimiento&fila=${fila}&token=${GAS_TOKEN}&_=${Date.now()}`);
+    toast('✅ Movimiento anulado', 'ok');
+    setTimeout(cargarTodo, 600);
+  } catch(err) { toast('Error: '+err.message, 'error'); }
+}
+
+// Tabs
+document.querySelectorAll('.tab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    document.querySelectorAll('.pane').forEach(p => p.classList.remove('active'));
+    document.getElementById('pane'+t.dataset.pane.charAt(0).toUpperCase()+t.dataset.pane.slice(1)).classList.add('active');
+  });
+});
+
+['stockSearch','stockCat','stockEstado'].forEach(id => document.getElementById(id).addEventListener('input', renderStock));
+['stockSearch','stockCat','stockEstado'].forEach(id => document.getElementById(id).addEventListener('change', renderStock));
+['mvDesde','mvHasta','mvTipo','mvEstado','mvSearch'].forEach(id => {
+  document.getElementById(id).addEventListener('input', renderMovs);
+  document.getElementById(id).addEventListener('change', renderMovs);
+});
+['catSearch','catCat'].forEach(id => {
+  document.getElementById(id).addEventListener('input', renderCatalogo);
+  document.getElementById(id).addEventListener('change', renderCatalogo);
+});
+
+cargarTodo();
+</script>
+
+</body>
+</html>

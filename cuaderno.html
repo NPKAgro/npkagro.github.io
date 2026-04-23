@@ -42,7 +42,7 @@
       background: var(--bg);
       color: var(--text);
       min-height: 100dvh;
-      padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 140px);
+      padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
       -webkit-tap-highlight-color: transparent;
     }
     ::-webkit-scrollbar { width: 4px; }
@@ -615,15 +615,13 @@
   </div>
 
   <!-- Espaciado final -->
-  <div style="height: 8px"></div>
-
-</div>
-
-<!-- ── BOTTOM BAR ── -->
-<div class="bottombar">
-  <button class="btn-submit" id="btnSubmit" onclick="handleSubmit()">
+  <!-- ── BOTÓN ENVIAR ── -->
+  <button class="btn-submit" id="btnSubmit" onclick="handleSubmit()" style="width:100%;padding:16px;border-radius:var(--radius);border:none;background:var(--accent);color:#fff;font-size:16px;font-weight:700;cursor:pointer;letter-spacing:-0.2px;margin-top:4px">
     📤 &nbsp;Guardar registro
   </button>
+
+  <div style="height: 24px"></div>
+
 </div>
 
 <!-- ── OVERLAY LOADING ── -->

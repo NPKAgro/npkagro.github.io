@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0f1117">
+  <meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
+  <title>Historial inventario · La Quinta</title>
+  <script>window.LQ_AUTH_MODE = 'equipo'; window.LQ_AUTH_SHOW_BAR = false;</script>
+  <script src="auth.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:#0f1117; --bg2:#161b24; --bg3:#1e2534;
+      --border:rgba(255,255,255,0.08); --text:#f0f2f5; --text2:#8b93a5; --text3:#555e70;
+      --accent:#f59e0b; --green:#10b981; --amber:#f59e0b; --red:#ef4444;
+      --radius:10px;
+    }
+    body { font-family:-apple-system,'Segoe UI',sans-serif; background:var(--bg); color:var(--text); min-height:100dvh; }
+    .header { background:var(--bg2); border-bottom:1px solid var(--border); padding:12px 18px; display:flex; align-items:center; gap:12px; position:sticky; top:0; z-index:50; }
+    .header-back { width:36px; height:36px; border-radius:8px; background:var(--bg3); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:20px; color:var(--text2); text-decoration:none; }
+    .header-brand { display:flex; flex-direction:column; line-height:1.25; flex:1; }
+    .header-empresa { font-size:15px; font-weight:700; }
+    .header-empresa span { color:var(--accent); }
+    .header-predio { font-size:11px; color:var(--text3); }
+    .content { padding:16px; max-width:700px; margin:0 auto; }
+    .filters { display:flex; gap:6px; padding:0 0 12px; overflow-x:auto; }
+    .chip { flex-shrink:0; padding:6px 12px; font-size:12px; font-weight:600; border:1px solid var(--border); border-radius:99px; color:var(--text2); background:var(--bg2); cursor:pointer; white-space:nowrap; }
+    .chip.active { background:var(--accent); color:#000; border-color:var(--accent); }
+    .mov { background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius); padding:12px 14px; margin-bottom:8px; }
+    .mov-head { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:4px; }
+    .mov-tipo { font-size:10px; font-weight:700; padding:2px 8px; border-radius:99px; text-transform:uppercase; letter-spacing:0.3px; }
+    .mov-tipo.ENTRADA { background:rgba(16,185,129,0.15); color:#6ee7b7; }
+    .mov-tipo.SALIDA  { background:rgba(249,115,22,0.15); color:#fdba74; }
+    .mov-qty { font-size:15px; font-weight:700; font-variant-numeric:tabular-nums; }
+    .mov-qty.in { color:#6ee7b7; } .mov-qty.out { color:#fdba74; }
+    .mov-name { font-size:13px; font-weight:700; margin-bottom:2px; }
+    .mov-meta { font-size:11px; color:var(--text3); line-height:1.4; }
+    .empty, .loader { padding:40px; text-align:center; color:var(--text3); font-size:13px; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <a class="header-back" href="inventario.html">←</a>
+  <div class="header-brand">
+    <div class="header-empresa">La <span>Quinta</span></div>
+    <div class="header-predio">Historial de inventario</div>
+  </div>
+</div>
+
+<div class="content">
+  <div class="filters">
+    <div class="chip active" data-tipo="">Todos</div>
+    <div class="chip" data-tipo="ENTRADA">Entradas</div>
+    <div class="chip" data-tipo="SALIDA">Salidas</div>
+  </div>
+  <div id="list"><div class="loader">⏳ Cargando...</div></div>
+</div>
+
+<script>
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbydi5imjeA5bXY5TlA7MBVGkG6-Aq4XhYC0soXGPUMl41lEvdL8rc-xhjeRv9m0_aJg/exec';
+const state = { mov: [], tipo: '' };
+
+function esc(s){ return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fmtNum(n){ const x = Number(n)||0; return Number.isInteger(x) ? x.toString() : x.toFixed(2); }
+function fmtFecha(f){ if (!f) return ''; const d = new Date(f); return isNaN(d.getTime()) ? String(f).substring(0,10) : d.toLocaleDateString('es-CL'); }
+function fmtCLP(n){ return '$'+(Math.round(Number(n)||0)).toLocaleString('es-CL'); }
+
+async function cargar(){
+  try {
+    const res = await fetch(`${GAS_URL}?action=list_movimientos&limit=200&_=${Date.now()}`);
+    state.mov = (await res.json()).movimientos || [];
+    render();
+  } catch(err) {
+    document.getElementById('list').innerHTML = '<div class="empty">Error: '+esc(err.message)+'</div>';
+  }
+}
+
+function render(){
+  let items = state.mov.slice();
+  if (state.tipo) items = items.filter(m => m.tipo === state.tipo);
+  items = items.filter(m => m.estado !== 'Anulado');
+  const list = document.getElementById('list');
+  if (!items.length) { list.innerHTML = '<div class="empty">Sin movimientos</div>'; return; }
+  list.innerHTML = items.map(m => `
+    <div class="mov">
+      <div class="mov-head">
+        <span class="mov-tipo ${esc(m.tipo)}">${esc(m.tipo)}</span>
+        <span class="mov-qty ${m.tipo==='ENTRADA'?'in':'out'}">${m.tipo==='ENTRADA'?'+':'−'}${fmtNum(m.cantidad)} ${esc(m.unidad)}</span>
+      </div>
+      <div class="mov-name">${esc(m.nombre_comercial)}</div>
+      <div class="mov-meta">
+        ${esc(fmtFecha(m.fecha))}
+        ${m.tipo==='ENTRADA' ? ' · '+esc(m.proveedor||'—')+(m.factura_n?' · '+esc(m.factura_n):'')+(m.precio_total?' · '+fmtCLP(m.precio_total):'') : ''}
+        ${m.tipo==='SALIDA' ? ' · '+esc(m.cuartel||'—')+(m.operacion?' · '+esc(m.operacion):''):''}
+        ${m.notas?'<br>'+esc(m.notas):''}
+      </div>
+    </div>
+  `).join('');
+}
+
+document.querySelectorAll('.chip').forEach(c => c.addEventListener('click', () => {
+  document.querySelectorAll('.chip').forEach(x => x.classList.remove('active'));
+  c.classList.add('active');
+  state.tipo = c.dataset.tipo;
+  render();
+}));
+
+cargar();
+</script>
+
+</body>
+</html>

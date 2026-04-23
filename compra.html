@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Compra LQ">
+  <meta name="theme-color" content="#0f1117">
+  <meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
+  <title>Registrar Compra · La Quinta</title>
+  <script>window.LQ_AUTH_MODE = 'equipo'; window.LQ_AUTH_SHOW_BAR = false;</script>
+  <script src="auth.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:      #0f1117;
+      --bg2:     #161b24;
+      --bg3:     #1e2534;
+      --border:  rgba(255,255,255,0.08);
+      --text:    #f0f2f5;
+      --text2:   #8b93a5;
+      --text3:   #555e70;
+      --accent:  #f59e0b;
+      --accent2: #d97706;
+      --green:   #10b981;
+      --red:     #ef4444;
+      --radius:  10px;
+    }
+    html, body { height: 100%; }
+    body {
+      font-family: -apple-system, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+      padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 120px);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .header {
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 18px;
+      display: flex; align-items: center; gap: 12px;
+      position: sticky; top: 0; z-index: 50;
+    }
+    .header-back {
+      width: 36px; height: 36px;
+      border-radius: 8px; background: var(--bg3);
+      border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; color: var(--text2);
+      text-decoration: none; flex-shrink: 0;
+    }
+    .header-brand { display: flex; flex-direction: column; line-height: 1.25; flex: 1; }
+    .header-empresa { font-size: 15px; font-weight: 700; }
+    .header-empresa span { color: var(--accent); }
+    .header-predio { font-size: 11px; color: var(--text3); }
+
+    .content { padding: 16px; max-width: 680px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+
+    .section {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+    }
+    .section-title {
+      font-size: 13px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.4px;
+      color: var(--text2); margin-bottom: 10px;
+    }
+    .field { margin-bottom: 10px; }
+    .field:last-child { margin-bottom: 0; }
+    .field label {
+      font-size: 11px; color: var(--text3);
+      text-transform: uppercase; letter-spacing: 0.3px;
+      display: block; margin-bottom: 4px;
+    }
+    .field input, .field select, .field textarea {
+      width: 100%;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 14px;
+      padding: 10px 12px;
+      font-family: inherit;
+    }
+    .field textarea { resize: none; min-height: 60px; }
+    .field input:focus, .field select:focus, .field textarea:focus {
+      outline: none; border-color: var(--accent);
+    }
+    .row { display: flex; gap: 8px; }
+    .row > * { flex: 1; }
+
+    /* Photo card */
+    .photo-slot {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      text-align: center;
+      cursor: pointer;
+      color: var(--text3);
+      transition: border-color 0.12s;
+    }
+    .photo-slot:active { border-color: var(--accent); }
+    .photo-slot.has-photo { border-style: solid; padding: 0; overflow: hidden; }
+    .photo-slot img { display: block; width: 100%; max-height: 300px; object-fit: contain; }
+    .photo-icon { font-size: 32px; margin-bottom: 6px; }
+    .photo-label { font-size: 13px; font-weight: 600; }
+    .photo-hint  { font-size: 11px; color: var(--text3); margin-top: 4px; }
+
+    /* Items list */
+    .item {
+      background: var(--bg3);
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 8px;
+      display: flex; justify-content: space-between; align-items: flex-start;
+      gap: 8px;
+      border: 1px solid var(--border);
+    }
+    .item-info { flex: 1; font-size: 13px; }
+    .item-name { font-weight: 700; margin-bottom: 2px; }
+    .item-meta { font-size: 11px; color: var(--text3); }
+    .item-remove {
+      background: none; border: none; color: var(--red);
+      font-size: 16px; cursor: pointer; padding: 4px 8px;
+    }
+
+    .btn-add-item {
+      width: 100%;
+      background: var(--bg3);
+      border: 1px dashed var(--border);
+      color: var(--text2);
+      padding: 12px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 4px;
+    }
+    .btn-add-item:active { border-color: var(--accent); color: var(--accent); }
+
+    /* Fixed submit bar */
+    .submit-bar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: var(--bg2);
+      border-top: 1px solid var(--border);
+      padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
+      display: flex; gap: 8px; z-index: 40;
+    }
+    .total-info {
+      flex: 1;
+      display: flex; flex-direction: column; justify-content: center;
+      font-size: 11px; color: var(--text3);
+    }
+    .total-val {
+      font-size: 18px; font-weight: 700;
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+    }
+    .btn-submit {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      border-radius: var(--radius);
+      padding: 12px 24px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Modal */
+    .overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.75);
+      display: none; align-items: flex-end; justify-content: center;
+      z-index: 100;
+    }
+    .overlay.visible { display: flex; }
+    .modal {
+      width: 100%; max-width: 560px;
+      background: var(--bg2);
+      border-radius: 16px 16px 0 0;
+      padding: 18px;
+      max-height: 90vh; overflow-y: auto;
+      animation: slideUp 0.2s ease-out;
+    }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    .modal-title { font-size: 16px; font-weight: 700; margin-bottom: 10px; }
+    .modal-tabs {
+      display: flex; gap: 4px;
+      background: var(--bg3);
+      border-radius: 8px;
+      padding: 3px;
+      margin-bottom: 14px;
+    }
+    .modal-tab {
+      flex: 1;
+      padding: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      text-align: center;
+      color: var(--text3);
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .modal-tab.active {
+      background: var(--accent);
+      color: #000;
+    }
+    .modal-pane { display: none; }
+    .modal-pane.active { display: block; }
+
+    .search-prod {
+      width: 100%;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 14px;
+      padding: 10px 12px;
+      margin-bottom: 10px;
+    }
+    .prod-list {
+      max-height: 280px; overflow-y: auto;
+      display: flex; flex-direction: column; gap: 4px;
+      margin-bottom: 10px;
+    }
+    .prod-option {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .prod-option:active { border-color: var(--accent); }
+    .prod-option-name { font-weight: 700; }
+    .prod-option-meta { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+    .modal-actions { display: flex; gap: 8px; margin-top: 14px; }
+    .btn-cancel, .btn-ok {
+      flex: 1; padding: 12px; border-radius: var(--radius);
+      border: none; font-size: 14px; font-weight: 700; cursor: pointer;
+    }
+    .btn-cancel { background: var(--bg3); color: var(--text); border: 1px solid var(--border); }
+    .btn-ok     { background: var(--accent); color: #000; }
+    .btn-ok:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .toast {
+      position: fixed; bottom: 120px; left: 50%; transform: translateX(-50%);
+      background: var(--bg3); border: 1px solid var(--border); color: var(--text);
+      padding: 10px 16px; border-radius: 99px; font-size: 13px;
+      z-index: 200; opacity: 0; transition: opacity 0.2s;
+      pointer-events: none;
+    }
+    .toast.visible { opacity: 1; }
+    .toast.ok    { border-color: var(--green); color: #6ee7b7; }
+    .toast.error { border-color: var(--red);   color: #fca5a5; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <a class="header-back" href="app.html">←</a>
+  <div class="header-brand">
+    <div class="header-empresa">La <span>Quinta</span></div>
+    <div class="header-predio">Registrar compra · Entrada a inventario</div>
+  </div>
+</div>
+
+<div class="content">
+
+  <div class="section">
+    <div class="section-title">📄 Foto de la factura (opcional)</div>
+    <div class="photo-slot" id="photoSlot" onclick="document.getElementById('photoInput').click()">
+      <div class="photo-icon">📸</div>
+      <div class="photo-label">Tocá para sacar foto</div>
+      <div class="photo-hint">Se guarda junto a la compra para respaldo</div>
+    </div>
+    <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none" onchange="onPhoto(this)">
+  </div>
+
+  <div class="section">
+    <div class="section-title">Datos de la factura</div>
+    <div class="field">
+      <label>Proveedor</label>
+      <select id="proveedor">
+        <option value="">— seleccionar —</option>
+        <option>MYC</option>
+        <option>Copeval</option>
+        <option>Coagra</option>
+        <option>Otro</option>
+      </select>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>N° Factura</label>
+        <input type="text" id="factura_n" placeholder="F-12345">
+      </div>
+      <div class="field">
+        <label>Fecha</label>
+        <input type="date" id="fecha">
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Productos comprados</div>
+    <div id="itemsList"></div>
+    <button class="btn-add-item" onclick="abrirModalProducto()">+ Agregar producto</button>
+  </div>
+
+  <div class="section">
+    <div class="field">
+      <label>Notas (opcional)</label>
+      <textarea id="notas" placeholder="Despacho, descuentos, observaciones..."></textarea>
+    </div>
+  </div>
+
+</div>
+
+<div class="submit-bar">
+  <div class="total-info">
+    <div>Total factura</div>
+    <div class="total-val" id="totalVal">$ 0</div>
+  </div>
+  <button class="btn-submit" id="btnSubmit" onclick="enviarCompra()">Guardar compra</button>
+</div>
+
+<!-- Modal producto -->
+<div class="overlay" id="modalOverlay" onclick="cerrarModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-title">Agregar producto</div>
+
+    <div class="modal-tabs">
+      <div class="modal-tab active" data-tab="existente">📦 Catálogo</div>
+      <div class="modal-tab"        data-tab="nuevo">➕ Nuevo producto</div>
+    </div>
+
+    <!-- Tab existente -->
+    <div class="modal-pane active" id="paneExistente">
+      <input type="text" class="search-prod" id="searchProd" placeholder="Buscar producto...">
+      <div class="prod-list" id="prodList"></div>
+
+      <div id="selectedProdForm" style="display:none">
+        <div class="field">
+          <label>Producto</label>
+          <input type="text" id="selProdName" readonly>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label id="selCantLbl">Cantidad</label>
+            <input type="number" step="0.01" min="0" id="selCantidad" inputmode="decimal">
+          </div>
+          <div class="field">
+            <label>Precio unitario CLP</label>
+            <input type="number" step="1" min="0" id="selPrecio" inputmode="decimal">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab nuevo -->
+    <div class="modal-pane" id="paneNuevo">
+      <div style="font-size:12px; color:var(--text3); margin-bottom:10px; line-height:1.4">
+        Si el producto no está en el catálogo, ingrésalo aquí. Quedará guardado para futuras compras.
+      </div>
+      <div class="field">
+        <label>Nombre comercial *</label>
+        <input type="text" id="nvNombre" placeholder="Ej. FULGOR 500 SC">
+      </div>
+      <div class="field">
+        <label>Categoría *</label>
+        <select id="nvCategoria">
+          <option value="">— seleccionar —</option>
+          <optgroup label="Protección cultivo">
+            <option value="Fungicida">Fungicida (FUN)</option>
+            <option value="Insecticida">Insecticida (INS)</option>
+            <option value="Acaricida">Acaricida (ACA)</option>
+            <option value="Herbicida">Herbicida (HER)</option>
+            <option value="Nematicida">Nematicida (NEM)</option>
+            <option value="Post-cosecha">Post-cosecha (POS)</option>
+          </optgroup>
+          <optgroup label="Nutrición">
+            <option value="Fertilizante Foliar">Fertilizante Foliar (FOL)</option>
+            <option value="Fertirriego">Fertirriego (FER)</option>
+          </optgroup>
+          <optgroup label="Bioestimulantes y biológicos">
+            <option value="Bioestimulante">Bioestimulante — algas, aminoácidos, húmicos (BIO)</option>
+            <option value="Biológico">Biológico — Trichoderma, Bacillus, Beauveria (BIL)</option>
+            <option value="Regulador">Regulador de crecimiento — GA, 6-BA, Dormex (REG)</option>
+          </optgroup>
+          <optgroup label="Auxiliares">
+            <option value="Coadyuvante">Coadyuvante — mojantes, pH, adherentes (COA)</option>
+            <option value="Otro">Otro (OTR)</option>
+          </optgroup>
+        </select>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>Unidad *</label>
+          <select id="nvUnidad">
+            <option value="L">L (litro)</option>
+            <option value="Kg">Kg</option>
+            <option value="g">g</option>
+            <option value="cc">cc</option>
+            <option value="Unidad">Unidad</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Cantidad comprada *</label>
+          <input type="number" step="0.01" min="0" id="nvCantidad" inputmode="decimal">
+        </div>
+      </div>
+      <div class="field">
+        <label>Precio unitario CLP *</label>
+        <input type="number" step="1" min="0" id="nvPrecio" inputmode="decimal">
+      </div>
+      <div class="field">
+        <label>Ingrediente activo (opcional)</label>
+        <input type="text" id="nvIA" placeholder="Ej. Boscalid 500 g/kg">
+      </div>
+      <div class="field">
+        <label>Uso principal (opcional)</label>
+        <input type="text" id="nvUso" placeholder="Ej. Botrytis en cereza">
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>Carencia días (opcional)</label>
+          <input type="number" min="0" id="nvCarencia" inputmode="numeric">
+        </div>
+        <div class="field">
+          <label>Dosis referencia (opcional)</label>
+          <input type="text" id="nvDosis" placeholder="Ej. 50 cc/100 L">
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn-ok" id="btnAddItem" onclick="agregarItem()">Agregar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const GAS_URL   = 'https://script.google.com/macros/s/AKfycbydi5imjeA5bXY5TlA7MBVGkG6-Aq4XhYC0soXGPUMl41lEvdL8rc-xhjeRv9m0_aJg/exec';
+const GAS_TOKEN = 'LQ2026-Santina';
+
+const state = {
+  productos: [],
+  items:     [],
+  fotoB64:   null,
+  fotoName:  null,
+  modalTab:  'existente',
+  selectedProd: null,
+  gps: null
+};
+
+function esc(s){
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function toast(msg, tipo){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast visible ' + (tipo||'');
+  clearTimeout(t._to);
+  t._to = setTimeout(()=> t.classList.remove('visible'), 3200);
+}
+
+function fmtCLP(n){
+  const x = Math.round(Number(n)||0);
+  return '$ ' + x.toLocaleString('es-CL');
+}
+
+async function cargarProductos(){
+  try {
+    const res = await fetch(`${GAS_URL}?action=list_productos&_=${Date.now()}`);
+    const data = await res.json();
+    state.productos = data.productos || [];
+  } catch(err) {
+    toast('⚠️ No se pudo cargar catálogo: '+err.message, 'error');
+  }
+}
+
+function renderProdList(){
+  const q = document.getElementById('searchProd').value.toLowerCase().trim();
+  const list = document.getElementById('prodList');
+  const items = state.productos.filter(p =>
+    !q || (p.nombre_comercial||'').toLowerCase().includes(q) ||
+          (p.codigo||'').toLowerCase().includes(q) ||
+          (p.ingrediente_activo||'').toLowerCase().includes(q)
+  ).slice(0, 30);
+  if (!items.length) {
+    list.innerHTML = '<div style="padding:16px; text-align:center; color:var(--text3); font-size:12px">Sin resultados. Probá en "Nuevo producto" →</div>';
+    return;
+  }
+  list.innerHTML = items.map(p => `
+    <div class="prod-option" onclick="seleccionarProducto('${esc(p.codigo)}')">
+      <div class="prod-option-name">${esc(p.nombre_comercial)}</div>
+      <div class="prod-option-meta">${esc(p.codigo)} · ${esc(p.categoria)} · ${esc(p.ingrediente_activo||'')}</div>
+    </div>
+  `).join('');
+}
+
+function seleccionarProducto(codigo){
+  const p = state.productos.find(x => x.codigo === codigo);
+  if (!p) return;
+  state.selectedProd = p;
+  document.getElementById('prodList').style.display = 'none';
+  document.getElementById('searchProd').style.display = 'none';
+  document.getElementById('selectedProdForm').style.display = 'block';
+  document.getElementById('selProdName').value = p.nombre_comercial + ' (' + p.codigo + ')';
+  document.getElementById('selCantLbl').textContent = 'Cantidad (' + p.unidad + ')';
+  document.getElementById('selCantidad').value = '';
+  document.getElementById('selPrecio').value   = p.precio_ref_clp || '';
+  document.getElementById('selCantidad').focus();
+}
+
+function abrirModalProducto(){
+  state.modalTab = 'existente';
+  state.selectedProd = null;
+  document.querySelectorAll('.modal-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.tab === 'existente');
+  });
+  document.querySelectorAll('.modal-pane').forEach(p => p.classList.remove('active'));
+  document.getElementById('paneExistente').classList.add('active');
+  document.getElementById('prodList').style.display = 'flex';
+  document.getElementById('searchProd').style.display = 'block';
+  document.getElementById('searchProd').value = '';
+  document.getElementById('selectedProdForm').style.display = 'none';
+  // Reset nuevo
+  ['nvNombre','nvCategoria','nvUnidad','nvCantidad','nvPrecio','nvIA','nvUso','nvCarencia','nvDosis'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el && el.tagName === 'SELECT') el.value = el.id === 'nvUnidad' ? 'L' : '';
+    else if (el) el.value = '';
+  });
+  renderProdList();
+  document.getElementById('modalOverlay').classList.add('visible');
+}
+
+function cerrarModal(e){
+  if (e && e.target !== e.currentTarget) return;
+  document.getElementById('modalOverlay').classList.remove('visible');
+}
+
+function cambiarTab(tab){
+  state.modalTab = tab;
+  document.querySelectorAll('.modal-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.tab === tab);
+  });
+  document.querySelectorAll('.modal-pane').forEach(p => p.classList.remove('active'));
+  document.getElementById(tab === 'existente' ? 'paneExistente' : 'paneNuevo').classList.add('active');
+}
+
+async function agregarItem(){
+  const btn = document.getElementById('btnAddItem');
+  btn.disabled = true;
+
+  if (state.modalTab === 'existente') {
+    if (!state.selectedProd) { toast('Selecciona un producto', 'error'); btn.disabled = false; return; }
+    const cant   = parseFloat(document.getElementById('selCantidad').value);
+    const precio = parseFloat(document.getElementById('selPrecio').value);
+    if (!cant || cant <= 0)   { toast('Cantidad inválida', 'error'); btn.disabled = false; return; }
+    if (!precio || precio <= 0) { toast('Precio inválido', 'error'); btn.disabled = false; return; }
+    state.items.push({
+      codigo:    state.selectedProd.codigo,
+      nombre_comercial: state.selectedProd.nombre_comercial,
+      unidad:    state.selectedProd.unidad,
+      categoria: state.selectedProd.categoria,
+      cantidad:  cant,
+      precio_unitario: precio
+    });
+    renderItems();
+    cerrarModal();
+  } else {
+    // Nuevo producto: validar y registrar en catálogo primero, luego agregar al carrito
+    const nombre    = document.getElementById('nvNombre').value.trim();
+    const categoria = document.getElementById('nvCategoria').value;
+    const unidad    = document.getElementById('nvUnidad').value;
+    const cantidad  = parseFloat(document.getElementById('nvCantidad').value);
+    const precio    = parseFloat(document.getElementById('nvPrecio').value);
+    const ia        = document.getElementById('nvIA').value.trim();
+    const uso       = document.getElementById('nvUso').value.trim();
+    const carencia  = parseInt(document.getElementById('nvCarencia').value);
+    const dosis     = document.getElementById('nvDosis').value.trim();
+
+    if (!nombre)          { toast('Falta nombre comercial', 'error'); btn.disabled = false; return; }
+    if (!categoria)       { toast('Falta categoría', 'error'); btn.disabled = false; return; }
+    if (!unidad)          { toast('Falta unidad', 'error'); btn.disabled = false; return; }
+    if (!cantidad || cantidad <= 0) { toast('Cantidad inválida', 'error'); btn.disabled = false; return; }
+    if (!precio || precio <= 0)     { toast('Precio inválido', 'error'); btn.disabled = false; return; }
+
+    // Generar código nuevo CAT-NNN
+    const prefijos = {
+      'Fungicida':'FUN','Insecticida':'INS','Acaricida':'ACA','Herbicida':'HER',
+      'Nematicida':'NEM','Post-cosecha':'POS',
+      'Fertilizante Foliar':'FOL','Fertirriego':'FER',
+      'Bioestimulante':'BIO','Biológico':'BIL','Regulador':'REG',
+      'Coadyuvante':'COA','Otro':'OTR'
+    };
+    const pre = prefijos[categoria] || 'OTR';
+    const ex = state.productos.filter(p => (p.codigo||'').startsWith(pre+'-'));
+    let maxN = 0;
+    ex.forEach(p => {
+      const m = (p.codigo||'').match(new RegExp(pre+'-(\\d+)'));
+      if (m) { const n = parseInt(m[1]); if (n > maxN) maxN = n; }
+    });
+    const codigo = pre + '-' + String(maxN+1).padStart(3,'0');
+
+    const proveedorSel = document.getElementById('proveedor').value || 'Otro';
+
+    // Registrar en catálogo via GAS
+    try {
+      toast('Guardando producto nuevo en catálogo...', '');
+      await fetch(GAS_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({
+          token: GAS_TOKEN,
+          action: 'upsert_producto',
+          codigo, nombre_comercial: nombre, ingrediente_activo: ia,
+          categoria, unidad, proveedor: proveedorSel,
+          precio_ref_clp: precio, dosis_referencia: dosis,
+          carencia_dias: carencia || '', uso_principal: uso,
+          activo: true, notas: 'Agregado desde compra.html'
+        })
+      });
+      // Optimistic: agrego al state local
+      state.productos.push({
+        codigo, nombre_comercial: nombre, ingrediente_activo: ia,
+        categoria, unidad, proveedor: proveedorSel,
+        precio_ref_clp: precio
+      });
+      state.items.push({
+        codigo, nombre_comercial: nombre, unidad, categoria,
+        cantidad, precio_unitario: precio, nuevo: true
+      });
+      renderItems();
+      cerrarModal();
+      toast('✅ Producto agregado al catálogo', 'ok');
+    } catch(err) {
+      toast('Error al guardar producto: '+err.message, 'error');
+    }
+  }
+  btn.disabled = false;
+}
+
+function renderItems(){
+  const cont = document.getElementById('itemsList');
+  if (!state.items.length) {
+    cont.innerHTML = '<div style="padding:10px; color:var(--text3); font-size:12px; text-align:center">Sin productos agregados</div>';
+    document.getElementById('totalVal').textContent = '$ 0';
+    return;
+  }
+  cont.innerHTML = state.items.map((it, i) => `
+    <div class="item">
+      <div class="item-info">
+        <div class="item-name">${esc(it.nombre_comercial)} ${it.nuevo?'<span style="color:var(--accent); font-size:10px; font-weight:700; text-transform:uppercase">· nuevo</span>':''}</div>
+        <div class="item-meta">${fmtNum(it.cantidad)} ${esc(it.unidad)} × ${fmtCLP(it.precio_unitario)} = <strong>${fmtCLP(it.cantidad*it.precio_unitario)}</strong></div>
+      </div>
+      <button class="item-remove" onclick="removerItem(${i})" title="Quitar">×</button>
+    </div>
+  `).join('');
+  const total = state.items.reduce((s, it) => s + (it.cantidad * it.precio_unitario), 0);
+  document.getElementById('totalVal').textContent = fmtCLP(total);
+}
+
+function removerItem(i){ state.items.splice(i, 1); renderItems(); }
+
+function fmtNum(n){
+  const x = Number(n)||0;
+  return Number.isInteger(x) ? x.toString() : x.toFixed(2);
+}
+
+function onPhoto(input){
+  const file = input.files && input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    state.fotoB64 = reader.result;
+    state.fotoName = file.name || ('factura_'+Date.now()+'.jpg');
+    const slot = document.getElementById('photoSlot');
+    slot.classList.add('has-photo');
+    slot.innerHTML = '<img src="'+reader.result+'" alt="factura">';
+  };
+  reader.readAsDataURL(file);
+}
+
+async function enviarCompra(){
+  const proveedor = document.getElementById('proveedor').value;
+  const factura_n = document.getElementById('factura_n').value.trim();
+  const fecha     = document.getElementById('fecha').value;
+  const notas     = document.getElementById('notas').value.trim();
+
+  if (!proveedor) { toast('Falta proveedor', 'error'); return; }
+  if (!fecha)     { toast('Falta fecha', 'error'); return; }
+  if (!state.items.length) { toast('Agregá al menos un producto', 'error'); return; }
+
+  const btn = document.getElementById('btnSubmit');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+
+  const payload = {
+    token: GAS_TOKEN, action: 'add_compra',
+    proveedor, factura_n, fecha, notas,
+    items: state.items,
+    usuario: (window.LQ_AUTH_USER || 'admin')
+  };
+  if (state.fotoB64) {
+    payload.foto_factura = state.fotoB64;
+    payload.filename_factura = state.fotoName;
+  }
+  if (state.gps) {
+    payload.gps_lat = state.gps.lat;
+    payload.gps_lng = state.gps.lng;
+  }
+
+  try {
+    await fetch(GAS_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(payload)
+    });
+    toast('✅ Compra registrada — '+state.items.length+' items', 'ok');
+    setTimeout(() => {
+      state.items = []; state.fotoB64 = null; state.fotoName = null;
+      renderItems();
+      document.getElementById('photoSlot').classList.remove('has-photo');
+      document.getElementById('photoSlot').innerHTML =
+        '<div class="photo-icon">📸</div><div class="photo-label">Tocá para sacar foto</div><div class="photo-hint">Se guarda junto a la compra para respaldo</div>';
+      document.getElementById('factura_n').value = '';
+      document.getElementById('notas').value = '';
+    }, 600);
+  } catch(err) {
+    toast('Error: '+err.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Guardar compra';
+  }
+}
+
+// Init
+document.getElementById('fecha').value = new Date().toISOString().slice(0,10);
+document.getElementById('searchProd').addEventListener('input', renderProdList);
+document.querySelectorAll('.modal-tab').forEach(t => {
+  t.addEventListener('click', () => cambiarTab(t.dataset.tab));
+});
+if (navigator.geolocation) {
+  navigator.geolocation.getCurrentPosition(
+    pos => { state.gps = { lat: pos.coords.latitude, lng: pos.coords.longitude }; },
+    err => {}, { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
+  );
+}
+renderItems();
+cargarProductos();
+</script>
+
+</body>
+</html>
