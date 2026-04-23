@@ -231,5 +231,21 @@
   La Quinta · Agrícola del Pedregal · Portal de equipo
 </footer>
 
+<script>
+// Registrar Service Worker con updateViaCache:none para evitar bugs de cache del sw.js
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
+      .then(function(reg) {
+        // Forzar check de actualización en cada visita
+        reg.update().catch(function(){});
+        // Si hay un SW nuevo waiting, dispararlo
+        if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+      })
+      .catch(function(err) { console.warn('[SW] registro fallido:', err); });
+  });
+}
+</script>
+
 </body>
 </html>

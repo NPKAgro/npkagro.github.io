@@ -537,7 +537,7 @@
 
 <!-- ── HEADER ── -->
 <div class="header">
-  <a class="header-back" href="index.html" title="Inicio">‹</a>
+  <a class="header-back" href="app.html" title="Portal">‹</a>
   <div class="header-brand">
     <div class="header-empresa">Agrícola <span>del Pedregal</span></div>
     <div class="header-predio">La Quinta · Aforado del Campo</div>
@@ -554,7 +554,7 @@
     <span class="tab-icon">📏</span>Medición
   </button>
   <button class="tab-btn" onclick="setTab('analisis')" id="tabAnalisis">
-    <span class="tab-icon">🍊</span>Análisis
+    <span class="tab-icon">📊</span>Análisis
   </button>
   <button class="tab-btn" onclick="setTab('historial')" id="tabHistorial">
     <span class="tab-icon">🕐</span>Historial
@@ -734,7 +734,7 @@
     <div class="card-body">
       <div id="heatmapContainer">
         <div class="empty-state">
-          <span class="empty-icon">🍊</span>
+          <span class="empty-icon">📊</span>
           Registra mediciones en la pestaña Medición para ver el mapa de calor
         </div>
       </div>
@@ -1030,7 +1030,7 @@ function renderResultados(ud, realLH, nomLH, desv) {
   udEl.textContent = ud.toFixed(1) + '%';
   udEl.className   = 'ud-value ' + udClass(ud);
 
-  const desc = ud0>= 90 ? 'Excelente — uniformidad óptima' :
+  const desc = ud >= 90 ? 'Excelente — uniformidad óptima' :
                ud >= 80 ? 'Bueno — uniformidad aceptable' :
                ud >= 70 ? 'Regular — revisar sectores bajos' :
                           'Deficiente — acción correctiva requerida';

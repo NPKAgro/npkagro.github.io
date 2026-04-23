@@ -246,25 +246,25 @@
 
   <div class="cards">
 
-    <a class="panel-card inventario" href="inventario_admin.html">
+    <a class="panel-card inventario" href="#" onclick="abrirDashboard('inventarios', event)">
       <span class="card-icon">📦</span>
       <div class="card-title">Inventario</div>
-      <div class="card-desc">Stock de productos agrícolas, alertas de stock bajo, historial de movimientos, configuración de umbrales.</div>
-      <span class="card-link">Ver inventario →</span>
+      <div class="card-desc">Stock de productos, alertas y movimientos. Se visualiza desde el Dashboard ejecutivo.</div>
+      <span class="card-link">Ver en Dashboard →</span>
     </a>
 
-    <a class="panel-card compra" href="compra.html">
+    <a class="panel-card compra" href="#" onclick="abrirDashboard('inventarios', event)">
       <span class="card-icon">🧾</span>
-      <div class="card-title">Registrar Compra</div>
-      <div class="card-desc">Cargar factura de compra, adjuntar foto, ingresar productos nuevos al catálogo si hace falta.</div>
-      <span class="card-link">Nueva compra →</span>
+      <div class="card-title">Compras e ingresos</div>
+      <div class="card-desc">Historial de compras y altas de productos. Consulta desde el Dashboard ejecutivo.</div>
+      <span class="card-link">Ver en Dashboard →</span>
     </a>
 
-    <a class="panel-card petroleo" href="petroleo.html">
+    <a class="panel-card petroleo" href="#" onclick="abrirDashboard('combustibles', event)">
       <span class="card-icon">⛽</span>
       <div class="card-title">Combustibles</div>
-      <div class="card-desc">Stock de diésel, registro de cargas con boleta y uso por máquina/actividad. Alertas de stock mínimo.</div>
-      <span class="card-link">Ver combustibles →</span>
+      <div class="card-desc">Stock de diésel, historial de cargas y usos por máquina/actividad. Consulta desde el Dashboard.</div>
+      <span class="card-link">Ver en Dashboard →</span>
     </a>
 
   </div>
@@ -288,6 +288,38 @@
 <footer>
   La Quinta · Agrícola del Pedregal · Panel de administración
 </footer>
+
+<script>
+// Registrar Service Worker con updateViaCache:none para evitar bugs de cache del sw.js
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
+      .then(function(reg) {
+        reg.update().catch(function(){});
+        if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+      })
+      .catch(function(err) { console.warn('[SW] registro fallido:', err); });
+  });
+}
+
+// Abrir Dashboard ejecutivo en un módulo específico
+function abrirDashboard(modulo, evento) {
+  if (evento) evento.preventDefault();
+  let url = localStorage.getItem('adp_dashboard_url') || '';
+  if (!url) {
+    url = prompt(
+      'Aún no configuraste la URL del Dashboard ejecutivo.\n\n' +
+      'Pegá acá la URL pública (ej. https://dashboard-adp.netlify.app/) — se guarda para las próximas veces.'
+    );
+    if (!url) return;
+    url = url.trim().replace(/\/$/, '');
+    localStorage.setItem('adp_dashboard_url', url);
+  }
+  // Agregamos hash para que el Dashboard abra el módulo correcto (requiere handler en Dashboard).
+  const target = url + (url.includes('#') ? '' : '#' + modulo);
+  window.open(target, '_blank', 'noopener');
+}
+</script>
 
 </body>
 </html>

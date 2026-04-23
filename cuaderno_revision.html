@@ -38,6 +38,7 @@
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
+    /* HEADER */
     header {
       background: var(--bg2);
       border-bottom: 1px solid var(--border);
@@ -50,13 +51,22 @@
       top: 0;
       z-index: 100;
     }
-    .logo-block { display: flex; flex-direction: column; line-height: 1.2; }
+    .logo-block { display: flex; flex-direction: column; line-height: 1.2; flex: 1; }
     .logo-empresa { font-size: 15px; font-weight: 700; letter-spacing: -0.3px; }
     .logo-empresa span { color: var(--teal); }
     .logo-predio { font-size: 11px; color: var(--text3); }
     .header-right { display: flex; align-items: center; gap: 10px; }
+    .header-back {
+      width: 36px; height: 36px; border-radius: 8px;
+      background: var(--bg3); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; color: var(--text2); text-decoration: none;
+      margin-right: 12px; flex-shrink: 0; transition: all 0.12s;
+    }
+    .header-back:active, .header-back:hover { border-color: var(--teal); color: var(--teal); }
     #fechaHoy { font-size: 12px; color: var(--text3); }
 
+    /* CONTROLES */
     .controls-wrap {
       background: var(--bg2);
       border-bottom: 1px solid var(--border);
@@ -114,6 +124,7 @@
     }
     .cbtn.active { background: rgba(139,92,246,0.2); border-color: var(--purple); color: #c4b5fd; }
 
+    /* KPIs */
     .kpis {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -130,6 +141,7 @@
     .kpi-val { font-size: 22px; font-weight: 600; letter-spacing: -0.5px; line-height: 1.1; }
     .kpi-sub { font-size: 11px; color: var(--text3); margin-top: 5px; }
 
+    /* GRID */
     .main-content { padding-bottom: 72px; }
     .grid-container {
       padding: 1.25rem 2rem;
@@ -138,6 +150,7 @@
       gap: 14px;
     }
 
+    /* CARD */
     .entry-card {
       background: var(--bg2);
       border: 1px solid var(--border);
@@ -194,10 +207,30 @@
     .tipo-Otro       { background: rgba(255,255,255,0.06); color: var(--text2); border: 1px solid var(--border); }
     .tipo-default    { background: rgba(255,255,255,0.06); color: var(--text2); border: 1px solid var(--border); }
 
-    .card-meta { display: flex; gap: 10px; flex-wrap: wrap; }
-    .meta-chip { font-size: 11px; color: var(--text3); display: flex; align-items: center; gap: 3px; }
-    .card-desc { font-size: 13px; color: var(--text2); line-height: 1.45; }
-    .card-actions { display: flex; gap: 6px; margin-top: 2px; }
+    .card-meta {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .meta-chip {
+      font-size: 11px;
+      color: var(--text3);
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .card-desc {
+      font-size: 13px;
+      color: var(--text2);
+      line-height: 1.45;
+    }
+
+    .card-actions {
+      display: flex;
+      gap: 6px;
+      margin-top: 2px;
+    }
     .btn-sm {
       font-size: 11px;
       padding: 4px 10px;
@@ -211,10 +244,16 @@
     .btn-sm:hover { background: var(--bg3); color: var(--text); }
     .btn-sm.danger:hover { border-color: var(--red); color: var(--red); }
 
-    .state-box { text-align: center; padding: 4rem 2rem; color: var(--text3); }
+    /* EMPTY / LOADING / ERROR */
+    .state-box {
+      text-align: center;
+      padding: 4rem 2rem;
+      color: var(--text3);
+    }
     .state-box .icon { font-size: 48px; margin-bottom: 12px; }
     .state-box p { font-size: 14px; }
 
+    /* LIGHTBOX */
     .lightbox {
       display: none;
       position: fixed;
@@ -225,9 +264,23 @@
       align-items: center;
     }
     .lightbox.open { display: flex; }
-    .lightbox img { max-width: 94vw; max-height: 92vh; border-radius: 8px; object-fit: contain; }
-    .lightbox-close { position: absolute; top: 16px; right: 20px; font-size: 28px; color: #fff; cursor: pointer; line-height: 1; }
+    .lightbox img {
+      max-width: 94vw;
+      max-height: 92vh;
+      border-radius: 8px;
+      object-fit: contain;
+    }
+    .lightbox-close {
+      position: absolute;
+      top: 16px;
+      right: 20px;
+      font-size: 28px;
+      color: #fff;
+      cursor: pointer;
+      line-height: 1;
+    }
 
+    /* TOAST */
     .toast {
       position: fixed;
       bottom: 24px;
@@ -248,6 +301,7 @@
 <body>
 
 <header>
+  <a class="header-back" href="index.html" title="Volver al panel">‹</a>
   <div class="logo-block">
     <div class="logo-empresa">Agrícola <span>del Pedregal</span></div>
     <div class="logo-predio">Cuaderno de Campo · La Quinta</div>
@@ -315,10 +369,12 @@ let todasEntradas = [];
 let filtroTipo    = 'todos';
 let filtroCuartel = 'todos';
 
+// ── Fecha encabezado ─────────────────────────────────────────────
 const hoy = new Date();
 document.getElementById('fechaHoy').textContent =
   hoy.toLocaleDateString('es-CL', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
 
+// ── Carga de datos ───────────────────────────────────────────────
 function cargarDatos() {
   document.getElementById('stateBox').style.display = '';
   document.getElementById('stateBox').innerHTML = '<div class="icon">⏳</div><p>Cargando registros...</p>';
@@ -341,6 +397,7 @@ function cargarDatos() {
     });
 }
 
+// ── Filtros ──────────────────────────────────────────────────────
 function setFiltroTipo(btn) {
   document.querySelectorAll('.fbtn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
@@ -358,6 +415,7 @@ function setFiltroCuartel(btn) {
 function construirFiltrosCuartel() {
   const row = document.getElementById('cuartelRow');
   const cuarteles = [...new Set(todasEntradas.map(e => e.cuartel).filter(Boolean))].sort();
+  // Mantener botón "Todos"
   row.innerHTML = `<span class="cuartel-label">Cuartel:</span>
     <button class="cbtn active" data-cuartel="todos" onclick="setFiltroCuartel(this)">Todos</button>
     ${cuarteles.map(c => `<button class="cbtn" data-cuartel="${c}" onclick="setFiltroCuartel(this)">${c}</button>`).join('')}`;
@@ -371,6 +429,7 @@ function aplicarFiltros() {
   actualizarKPIs(lista);
 }
 
+// ── KPIs ─────────────────────────────────────────────────────────
 function actualizarKPIs(lista) {
   document.getElementById('kTotal').textContent     = lista.length;
   document.getElementById('kFotos').textContent     = lista.filter(e => e.url_foto).length;
@@ -378,11 +437,15 @@ function actualizarKPIs(lista) {
   document.getElementById('kCuarteles').textContent = new Set(lista.map(e => e.cuartel).filter(Boolean)).size;
 }
 
+// ── Render ───────────────────────────────────────────────────────
 function tipoClass(tipo) {
   const mapa = {
-    'Riego': 'tipo-Riego', 'Fertilización': 'tipo-Fertilización',
-    'Poda': 'tipo-Poda', 'Fitosanitario': 'tipo-Fitosanitario',
-    'Cosecha': 'tipo-Cosecha', 'Otro': 'tipo-Otro',
+    'Riego': 'tipo-Riego',
+    'Fertilización': 'tipo-Fertilización',
+    'Poda': 'tipo-Poda',
+    'Fitosanitario': 'tipo-Fitosanitario',
+    'Cosecha': 'tipo-Cosecha',
+    'Otro': 'tipo-Otro',
   };
   return mapa[tipo] || 'tipo-default';
 }
@@ -443,6 +506,7 @@ function renderEntradas(lista) {
   }).join('');
 }
 
+// ── Eliminar ─────────────────────────────────────────────────────
 function confirmarEliminar(fila) {
   if (!confirm('¿Eliminar este registro del cuaderno?')) return;
   fetch(`${GAS_URL}?action=deleterow_cuaderno&fila=${fila}&token=${GAS_TOKEN}`)
@@ -450,6 +514,7 @@ function confirmarEliminar(fila) {
     .catch(() => mostrarToast('Error al eliminar'));
 }
 
+// ── Lightbox ─────────────────────────────────────────────────────
 function openLightbox(url) {
   document.getElementById('lightboxImg').src = url;
   document.getElementById('lightbox').classList.add('open');
@@ -460,6 +525,7 @@ function closeLightbox() {
 }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
 
+// ── Toast ────────────────────────────────────────────────────────
 function mostrarToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -467,6 +533,7 @@ function mostrarToast(msg) {
   setTimeout(() => t.classList.remove('show'), 2500);
 }
 
+// ── Init ─────────────────────────────────────────────────────────
 cargarDatos();
 </script>
 </body>

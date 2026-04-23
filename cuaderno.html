@@ -40,7 +40,7 @@
       background: var(--bg);
       color: var(--text);
       min-height: 100dvh;
-      padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
+      padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 110px);
       -webkit-tap-highlight-color: transparent;
     }
     ::-webkit-scrollbar { width: 4px; }
@@ -465,7 +465,7 @@
 
 <!-- ── HEADER ── -->
 <div class="header">
-  <a class="header-back" href="index.html" title="Inicio">‹</a>
+  <a class="header-back" href="app.html" title="Portal">‹</a>
   <div class="header-brand">
     <div class="header-empresa">Agrícola <span>del Pedregal</span></div>
     <div class="header-predio">La Quinta · Cuaderno de campo</div>
@@ -519,6 +519,11 @@
             oninput="onHileraInput(this.value)">
           <button class="stepper-btn" onclick="cambiarHilera(+1)">+</button>
         </div>
+      </div>
+
+      <div>
+        <div class="sublabel">Claro <span>(1–5)</span></div>
+        <div class="btn-grid-5" id="claroGrid"></div>
       </div>
 
       <div>
@@ -608,6 +613,7 @@ const CONFIG = {
   MAX_FOTOS:    4,
   N_HILERAS:    59,
   N_PLANTAS:    16,
+  N_CLAROS:     5,
 };
 
 const CATEGORIAS = [
@@ -620,7 +626,7 @@ const CATEGORIAS = [
 ];
 
 const STATE_KEY = 'cuaderno_state_v1';
-let appState = { categoria: null, cuartel: null, hilera: null, planta: null, fotos: [], gps: null };
+let appState = { categoria: null, cuartel: null, hilera: null, claro: null, planta: null, fotos: [], gps: null };
 let gpsData  = null;
 
 // ══════════════════════════════════════════════════════
@@ -651,6 +657,19 @@ function init() {
     btn.onclick = () => seleccionarCuartel(c);
     cGrid.appendChild(btn);
   });
+
+  // Construir claros (opcional)
+  const claroGrid = document.getElementById('claroGrid');
+  if (claroGrid) {
+    for (let i = 1; i <= (CONFIG.N_CLAROS || 5); i++) {
+      const btn = document.createElement('button');
+      btn.className    = 'sel-btn';
+      btn.textContent  = i;
+      btn.dataset.val  = i;
+      btn.onclick = () => seleccionarClaro(i);
+      claroGrid.appendChild(btn);
+    }
+  }
 
   // File input
   // File input listener añadido dinámicamente en triggerCamera() (iOS fix)
@@ -725,6 +744,7 @@ function restaurarEstado() {
     if (s.categoria) seleccionarCategoria(s.categoria);
     if (s.cuartel)   seleccionarCuartel(s.cuartel);
     if (s.hilera)    setHilera(s.hilera);
+    if (s.claro)     seleccionarClaro(s.claro);
     if (s.planta)    setPlanta(s.planta);
     if (s.fotos?.length) appState.fotos = s.fotos;
     if (s.gps) {
@@ -773,6 +793,20 @@ function onHileraInput(val) {
   } else if (val === '' || val === '0') {
     appState.hilera = null; guardarEstado(); actualizarResumen();
   }
+}
+
+function seleccionarClaro(c) {
+  // Toggle: si ya está seleccionado, deseleccionar
+  if (appState.claro === c) {
+    appState.claro = null;
+  } else {
+    appState.claro = c;
+  }
+  guardarEstado();
+  document.querySelectorAll('#claroGrid .sel-btn').forEach(b => {
+    b.classList.toggle('active', parseInt(b.dataset.val) === appState.claro);
+  });
+  actualizarResumen();
 }
 
 function setPlanta(n) {
@@ -890,6 +924,7 @@ async function handleSubmit() {
     tipo:        appState.categoria || 'otro',
     cuartel:     appState.cuartel,
     hilera:      appState.hilera  || '',
+    claro:       appState.claro   || '',
     planta:      appState.planta  || '',
     notas:       notas,
     gps_lat:     gpsData?.lat     || '',
@@ -947,7 +982,7 @@ function mostrarExito(catInfo, notas) {
 
 function resetForm() {
   document.getElementById('overlaySuccess').classList.remove('visible');
-  appState = { categoria: null, cuartel: null, hilera: null, planta: null, fotos: [], gps: gpsData };
+  appState = { categoria: null, cuartel: null, hilera: null, claro: null, planta: null, fotos: [], gps: gpsData };
   guardarEstado();
 
   // Reset UI
