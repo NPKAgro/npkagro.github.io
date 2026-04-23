@@ -110,9 +110,12 @@
       'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;',
     '}',
     '.lq-user-avatar{',
-      'width:28px;height:28px;border-radius:50%;',
+      'width:28px;height:28px;min-width:28px;max-width:28px;min-height:28px;max-height:28px;',
+      'border-radius:50%;',
       'background:#1e2534;border:1px solid rgba(255,255,255,.1);',
-      'object-fit:cover;flex-shrink:0;',
+      'object-fit:cover;flex-shrink:0;display:flex;',
+      'align-items:center;justify-content:center;',
+      'font-size:13px;font-weight:700;color:#10b981;',
     '}',
     '.lq-user-name{font-size:12px;color:#8b93a5;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
     '.lq-signout-btn{',
@@ -164,12 +167,17 @@
 
   // ── Mostrar barra de usuario ───────────────────────────────────────────
   function showUserBar(session) {
+    // Asegurar que el CSS esté inyectado (si esta página no pasó por login, puede faltar)
+    injectCSS();
+    // Evitar duplicados si se llama varias veces
+    var prev = document.getElementById('lq-user-bar');
+    if (prev) prev.remove();
     var bar = document.createElement('div');
     bar.id  = 'lq-user-bar';
     bar.className = 'lq-user-bar';
     var avatarHtml = session.picture
-      ? '<img class="lq-user-avatar" src="' + escHtml(session.picture) + '" alt="">'
-      : '<div class="lq-user-avatar"></div>';
+      ? '<img class="lq-user-avatar" src="' + escHtml(session.picture) + '" alt="" referrerpolicy="no-referrer">'
+      : '<div class="lq-user-avatar lq-user-avatar-initial">' + escHtml((session.name || session.email || '?').charAt(0).toUpperCase()) + '</div>';
     bar.innerHTML = avatarHtml
       + '<span class="lq-user-name">' + escHtml(session.name || session.email) + '</span>'
       + '<button class="lq-signout-btn" onclick="lqSignOut()">Salir</button>';
