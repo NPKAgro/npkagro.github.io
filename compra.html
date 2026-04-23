@@ -262,6 +262,90 @@
     .toast.visible { opacity: 1; }
     .toast.ok    { border-color: var(--green); color: #6ee7b7; }
     .toast.error { border-color: var(--red);   color: #fca5a5; }
+
+    /* ── IA · Detectar productos desde foto ── */
+    .btn-ia {
+      width: 100%;
+      margin-top: 10px;
+      background: linear-gradient(135deg, #6366f1 0%, #3b82f6 100%);
+      border: none;
+      color: #fff;
+      padding: 12px 14px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 2px 10px rgba(99,102,241,0.25);
+    }
+    .btn-ia:active  { transform: scale(0.98); }
+    .btn-ia:disabled { opacity: 0.55; cursor: not-allowed; box-shadow: none; }
+    .btn-ia .ia-icon { font-size: 16px; }
+    .btn-ia .ia-hint { font-size: 10px; opacity: 0.72; font-weight: 600; margin-left: 4px; padding: 2px 6px; border-radius: 99px; background: rgba(255,255,255,0.15); }
+
+    .ia-status {
+      margin-top: 8px;
+      padding: 10px 12px;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 12px;
+      color: var(--text2);
+      line-height: 1.5;
+    }
+    .ia-status.error { border-color: rgba(239,68,68,0.4); color: #fca5a5; background: rgba(239,68,68,0.06); }
+    .ia-status.ok    { border-color: rgba(16,185,129,0.4); color: #6ee7b7; background: rgba(16,185,129,0.05); }
+    .ia-spinner {
+      display: inline-block; width: 12px; height: 12px;
+      border: 2px solid currentColor; border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.75s linear infinite;
+      vertical-align: -2px; margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .ia-pend-item {
+      background: var(--bg3);
+      border: 1px solid rgba(251,191,36,0.35);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 6px;
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: border-color 0.12s;
+    }
+    .ia-pend-item:active { border-color: #fbbf24; }
+    .ia-pend-info { flex: 1; font-size: 13px; }
+    .ia-pend-name { font-weight: 700; margin-bottom: 2px; }
+    .ia-pend-meta { font-size: 11px; color: var(--text3); }
+    .ia-pend-action {
+      flex-shrink: 0;
+      background: rgba(251,191,36,0.15);
+      border: 1px solid rgba(251,191,36,0.4);
+      color: #fbbf24;
+      font-size: 11px; font-weight: 700;
+      padding: 6px 10px; border-radius: 99px;
+      pointer-events: none;
+    }
+    .ia-pend-discard {
+      flex-shrink: 0;
+      background: none; border: none; color: var(--red);
+      font-size: 18px; cursor: pointer; padding: 4px 6px;
+    }
+
+    .item.ia-mark { border-left: 3px solid #6366f1; }
+    .ia-badge {
+      font-size: 9px; font-weight: 700;
+      padding: 2px 6px; border-radius: 99px;
+      background: rgba(99,102,241,0.15); color: #a5b4fc;
+      text-transform: uppercase; letter-spacing: 0.3px;
+      margin-left: 6px;
+      vertical-align: 2px;
+    }
   </style>
 </head>
 <body>
@@ -277,13 +361,29 @@
 <div class="content">
 
   <div class="section">
-    <div class="section-title">📄 Foto de la factura (opcional)</div>
+    <div class="section-title">📄 Foto de la factura</div>
     <div class="photo-slot" id="photoSlot" onclick="document.getElementById('photoInput').click()">
       <div class="photo-icon">📸</div>
       <div class="photo-label">Tocá para sacar foto</div>
-      <div class="photo-hint">Se guarda junto a la compra para respaldo</div>
+      <div class="photo-hint">Respaldo + detección automática de productos</div>
     </div>
     <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none" onchange="onPhoto(this)">
+
+    <button class="btn-ia" id="btnDetectarIA" onclick="detectarConIA()" style="display:none">
+      <span class="ia-icon">✨</span>
+      <span class="ia-label">Detectar productos con IA</span>
+      <span class="ia-hint">Gemini · gratis</span>
+    </button>
+    <div id="iaStatus" class="ia-status" style="display:none"></div>
+  </div>
+
+  <div class="section" id="iaPendientesSection" style="display:none">
+    <div class="section-title" style="color:#fbbf24">⚠️ Sin coincidencia en catálogo</div>
+    <div style="font-size:11px; color:var(--text3); margin-bottom:10px; line-height:1.4">
+      La IA detectó estos productos pero no los encontró en tu catálogo.
+      Tocá cada uno para registrarlo como producto nuevo.
+    </div>
+    <div id="iaPendientesList"></div>
   </div>
 
   <div class="section">
@@ -458,10 +558,15 @@ const GAS_TOKEN = 'LQ2026-Santina';
 const state = {
   productos: [],
   items:     [],
-  fotoB64:   null,
+  fotoB64:   null,   // data-url completa (con prefix) — se envía al backend
   fotoName:  null,
+  iaBase64:  null,   // base64 raw (sin prefix) — se envía a parse_factura
+  iaMimeType:'image/jpeg',
+  iaPendientes: [],  // items detectados sin match al catálogo
   modalTab:  'existente',
   selectedProd: null,
+  prefillFromIA: null, // { nombre, cantidad, unidad } para pre-rellenar modal
+  pendienteIdxEdit: null,
   gps: null
 };
 
@@ -551,6 +656,8 @@ function abrirModalProducto(){
 function cerrarModal(e){
   if (e && e.target !== e.currentTarget) return;
   document.getElementById('modalOverlay').classList.remove('visible');
+  state.pendienteIdxEdit = null;
+  state.prefillFromIA = null;
 }
 
 function cambiarTab(tab){
@@ -565,21 +672,27 @@ function cambiarTab(tab){
 async function agregarItem(){
   const btn = document.getElementById('btnAddItem');
   btn.disabled = true;
+  const desdeIA = state.pendienteIdxEdit !== null;
 
   if (state.modalTab === 'existente') {
     if (!state.selectedProd) { toast('Selecciona un producto', 'error'); btn.disabled = false; return; }
     const cant   = parseFloat(document.getElementById('selCantidad').value);
     const precio = parseFloat(document.getElementById('selPrecio').value);
     if (!cant || cant <= 0)   { toast('Cantidad inválida', 'error'); btn.disabled = false; return; }
-    if (!precio || precio <= 0) { toast('Precio inválido', 'error'); btn.disabled = false; return; }
+    if ((!precio || precio <= 0) && !desdeIA) { toast('Precio inválido', 'error'); btn.disabled = false; return; }
     state.items.push({
       codigo:    state.selectedProd.codigo,
       nombre_comercial: state.selectedProd.nombre_comercial,
       unidad:    state.selectedProd.unidad,
       categoria: state.selectedProd.categoria,
       cantidad:  cant,
-      precio_unitario: precio
+      precio_unitario: precio || 0,
+      ia_detectado: desdeIA || undefined
     });
+    if (desdeIA) {
+      state.iaPendientes.splice(state.pendienteIdxEdit, 1);
+      renderIAPendientes();
+    }
     renderItems();
     cerrarModal();
   } else {
@@ -598,7 +711,7 @@ async function agregarItem(){
     if (!categoria)       { toast('Falta categoría', 'error'); btn.disabled = false; return; }
     if (!unidad)          { toast('Falta unidad', 'error'); btn.disabled = false; return; }
     if (!cantidad || cantidad <= 0) { toast('Cantidad inválida', 'error'); btn.disabled = false; return; }
-    if (!precio || precio <= 0)     { toast('Precio inválido', 'error'); btn.disabled = false; return; }
+    if ((!precio || precio <= 0) && !desdeIA) { toast('Precio inválido', 'error'); btn.disabled = false; return; }
 
     // Generar código nuevo CAT-NNN
     const prefijos = {
@@ -631,21 +744,27 @@ async function agregarItem(){
           action: 'upsert_producto',
           codigo, nombre_comercial: nombre, ingrediente_activo: ia,
           categoria, unidad, proveedor: proveedorSel,
-          precio_ref_clp: precio, dosis_referencia: dosis,
+          precio_ref_clp: precio || 0, dosis_referencia: dosis,
           carencia_dias: carencia || '', uso_principal: uso,
-          activo: true, notas: 'Agregado desde compra.html'
+          activo: true, notas: desdeIA ? 'Agregado desde IA factura' : 'Agregado desde compra.html'
         })
       });
       // Optimistic: agrego al state local
       state.productos.push({
         codigo, nombre_comercial: nombre, ingrediente_activo: ia,
         categoria, unidad, proveedor: proveedorSel,
-        precio_ref_clp: precio
+        precio_ref_clp: precio || 0
       });
       state.items.push({
         codigo, nombre_comercial: nombre, unidad, categoria,
-        cantidad, precio_unitario: precio, nuevo: true
+        cantidad, precio_unitario: precio || 0,
+        nuevo: true,
+        ia_detectado: desdeIA || undefined
       });
+      if (desdeIA) {
+        state.iaPendientes.splice(state.pendienteIdxEdit, 1);
+        renderIAPendientes();
+      }
       renderItems();
       cerrarModal();
       toast('✅ Producto agregado al catálogo', 'ok');
@@ -653,6 +772,8 @@ async function agregarItem(){
       toast('Error al guardar producto: '+err.message, 'error');
     }
   }
+  state.pendienteIdxEdit = null;
+  state.prefillFromIA = null;
   btn.disabled = false;
 }
 
@@ -663,16 +784,24 @@ function renderItems(){
     document.getElementById('totalVal').textContent = '$ 0';
     return;
   }
-  cont.innerHTML = state.items.map((it, i) => `
-    <div class="item">
+  cont.innerHTML = state.items.map((it, i) => {
+    let badges = '';
+    if (it.nuevo) badges += '<span style="color:var(--accent); font-size:10px; font-weight:700; text-transform:uppercase; margin-left:6px">· nuevo</span>';
+    if (it.ia_detectado) badges += '<span class="ia-badge">✨ IA</span>';
+    const cls = it.ia_detectado ? 'item ia-mark' : 'item';
+    const precioTxt = it.precio_unitario > 0
+      ? fmtCLP(it.precio_unitario) + ' = <strong>' + fmtCLP(it.cantidad * it.precio_unitario) + '</strong>'
+      : '<span style="color:var(--text3)">sin precio</span>';
+    return `
+    <div class="${cls}">
       <div class="item-info">
-        <div class="item-name">${esc(it.nombre_comercial)} ${it.nuevo?'<span style="color:var(--accent); font-size:10px; font-weight:700; text-transform:uppercase">· nuevo</span>':''}</div>
-        <div class="item-meta">${fmtNum(it.cantidad)} ${esc(it.unidad)} × ${fmtCLP(it.precio_unitario)} = <strong>${fmtCLP(it.cantidad*it.precio_unitario)}</strong></div>
+        <div class="item-name">${esc(it.nombre_comercial)}${badges}</div>
+        <div class="item-meta">${fmtNum(it.cantidad)} ${esc(it.unidad)} × ${precioTxt}</div>
       </div>
       <button class="item-remove" onclick="removerItem(${i})" title="Quitar">×</button>
-    </div>
-  `).join('');
-  const total = state.items.reduce((s, it) => s + (it.cantidad * it.precio_unitario), 0);
+    </div>`;
+  }).join('');
+  const total = state.items.reduce((s, it) => s + (Number(it.cantidad)||0) * (Number(it.precio_unitario)||0), 0);
   document.getElementById('totalVal').textContent = fmtCLP(total);
 }
 
@@ -686,15 +815,175 @@ function fmtNum(n){
 function onPhoto(input){
   const file = input.files && input.files[0];
   if (!file) return;
-  const reader = new FileReader();
-  reader.onload = () => {
-    state.fotoB64 = reader.result;
-    state.fotoName = file.name || ('factura_'+Date.now()+'.jpg');
+  comprimirImagen(file, 1600).then(({ dataUrl, b64Raw }) => {
+    state.fotoB64 = dataUrl;
+    state.iaBase64 = b64Raw;
+    state.iaMimeType = 'image/jpeg';
+    state.fotoName = file.name || ('factura_' + Date.now() + '.jpg');
     const slot = document.getElementById('photoSlot');
     slot.classList.add('has-photo');
-    slot.innerHTML = '<img src="'+reader.result+'" alt="factura">';
-  };
-  reader.readAsDataURL(file);
+    slot.innerHTML = '<img src="' + dataUrl + '" alt="factura">';
+    // Mostrar botón de IA
+    const btnIA = document.getElementById('btnDetectarIA');
+    btnIA.style.display = 'flex';
+    btnIA.disabled = false;
+    btnIA.innerHTML = '<span class="ia-icon">✨</span><span class="ia-label">Detectar productos con IA</span><span class="ia-hint">Gemini · gratis</span>';
+    document.getElementById('iaStatus').style.display = 'none';
+  }).catch(err => {
+    toast('Error leyendo foto: ' + err.message, 'error');
+  });
+}
+
+function comprimirImagen(file, maxLado){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('No se pudo leer el archivo'));
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width, h = img.height;
+        if (w > maxLado || h > maxLado) {
+          if (w > h) { h = Math.round(h * maxLado / w); w = maxLado; }
+          else      { w = Math.round(w * maxLado / h); h = maxLado; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        const b64Raw = dataUrl.split(',')[1];
+        resolve({ dataUrl, b64Raw });
+      };
+      img.onerror = () => reject(new Error('No se pudo decodificar'));
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function detectarConIA(){
+  if (!state.iaBase64) { toast('Primero tomá una foto', 'error'); return; }
+  const btn = document.getElementById('btnDetectarIA');
+  const status = document.getElementById('iaStatus');
+  btn.disabled = true;
+  status.style.display = 'block';
+  status.className = 'ia-status';
+  status.innerHTML = '<span class="ia-spinner"></span>Analizando factura con IA... <span style="color:var(--text3)">(5–15 s)</span>';
+
+  try {
+    const res = await fetch(GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({
+        token: GAS_TOKEN,
+        action: 'parse_factura',
+        imagen_base64: state.iaBase64,
+        mime_type: state.iaMimeType || 'image/jpeg'
+      })
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    if (data.success === false || data.ok === false || data.error) {
+      throw new Error(data.error || 'IA respondió error');
+    }
+
+    const items = (data.items || []).filter(i => i && Number(i.cantidad) > 0);
+    if (items.length === 0) {
+      status.className = 'ia-status';
+      status.innerHTML = '⚠️ No detecté productos. Probá con una foto más nítida y bien iluminada, o agregá los productos manualmente.';
+      btn.disabled = false;
+      btn.innerHTML = '<span class="ia-icon">✨</span><span class="ia-label">Reintentar</span><span class="ia-hint">Gemini</span>';
+      return;
+    }
+
+    // Separar items con match vs sin match
+    let matched = 0;
+    state.iaPendientes = [];
+    items.forEach(it => {
+      if (it.match && it.match.codigo) {
+        // Auto-agregar a items con datos del catálogo
+        state.items.push({
+          codigo: it.match.codigo,
+          nombre_comercial: it.match.nombre_comercial,
+          unidad: it.match.unidad || it.unidad || 'L',
+          categoria: it.match.categoria || '',
+          cantidad: Number(it.cantidad) || 0,
+          precio_unitario: Number(it.match.precio_ref_clp) || 0,
+          ia_detectado: true,
+          ia_nombre_original: it.producto || '',
+          ia_match_score: it.match.score || 0
+        });
+        matched++;
+      } else {
+        // Sin match → dejar en pendientes para que usuario los agregue manualmente
+        state.iaPendientes.push({
+          producto: it.producto || '',
+          cantidad: Number(it.cantidad) || 0,
+          unidad: it.unidad || 'L',
+          nota: it.nota || ''
+        });
+      }
+    });
+
+    renderItems();
+    renderIAPendientes();
+
+    const unmatched = state.iaPendientes.length;
+    status.className = 'ia-status ok';
+    status.innerHTML = '✅ <strong>' + items.length + ' producto' + (items.length===1?'':'s') + ' detectado' + (items.length===1?'':'s') + '</strong>' +
+      ' · ' + matched + ' match automático' +
+      (unmatched ? ' · <strong style="color:#fbbf24">' + unmatched + ' sin match</strong> (revisá abajo)' : '');
+    btn.disabled = false;
+    btn.innerHTML = '<span class="ia-icon">✨</span><span class="ia-label">Detectar de nuevo</span><span class="ia-hint">Gemini</span>';
+  } catch(err) {
+    status.className = 'ia-status error';
+    status.textContent = '❌ ' + err.message;
+    btn.disabled = false;
+    btn.innerHTML = '<span class="ia-icon">✨</span><span class="ia-label">Reintentar</span><span class="ia-hint">Gemini</span>';
+  }
+}
+
+function renderIAPendientes(){
+  const section = document.getElementById('iaPendientesSection');
+  const list = document.getElementById('iaPendientesList');
+  if (!state.iaPendientes.length) {
+    section.style.display = 'none';
+    list.innerHTML = '';
+    return;
+  }
+  section.style.display = 'block';
+  list.innerHTML = state.iaPendientes.map((p, i) => `
+    <div class="ia-pend-item" onclick="agregarPendienteIA(${i})">
+      <div class="ia-pend-info">
+        <div class="ia-pend-name">${esc(p.producto)}</div>
+        <div class="ia-pend-meta">${fmtNum(p.cantidad)} ${esc(p.unidad)}${p.nota ? ' · ' + esc(p.nota) : ''}</div>
+      </div>
+      <span class="ia-pend-action">Registrar →</span>
+      <button class="ia-pend-discard" onclick="event.stopPropagation(); descartarPendienteIA(${i})" title="Descartar">×</button>
+    </div>
+  `).join('');
+}
+
+function descartarPendienteIA(idx){
+  state.iaPendientes.splice(idx, 1);
+  renderIAPendientes();
+}
+
+function agregarPendienteIA(idx){
+  const p = state.iaPendientes[idx];
+  if (!p) return;
+  state.prefillFromIA = { nombre: p.producto, cantidad: p.cantidad, unidad: p.unidad };
+  state.pendienteIdxEdit = idx;
+  abrirModalProducto();
+  // Ir directo al tab "Nuevo producto" con nombre ya lleno
+  cambiarTab('nuevo');
+  document.getElementById('nvNombre').value = p.producto;
+  document.getElementById('nvCantidad').value = p.cantidad;
+  // Normalizar unidad al select
+  const unidadMap = { 'L':'L', 'KG':'Kg', 'Kg':'Kg', 'CC':'cc', 'cc':'cc', 'G':'g', 'g':'g', 'UNIDAD':'Unidad', 'Unidad':'Unidad' };
+  const unidadSel = unidadMap[p.unidad] || unidadMap[String(p.unidad).toUpperCase()] || 'L';
+  document.getElementById('nvUnidad').value = unidadSel;
+  // Intentar adivinar categoría por el tab "existente" (búsqueda)
+  document.getElementById('searchProd').value = p.producto;
 }
 
 async function enviarCompra(){
@@ -734,11 +1023,17 @@ async function enviarCompra(){
     });
     toast('✅ Compra registrada — '+state.items.length+' items', 'ok');
     setTimeout(() => {
-      state.items = []; state.fotoB64 = null; state.fotoName = null;
+      state.items = [];
+      state.fotoB64 = null; state.fotoName = null;
+      state.iaBase64 = null; state.iaPendientes = [];
+      state.pendienteIdxEdit = null; state.prefillFromIA = null;
       renderItems();
+      renderIAPendientes();
       document.getElementById('photoSlot').classList.remove('has-photo');
       document.getElementById('photoSlot').innerHTML =
-        '<div class="photo-icon">📸</div><div class="photo-label">Tocá para sacar foto</div><div class="photo-hint">Se guarda junto a la compra para respaldo</div>';
+        '<div class="photo-icon">📸</div><div class="photo-label">Tocá para sacar foto</div><div class="photo-hint">Respaldo + detección automática de productos</div>';
+      document.getElementById('btnDetectarIA').style.display = 'none';
+      document.getElementById('iaStatus').style.display = 'none';
       document.getElementById('factura_n').value = '';
       document.getElementById('notas').value = '';
     }, 600);
