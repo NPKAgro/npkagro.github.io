@@ -7,9 +7,12 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Aforado LQ">
   <meta name="theme-color" content="#0f1117">
-  <title>Aforado del Campo · La Quinta</title>
+  <meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
+  <title>Aforado de Riego · La Quinta</title>
   <script>window.LQ_AUTH_MODE = 'equipo'; window.LQ_AUTH_SHOW_BAR = false;</script>
   <script src="auth.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -24,16 +27,14 @@
       --accent:      #3b82f6;
       --accent2:     #1d4ed8;
       --accent-pale: rgba(59,130,246,0.15);
+      --teal:        #14b8a6;
+      --teal-pale:   rgba(20,184,166,0.15);
       --green:       #10b981;
       --amber:       #f59e0b;
       --red:         #ef4444;
       --purple:      #8b5cf6;
-      --teal:        #14b8a6;
-      --teal-pale:   rgba(20,184,166,0.15);
-      --orange:      #f97316;
       --radius:      10px;
       --radius-sm:   8px;
-      --shadow:      0 4px 20px rgba(0,0,0,0.5);
     }
 
     html, body { height: 100%; }
@@ -46,780 +47,489 @@
       -webkit-tap-highlight-color: transparent;
     }
     ::-webkit-scrollbar { width: 4px; }
-    ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
-    /* ── HEADER ── */
-    .header {
+    header {
       background: var(--bg2);
       border-bottom: 1px solid var(--border);
       padding: 12px 18px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      position: sticky;
-      top: 0;
-      z-index: 50;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; position: sticky; top: 0; z-index: 50;
     }
     .header-back {
-      width: 36px; height: 36px;
-      border-radius: var(--radius-sm);
-      background: var(--bg3);
-      border: 1px solid var(--border);
+      width: 36px; height: 36px; border-radius: var(--radius-sm);
+      background: var(--bg3); border: 1px solid var(--border);
       display: flex; align-items: center; justify-content: center;
-      font-size: 20px; color: var(--text2);
-      text-decoration: none; flex-shrink: 0;
-      transition: all 0.12s;
+      font-size: 20px; color: var(--text2); text-decoration: none;
+      transition: all 0.12s; flex-shrink: 0;
     }
     .header-back:active { border-color: var(--teal); color: var(--teal); }
     .header-brand { display: flex; flex-direction: column; line-height: 1.25; flex: 1; }
-    .header-empresa { font-size: 15px; font-weight: 700; color: var(--text); letter-spacing: -0.3px; }
+    .header-empresa { font-size: 15px; font-weight: 700; letter-spacing: -0.3px; }
     .header-empresa span { color: var(--teal); }
     .header-predio { font-size: 11px; color: var(--text3); }
     .header-datetime { text-align: right; flex-shrink: 0; }
     .header-fecha { font-size: 12px; color: var(--text3); }
-    .header-hora {
-      font-size: 18px; font-weight: 600;
-      font-variant-numeric: tabular-nums;
-      color: var(--text); line-height: 1.1;
-    }
+    .header-hora { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
 
-    /* ── TAB BAR ── */
-    .tabs {
-      display: flex;
-      background: var(--bg2);
-      border-bottom: 1px solid var(--border);
-      position: sticky;
-      top: 61px;
-      z-index: 40;
-    }
-    .tab-btn {
-      flex: 1;
-      padding: 11px 8px;
-      background: none; border: none;
+    .gps-bar {
+      display: flex; align-items: center; gap: 8px;
+      padding: 7px 18px; font-size: 12px; font-weight: 600;
+      background: rgba(0,0,0,0.3); border-bottom: 1px solid var(--border);
       color: var(--text3);
-      font-size: 12px; font-weight: 600;
-      cursor: pointer;
-      border-bottom: 2px solid transparent;
-      transition: all 0.15s;
-      text-align: center;
     }
-    .tab-btn.active {
-      color: var(--teal);
-      border-bottom-color: var(--teal);
-    }
-    .tab-btn .tab-icon { font-size: 16px; display: block; margin-bottom: 2px; }
-
-    /* ── CONTENT ── */
-    .tab-panel { display: none; }
-    .tab-panel.active { display: block; }
-    .content {
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      max-width: 600px;
-      margin: 0 auto;
+    .gps-dot { width: 7px; height: 7px; border-radius: 50%; }
+    .gps-bar.buscando .gps-dot { background: var(--amber); animation: pulse 1.2s infinite; }
+    .gps-bar.ok       .gps-dot { background: var(--green); }
+    .gps-bar.error    .gps-dot { background: var(--red); }
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:0.5;transform:scale(1.3);} }
+    .gps-coords { font-variant-numeric: tabular-nums; font-size: 11px; }
+    .gps-refresh {
+      margin-left: auto; background: var(--bg3); border: 1px solid var(--border);
+      color: var(--text2); padding: 3px 8px; border-radius: 5px;
+      font-size: 11px; cursor: pointer;
     }
 
-    /* ── CARD ── */
+    .content { padding: 14px 14px 4px; max-width: 680px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+
     .card {
-      background: var(--bg2);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
-      transition: border-color 0.15s;
-    }
-    .card.error-card { border-color: rgba(239,68,68,0.5); }
-    .card-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 11px 14px 10px;
-      border-bottom: 1px solid var(--border);
-    }
-    .card-label { font-size: 13px; font-weight: 600; color: var(--text2); }
-    .optional-tag {
-      font-size: 10px; color: var(--text3);
-      background: var(--bg3); border-radius: 99px; padding: 2px 8px;
-    }
-    .card-body { padding: 12px 14px; }
-
-    /* ── CUARTEL BUTTONS ── */
-    .btn-grid-3 {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-    }
-    .sel-btn {
-      padding: 14px 8px;
-      border-radius: var(--radius-sm);
-      background: var(--bg3);
-      border: 1px solid var(--border);
-      color: var(--text2);
-      font-size: 16px; font-weight: 700;
-      cursor: pointer; transition: all 0.12s;
-      text-align: center;
-    }
-    .sel-btn.active {
-      background: var(--teal-pale);
-      border-color: var(--teal);
-      color: var(--teal);
-    }
-    .sel-btn:active { transform: scale(0.93); }
-
-    /* ── SUBLABEL ── */
-    .sublabel {
-      font-size: 11px; font-weight: 600;
-      color: var(--text3); text-transform: uppercase;
-      letter-spacing: 0.06em; margin-bottom: 7px;
-    }
-    .sublabel span { font-weight: 400; opacity: 0.7; text-transform: none; }
-
-    /* ── INPUT ── */
-    .field-input {
-      width: 100%;
-      background: var(--bg3);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      color: var(--text);
-      font-size: 15px; padding: 11px 13px;
-      outline: none; transition: border-color 0.12s;
-    }
-    .field-input:focus { border-color: var(--teal); }
-    .field-select {
-      width: 100%;
-      background: var(--bg3);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      color: var(--text);
-      font-size: 15px; padding: 11px 13px;
-      outline: none; transition: border-color 0.12s;
-      appearance: none;
-      -webkit-appearance: none;
-    }
-    .field-select:focus { border-color: var(--teal); }
-
-    /* ── STEPPER ── */
-    .stepper {
-      display: flex; align-items: center;
-      background: var(--bg3); border: 1px solid var(--border);
+      background: var(--bg2); border: 1px solid var(--border);
       border-radius: var(--radius); overflow: hidden;
       transition: border-color 0.15s;
     }
-    .stepper:focus-within { border-color: var(--teal); }
-    .stepper-btn {
-      background: none; border: none;
-      font-size: 26px; font-weight: 300;
-      color: var(--teal); padding: 8px 16px;
-      cursor: pointer; line-height: 1; user-select: none;
-      transition: background 0.1s;
+    .card.error { border-color: var(--red); }
+    .card-header {
+      padding: 12px 14px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
     }
-    .stepper-btn:active { background: var(--teal-pale); }
-    .stepper-input {
-      flex: 1; text-align: center;
-      font-size: 24px; font-weight: 700;
-      font-variant-numeric: tabular-nums;
-      background: transparent; border: none;
-      color: var(--text); outline: none;
-      padding: 8px 4px; width: 0; min-width: 0;
-      -moz-appearance: textfield;
-    }
-    .stepper-input::-webkit-outer-spin-button,
-    .stepper-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-    .stepper-unit {
-      font-size: 12px; color: var(--text3);
-      padding-right: 12px; font-weight: 500;
-    }
+    .card-label { font-size: 13px; font-weight: 600; color: var(--teal); letter-spacing: 0.3px; text-transform: uppercase; }
+    .card-body { padding: 12px 14px; }
 
-    /* ── GRID 2 COLS ── */
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+    .sublabel { font-size: 11px; color: var(--text3); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.3px; font-weight: 600; }
+    .sublabel span { color: var(--text3); opacity: 0.8; font-weight: 400; text-transform: none; letter-spacing: 0; }
 
-    /* ── MEDICIÓN ENTRY ── */
-    .medicion-row {
-      display: grid;
-      grid-template-columns: 40px 1fr 80px;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 0;
-      border-bottom: 1px solid var(--border);
-    }
-    .medicion-row:last-child { border-bottom: none; }
-    .medicion-label {
-      font-size: 12px; font-weight: 700;
-      color: var(--text3); text-align: center;
-    }
-    .medicion-input {
+    .btn-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .btn-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+
+    .sel-btn {
+      padding: 12px 8px; border-radius: var(--radius-sm);
       background: var(--bg3); border: 1px solid var(--border);
-      border-radius: var(--radius-sm); color: var(--text);
-      font-size: 16px; font-weight: 600;
-      padding: 8px 10px; outline: none;
-      transition: border-color 0.12s; text-align: right;
-      -moz-appearance: textfield;
+      color: var(--text2); font-size: 15px; font-weight: 600;
+      cursor: pointer; transition: all 0.12s; text-align: center;
     }
-    .medicion-input::-webkit-outer-spin-button,
-    .medicion-input::-webkit-inner-spin-button { -webkit-appearance: none; }
-    .medicion-input:focus { border-color: var(--teal); }
-    .medicion-unit { font-size: 11px; color: var(--text3); font-weight: 600; text-align: left; }
+    .sel-btn.active {
+      background: var(--teal-pale); border-color: var(--teal); color: #5eead4;
+    }
+    .sel-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .sel-btn:active:not(:disabled) { transform: scale(0.95); }
 
-    /* ── UD BADGE ── */
-    .ud-badge {
-      display: flex; align-items: center; justify-content: center;
-      gap: 12px; padding: 16px;
-      background: var(--bg3); border-radius: var(--radius-sm);
-      border: 1px solid var(--border);
-    }
-    .ud-value {
-      font-size: 48px; font-weight: 800;
-      font-variant-numeric: tabular-nums;
-      line-height: 1;
-    }
-    .ud-value.excellent { color: var(--green); }
-    .ud-value.good      { color: var(--teal); }
-    .ud-value.fair      { color: var(--amber); }
-    .ud-value.poor      { color: var(--red); }
-    .ud-info { display: flex; flex-direction: column; gap: 4px; }
-    .ud-label { font-size: 13px; color: var(--text2); font-weight: 600; }
-    .ud-desc  { font-size: 11px; color: var(--text3); }
-
-    /* ── ALERT BADGE ── */
-    .alert-row {
-      display: flex; align-items: center; gap: 10px;
-      padding: 10px 12px;
-      border-radius: var(--radius-sm);
-      margin-bottom: 6px;
-      font-size: 12px; font-weight: 600;
-    }
-    .alert-row.green  { background: rgba(16,185,129,0.08); color: var(--green); }
-    .alert-row.amber  { background: rgba(245,158,11,0.1);  color: var(--amber); }
-    .alert-row.red    { background: rgba(239,68,68,0.1);   color: var(--red);   }
-    .alert-icon { font-size: 18px; flex-shrink: 0; }
-
-    /* ── HEATMAP ── */
-    .heatmap-wrapper {
-      background: var(--bg3);
-      border-radius: var(--radius-sm);
-      padding: 12px;
-      overflow-x: auto;
-    }
-    .heatmap-title {
-      font-size: 11px; font-weight: 700; color: var(--text3);
-      text-transform: uppercase; letter-spacing: 0.06em;
-      margin-bottom: 8px;
-    }
-    .heatmap-cuartel { margin-bottom: 14px; }
-    .heatmap-cuartel-label {
-      font-size: 12px; font-weight: 700; color: var(--text2);
-      margin-bottom: 6px;
-    }
-    .heatmap-grid {
-      display: grid;
-      gap: 2px;
-    }
-    .heatmap-cell {
-      height: 10px;
-      border-radius: 2px;
-      background: var(--bg2);
-      transition: background 0.3s;
-      cursor: pointer;
-      position: relative;
-    }
-    .heatmap-cell[data-val]:hover::after {
-      content: attr(data-val);
-      position: absolute;
-      top: -24px; left: 50%; transform: translateX(-50%);
-      background: rgba(0,0,0,0.9);
-      color: #fff;
-      font-size: 10px; padding: 2px 6px;
-      border-radius: 4px; white-space: nowrap;
-      z-index: 10; pointer-events: none;
-    }
-    /* Heat colors */
-    .hc-none  { background: rgba(255,255,255,0.04); }
-    .hc-low   { background: rgba(239,68,68,0.7); }
-    .hc-mid   { background: rgba(245,158,11,0.7); }
-    .hc-ok    { background: rgba(20,184,166,0.75); }
-    .hc-high  { background: rgba(139,92,246,0.7); }
-
-    /* ── LEGEND ── */
-    .legend {
-      display: flex; gap: 12px; flex-wrap: wrap;
+    .info-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px; border-radius: 999px;
+      background: var(--bg3); border: 1px solid var(--border);
+      font-size: 11px; color: var(--text2); font-weight: 500;
       margin-top: 8px;
     }
-    .legend-item {
-      display: flex; align-items: center; gap: 5px;
-      font-size: 10px; color: var(--text3);
+
+    .text-input {
+      width: 100%; background: var(--bg3); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 11px 14px;
+      font-size: 15px; color: var(--text); outline: none;
+      transition: border-color 0.12s;
     }
-    .legend-dot {
-      width: 10px; height: 10px; border-radius: 2px;
+    .text-input:focus { border-color: var(--teal); }
+    .text-input::placeholder { color: var(--text3); }
+
+    select.text-input { appearance: none; padding-right: 32px; background-image: linear-gradient(45deg, transparent 50%, var(--text3) 50%), linear-gradient(135deg, var(--text3) 50%, transparent 50%); background-position: calc(100% - 18px) 50%, calc(100% - 13px) 50%; background-size: 5px 5px, 5px 5px; background-repeat: no-repeat; }
+
+    .field-textarea {
+      width: 100%; background: var(--bg3); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 11px 14px;
+      font-size: 14px; font-family: inherit; color: var(--text);
+      resize: none; min-height: 72px; outline: none;
+    }
+    .field-textarea:focus { border-color: var(--teal); }
+
+    .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 420px) {
+      .row-2 { grid-template-columns: 1fr; gap: 10px; }
     }
 
-    /* ── HISTORIAL ── */
-    .historial-item {
-      display: flex; align-items: center;
-      gap: 12px; padding: 10px 0;
+    /* ── MEDICIONES ── */
+    .med-row {
+      display: grid;
+      grid-template-columns: auto 1fr 1fr 80px;
+      gap: 8px; align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px dashed var(--border);
+    }
+    .med-row:last-child { border-bottom: none; }
+    .med-label {
+      font-size: 12px; font-weight: 700; color: var(--text2);
+      min-width: 62px;
+    }
+    .med-input {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 8px;
+      font-size: 15px; font-weight: 600; color: var(--text);
+      text-align: center; outline: none;
+      -moz-appearance: textfield;
+    }
+    .med-input:focus { border-color: var(--teal); }
+    .med-input::-webkit-outer-spin-button,
+    .med-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    .med-caudal {
+      font-size: 13px; font-weight: 700; color: var(--teal);
+      text-align: right; font-variant-numeric: tabular-nums;
+    }
+    .med-head {
+      display: grid; grid-template-columns: auto 1fr 1fr 80px;
+      gap: 8px; padding: 6px 0 8px;
+      font-size: 10px; font-weight: 700; color: var(--text3);
+      text-transform: uppercase; letter-spacing: 0.4px;
       border-bottom: 1px solid var(--border);
     }
-    .historial-item:last-child { border-bottom: none; }
-    .historial-fecha {
-      font-size: 11px; color: var(--text3);
-      min-width: 80px;
-    }
-    .historial-cuartel {
-      font-size: 12px; font-weight: 700;
-      color: var(--teal);
-      min-width: 30px;
-    }
-    .historial-ud {
-      font-size: 18px; font-weight: 800;
-      font-variant-numeric: tabular-nums;
-      min-width: 55px;
-    }
-    .historial-notas {
-      font-size: 12px; color: var(--text2);
-      flex: 1; overflow: hidden;
-      text-overflow: ellipsis; white-space: nowrap;
-    }
+    .med-head span { text-align: center; }
+    .med-head span:first-child { text-align: left; }
+    .med-head span:last-child  { text-align: right; }
 
-    /* ── COMPARISON BAR ── */
-    .compare-row { margin-bottom: 10px; }
-    .compare-header {
-      display: flex; justify-content: space-between;
-      font-size: 12px; margin-bottom: 4px;
+    /* ── RESULTADOS ── */
+    .res-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
     }
-    .compare-label { color: var(--text2); font-weight: 600; }
-    .compare-values { color: var(--text3); }
-    .compare-bar-bg {
-      height: 8px; background: var(--bg3); border-radius: 99px;
-      overflow: hidden; position: relative;
-    }
-    .compare-bar-nominal {
-      position: absolute; top: 0; left: 0; height: 100%;
-      background: rgba(255,255,255,0.15); border-radius: 99px;
-      transition: width 0.4s;
-    }
-    .compare-bar-real {
-      position: absolute; top: 0; left: 0; height: 100%;
-      border-radius: 99px; transition: width 0.4s;
-    }
-    .bar-ok   { background: var(--teal); }
-    .bar-warn { background: var(--amber); }
-    .bar-bad  { background: var(--red); }
-
-    /* ── BOTTOM BAR ── */
-    .bottombar {
-      position: fixed; bottom: 0; left: 0; right: 0;
-      background: var(--bg2); border-top: 1px solid var(--border);
-      padding: 12px 16px;
-      padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
-      z-index: 40;
-    }
-    .btn-submit {
-      width: 100%; background: var(--teal); color: #fff;
-      border: none; border-radius: var(--radius);
-      padding: 15px; font-size: 16px; font-weight: 700;
-      cursor: pointer; transition: opacity 0.12s;
-    }
-    .btn-submit:active { opacity: 0.85; }
-    .btn-submit:disabled { background: var(--bg3); color: var(--text3); cursor: not-allowed; opacity: 1; }
-
-    /* ── OVERLAY ── */
-    .overlay-loading-bg {
-      position: fixed; inset: 0;
-      background: rgba(10,13,20,0.95);
-      z-index: 10000; display: none;
-      flex-direction: column; align-items: center;
-      justify-content: center; gap: 16px; padding: 32px;
-    }
-    .overlay-loading-bg.visible { display: flex; }
-    .spinner {
-      width: 44px; height: 44px;
-      border: 3px solid rgba(255,255,255,0.1);
-      border-top-color: var(--teal);
-      border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .overlay-title { font-size: 20px; font-weight: 700; color: var(--text); }
-
-    .overlay-success-bg {
-      position: fixed; inset: 0;
-      background: rgba(10,13,20,0.97);
-      z-index: 10000; display: none;
-      flex-direction: column; align-items: center;
-      justify-content: center; gap: 16px; padding: 32px;
-      text-align: center;
-    }
-    .overlay-success-bg.visible { display: flex; }
-    .success-icon { font-size: 72px; animation: pop 0.4s cubic-bezier(0.34,1.56,0.64,1); }
-    @keyframes pop { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-    .success-msg {
-      background: var(--bg2); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 14px 18px;
-      font-size: 13px; color: var(--text2);
-      text-align: left; line-height: 1.7;
-      width: 100%; max-width: 340px; white-space: pre-line;
-    }
-    .success-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; max-width: 340px; }
-    .btn-nuevo {
-      padding: 14px; border-radius: var(--radius);
-      border: 1px solid rgba(20,184,166,0.3);
-      background: var(--teal-pale); color: var(--text);
-      font-size: 15px; font-weight: 600; cursor: pointer;
-    }
-    .btn-inicio {
-      padding: 14px; border-radius: var(--radius);
-      border: 1px solid var(--border); background: var(--bg3);
-      color: var(--text2); font-size: 15px; font-weight: 600;
-      cursor: pointer; text-decoration: none;
-      display: flex; align-items: center; justify-content: center;
-    }
-
-    /* ── TOAST ── */
-    .toast {
-      display: none; position: fixed;
-      bottom: calc(80px + env(safe-area-inset-bottom, 0px));
-      left: 50%; transform: translateX(-50%);
-      background: var(--bg3); border: 1px solid rgba(239,68,68,0.4);
-      color: var(--red); padding: 10px 20px;
-      border-radius: var(--radius-sm);
-      font-size: 13px; font-weight: 600;
-      z-index: 200; max-width: 88vw;
-      text-align: center; box-shadow: var(--shadow);
-    }
-    .toast.visible { display: block; }
-    .toast.ok { border-color: rgba(16,185,129,0.4); color: var(--green); }
-
-    /* ── KPI CARDS ── */
-    .kpi-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .kpi-card {
-      background: var(--bg2); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 12px 14px;
-    }
-    .kpi-val { font-size: 28px; font-weight: 800; font-variant-numeric: tabular-nums; }
-    .kpi-label { font-size: 11px; color: var(--text3); margin-top: 2px; }
-
-    /* ── SECTION HEAD ── */
-    .section-head {
-      font-size: 11px; font-weight: 700; color: var(--teal);
-      text-transform: uppercase; letter-spacing: 0.08em;
-      padding: 4px 0;
-    }
-
-    /* ── PRESION COMPARE ── */
-    .presion-row {
-      display: grid; grid-template-columns: 1fr auto 1fr;
-      align-items: center; gap: 8px;
-    }
-    .presion-box {
+    .res-box {
       background: var(--bg3); border: 1px solid var(--border);
       border-radius: var(--radius-sm); padding: 10px 12px;
       text-align: center;
     }
-    .presion-box .pb-label { font-size: 10px; color: var(--text3); font-weight: 600; text-transform: uppercase; }
-    .presion-box .pb-val   { font-size: 22px; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; margin: 2px 0; }
-    .presion-box .pb-unit  { font-size: 11px; color: var(--text3); }
-    .presion-arrow { font-size: 20px; color: var(--text3); text-align: center; }
-    .presion-box.measured { border-color: var(--teal); }
-    .presion-box.measured .pb-val { color: var(--teal); }
-
-    /* ── EMPTY STATE ── */
-    .empty-state {
-      text-align: center; padding: 40px 20px;
-      color: var(--text3); font-size: 14px; line-height: 1.8;
+    .res-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.4px; font-weight: 600; }
+    .res-value { font-size: 20px; font-weight: 700; color: var(--text); margin-top: 4px; font-variant-numeric: tabular-nums; }
+    .res-sub   { font-size: 11px; color: var(--text3); margin-top: 2px; }
+    .clasif-chip {
+      display: inline-block; padding: 6px 14px;
+      border-radius: 999px; font-weight: 700; font-size: 13px;
+      margin-top: 10px;
     }
-    .empty-icon { font-size: 48px; display: block; margin-bottom: 12px; opacity: 0.5; }
+    .clasif-exc  { background: rgba(16,185,129,0.15); color: var(--green); border: 1px solid rgba(16,185,129,0.3); }
+    .clasif-bue  { background: rgba(59,130,246,0.15); color: var(--accent); border: 1px solid rgba(59,130,246,0.3); }
+    .clasif-reg  { background: rgba(245,158,11,0.15); color: var(--amber); border: 1px solid rgba(245,158,11,0.3); }
+    .clasif-def  { background: rgba(239,68,68,0.15);  color: var(--red);   border: 1px solid rgba(239,68,68,0.3); }
+    .clasif-none { background: var(--bg3); color: var(--text3); border: 1px solid var(--border); }
 
-    /* ── Ajustes móviles ── */
-    @media (max-width: 480px) {
-      .grid-2 { grid-template-columns: 1fr; gap: 12px; }
-      .stepper-input { font-size: 20px; padding: 10px 2px; }
-      .stepper-btn   { font-size: 22px; padding: 8px 12px; }
-      .stepper-unit  { font-size: 11px; padding-right: 8px; }
-      .presion-row   { flex-direction: column; gap: 8px; align-items: stretch; }
-      .presion-arrow { transform: rotate(90deg); text-align: center; }
-      .medicion-row { grid-template-columns: 30px 1fr 70px; }
+    /* ── FOTOS ── */
+    .fotos-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 10px; }
+    .foto-thumb { position: relative; aspect-ratio: 1; border-radius: var(--radius-sm); overflow: hidden; background: var(--bg3); border: 1px solid var(--border); }
+    .foto-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .foto-delete { position: absolute; top: 3px; right: 3px; background: rgba(239,68,68,0.95); color: #fff; border: none; width: 22px; height: 22px; border-radius: 50%; font-size: 14px; cursor: pointer; }
+    .btn-add-foto { width: 100%; padding: 12px; background: var(--bg3); border: 1px dashed var(--border); border-radius: var(--radius-sm); color: var(--text2); font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .btn-add-foto:active { border-color: var(--teal); color: var(--teal); }
+
+    /* ── MAPA ── */
+    .map-toggle { background: var(--bg3); border: 1px solid var(--border); color: var(--text2); padding: 4px 10px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 600; cursor: pointer; }
+    .map-body { padding: 0 !important; }
+    .map-body.hidden { display: none; }
+    #mapaLeaflet { width: 100%; height: 260px; background: #0b0d13; }
+    .map-estimate { padding: 10px 14px; font-size: 13px; font-weight: 600; color: var(--text2); background: var(--bg3); border-bottom: 1px solid var(--border); text-align: center; line-height: 1.4; }
+    .map-estimate.ok { color: var(--text); } .map-estimate.warn { color: var(--amber); }
+    .map-estimate b { color: var(--green); font-weight: 700; }
+    .map-estimate.warn b { color: var(--amber); }
+    .map-actions { display: flex; gap: 6px; padding: 10px 12px; border-top: 1px solid var(--border); background: var(--bg3); }
+    .map-btn { flex: 1; background: var(--bg2); border: 1px solid var(--border); color: var(--text2); padding: 8px 6px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 600; cursor: pointer; }
+    .map-btn:active { border-color: var(--teal); color: var(--teal); }
+    .map-hint { padding: 0 14px 12px; font-size: 11px; color: var(--text3); text-align: center; background: var(--bg3); }
+    .leaflet-container { background: #0b0d13; font-family: inherit; outline: none; }
+    .leaflet-control-zoom a { background: rgba(15,17,23,0.9) !important; color: #fff !important; border-color: rgba(255,255,255,0.15) !important; }
+    .leaflet-tooltip.cuartel-label { background: rgba(15,17,23,0.85); color: #fff; border: 1px solid rgba(255,255,255,0.25); border-radius: 4px; font-size: 12px; font-weight: 700; padding: 2px 6px; box-shadow: none; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
+    .leaflet-tooltip.cuartel-label::before { display: none; }
+
+    /* ── OVERLAYS ── */
+    .overlay-loading-bg, .overlay-success-bg {
+      position: fixed; inset: 0;
+      background: rgba(10,13,20,0.96);
+      z-index: 10000; display: none;
+      flex-direction: column; align-items: center; justify-content: center;
+      gap: 18px; text-align: center; padding: 32px;
     }
+    .overlay-loading-bg.visible, .overlay-success-bg.visible { display: flex; }
+    .spinner { width: 44px; height: 44px; border: 3px solid rgba(255,255,255,0.1); border-top-color: var(--teal); border-radius: 50%; animation: spin 0.7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .overlay-title { font-size: 20px; font-weight: 700; }
+    .success-icon { font-size: 72px; animation: pop 0.4s cubic-bezier(0.34,1.56,0.64,1); }
+    @keyframes pop { from { transform: scale(0); opacity:0; } to { transform: scale(1); opacity:1; } }
+    .success-msg {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 16px 20px;
+      max-width: 420px; width: 100%;
+      font-size: 14px; white-space: pre-line; text-align: left;
+    }
+    .success-actions { display: flex; gap: 10px; margin-top: 16px; }
+    .success-actions a, .success-actions button {
+      padding: 12px 20px; border-radius: var(--radius);
+      border: 1px solid var(--border); background: var(--bg2);
+      color: var(--text); font-size: 14px; font-weight: 600;
+      text-decoration: none; cursor: pointer;
+    }
+    .btn-nuevo { background: var(--teal) !important; border-color: var(--teal) !important; color: #000 !important; }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+      background: var(--red); color: #fff;
+      padding: 10px 18px; border-radius: var(--radius);
+      font-size: 13px; font-weight: 600;
+      z-index: 200; max-width: 88vw; text-align: center;
+      display: none;
+    }
+    .toast.visible { display: block; }
+    .toast.ok { background: var(--green); }
   </style>
 </head>
 <body>
 
-<!-- ── HEADER ── -->
-<div class="header">
+<header>
   <a class="header-back" href="app.html" title="Portal">‹</a>
   <div class="header-brand">
     <div class="header-empresa">Agrícola <span>del Pedregal</span></div>
-    <div class="header-predio">La Quinta · Aforado del Campo</div>
+    <div class="header-predio">La Quinta · Aforado de Riego</div>
   </div>
   <div class="header-datetime">
     <div class="header-fecha" id="hdrFecha"></div>
     <div class="header-hora"  id="hdrHora"></div>
   </div>
+</header>
+
+<div class="gps-bar buscando" id="gpsBar">
+  <div class="gps-dot"></div>
+  <span id="gpsMsg">🛰 Buscando GPS...</span>
+  <span class="gps-coords" id="gpsCoords"></span>
+  <button class="gps-refresh" onclick="pedirGPS()" title="Actualizar">↻</button>
 </div>
 
-<!-- ── TAB BAR ── -->
-<div class="tabs">
-  <button class="tab-btn active" onclick="setTab('captura')" id="tabCaptura">
-    <span class="tab-icon">📏</span>Medición
-  </button>
-  <button class="tab-btn" onclick="setTab('analisis')" id="tabAnalisis">
-    <span class="tab-icon">📊</span>Análisis
-  </button>
-  <button class="tab-btn" onclick="setTab('historial')" id="tabHistorial">
-    <span class="tab-icon">🕐</span>Historial
-  </button>
-</div>
-
-<!-- ══════════════════ TAB: CAPTURA ══════════════════ -->
-<div class="tab-panel active" id="panelCaptura">
 <div class="content">
 
-  <!-- CUARTEL -->
-  <div class="card" id="cardCuartel">
-    <div class="card-header"><span class="card-label">🌳 Cuartel</span></div>
+  <!-- ── OPERADOR ── -->
+  <div class="card" id="cardOperador">
+    <div class="card-header"><span class="card-label">👤 Operador</span></div>
     <div class="card-body">
-      <div class="btn-grid-3" id="cuartelGrid"></div>
+      <input type="text" id="operadorInput" class="text-input"
+        list="operadoresList" autocomplete="name"
+        placeholder="Tu nombre" oninput="onOperadorChange(this.value)">
+      <datalist id="operadoresList"></datalist>
+      <div id="operadorHint" style="font-size:11px;color:var(--text3);margin-top:6px">El nombre queda registrado en el aforo para trazabilidad.</div>
     </div>
   </div>
 
-  <!-- DISEÑO DEL SISTEMA -->
-  <div class="card">
-    <div class="card-header"><span class="card-label">⚙️ Diseño del sistema</span></div>
-    <div class="card-body" style="display:flex;flex-direction:column;gap:12px">
-
-      <div>
-        <div class="sublabel">Tipo de gotero</div>
-        <select class="field-select" id="tipoGotero">
-          <option value="">— Seleccionar —</option>
-          <option value="autocompensante">Autocompensante</option>
-          <option value="presion">Por presión</option>
-          <option value="exudacion">Exudación</option>
-          <option value="microaspersor">Microaspersor</option>
-        </select>
-      </div>
-
-      <div class="grid-2">
-        <div>
-          <div class="sublabel">Caudal nominal <span>(L/h)</span></div>
-          <div class="stepper">
-            <button class="stepper-btn" onclick="cambiarCaudalNom(-0.5)">−</button>
-            <input type="number" class="stepper-input" id="caudalNominal"
-              min="0" max="20" step="0.1" placeholder="—" inputmode="decimal"
-              oninput="onSistemaChange()">
-            <span class="stepper-unit">L/h</span>
-            <button class="stepper-btn" onclick="cambiarCaudalNom(+0.5)">+</button>
-          </div>
-        </div>
-        <div>
-          <div class="sublabel">Presión requerida</div>
-          <div class="stepper">
-            <button class="stepper-btn" onclick="cambiarPresionNom(-0.1)">−</button>
-            <input type="number" class="stepper-input" id="presionNominal"
-              min="0" max="10" step="0.1" placeholder="—" inputmode="decimal"
-              oninput="onSistemaChange()">
-            <span class="stepper-unit" id="presionUnit">bar</span>
-            <button class="stepper-btn" onclick="cambiarPresionNom(+0.1)">+</button>
-          </div>
-        </div>
-      </div>
-
-      <div>
-        <div class="sublabel">Duración medición <span>(minutos)</span></div>
-        <div class="stepper">
-          <button class="stepper-btn" onclick="cambiarDuracion(-1)">−</button>
-          <input type="number" class="stepper-input" id="duracionMin"
-            min="1" max="60" placeholder="5" inputmode="numeric"
-            oninput="onSistemaChange()">
-          <span class="stepper-unit">min</span>
-          <button class="stepper-btn" onclick="cambiarDuracion(+1)">+</button>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- PRESIÓN VÁLVULA -->
-  <div class="card">
-    <div class="card-header"><span class="card-label">🔧 Presión en válvula</span></div>
-    <div class="card-body">
-      <div class="presion-row">
-        <div class="presion-box">
-          <div class="pb-label">Requerida</div>
-          <div class="pb-val" id="presNomDisplay">—</div>
-          <div class="pb-unit" id="presNomUnit">bar</div>
-        </div>
-        <div class="presion-arrow">⟶</div>
-        <div class="presion-box measured">
-          <div class="pb-label">Medida</div>
-          <div class="stepper" style="border:none;background:transparent;">
-            <button class="stepper-btn" onclick="cambiarPresionMed(-0.1)">−</button>
-            <input type="number" class="stepper-input" id="presionMedida"
-              min="0" max="15" step="0.1" placeholder="—" inputmode="decimal"
-              oninput="calcularResultados()" style="font-size:20px;">
-            <button class="stepper-btn" onclick="cambiarPresionMed(+0.1)">+</button>
-          </div>
-          <div class="pb-unit">bar</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- MEDICIÓN DE CAUDAL POR HILERA (primera + última hilera de cada bloque) -->
-  <div class="card">
+  <!-- ── MAPA ── -->
+  <div class="card" id="cardMapa">
     <div class="card-header">
-      <span class="card-label">💧 Caudal real por gotero</span>
-      <span class="optional-tag" id="medUnidadTag">ml / 5 min</span>
+      <span class="card-label">🗺 Ubicación en el campo</span>
+      <button type="button" class="map-toggle" id="mapToggleBtn" onclick="toggleMapa()">Ocultar</button>
     </div>
-    <div class="card-body">
-      <div id="medicionesContainer">
-        <!-- Se generan dinámicamente para el cuartel seleccionado -->
-        <div class="empty-state">
-          <span class="empty-icon">🌳</span>
-          Selecciona un cuartel para ingresar las mediciones de caudal
-        </div>
+    <div class="card-body map-body" id="mapaBody">
+      <div class="map-estimate" id="mapEstimate">📍 Activa el GPS para ver tu ubicación</div>
+      <div id="mapaLeaflet"></div>
+      <div class="map-actions">
+        <button type="button" class="map-btn" onclick="centrarEnMi()">📍 Centrarme</button>
+        <button type="button" class="map-btn" onclick="verCuartel()">🎯 Ver cuartel</button>
+        <button type="button" class="map-btn" onclick="verTodos()">🔍 Ver todos</button>
       </div>
+      <div class="map-hint">Referencia visual · detección exacta desde los KMZ del campo.</div>
     </div>
   </div>
 
-  <!-- RESULTADOS EN TIEMPO REAL -->
-  <div class="card" id="cardResultados" style="display:none">
-    <div class="card-header"><span class="card-label">📈 Resultados</span></div>
+  <!-- ── LATERAL A AFORAR ── -->
+  <div class="card" id="cardLateral">
+    <div class="card-header"><span class="card-label">📏 Lateral a aforar</span></div>
     <div class="card-body" style="display:flex;flex-direction:column;gap:14px">
 
-      <!-- UD% -->
-      <div class="ud-badge" id="udBadge">
-        <div class="ud-value" id="udValue">—</div>
-        <div class="ud-info">
-          <div class="ud-label">Uniformidad de Distribución</div>
-          <div class="ud-desc" id="udDesc">Ingresa las mediciones para calcular</div>
+      <div>
+        <div class="sublabel">Sector de riego</div>
+        <div class="btn-grid-3" id="sectorGrid">
+          <button class="sel-btn" data-val="S1" onclick="selSector('S1')">S1 <span style="display:block;font-size:10px;opacity:0.7;font-weight:400">H 1–19</span></button>
+          <button class="sel-btn" data-val="S2" onclick="selSector('S2')">S2 <span style="display:block;font-size:10px;opacity:0.7;font-weight:400">H 20–38</span></button>
+          <button class="sel-btn" data-val="S3" onclick="selSector('S3')">S3 <span style="display:block;font-size:10px;opacity:0.7;font-weight:400">H 39–59</span></button>
         </div>
       </div>
 
-      <!-- Caudal comparativo -->
-      <div id="comparaciones"></div>
+      <div>
+        <div class="sublabel">Cuartel</div>
+        <div class="btn-grid-3" id="cuartelGrid"></div>
+      </div>
 
-      <!-- Alertas -->
-      <div id="alertasContainer"></div>
+      <div>
+        <div class="sublabel">Válvula <span>(hilera donde arranca el lateral)</span></div>
+        <div class="btn-grid-3" id="valvulaGrid">
+          <button class="sel-btn" data-val="19" onclick="selValvula(19)">H 19</button>
+          <button class="sel-btn" data-val="29" onclick="selValvula(29)">H 29</button>
+          <button class="sel-btn" data-val="49" onclick="selValvula(49)">H 49</button>
+        </div>
+      </div>
 
+      <div>
+        <div class="sublabel">Lado del lateral <span>(desde la mitad de la hilera)</span></div>
+        <div class="btn-grid-2" id="ladoGrid">
+          <button class="sel-btn" data-val="N" onclick="selLado('N')">⬆ Norte</button>
+          <button class="sel-btn" data-val="S" onclick="selLado('S')">⬇ Sur</button>
+        </div>
+      </div>
+
+      <div id="lateralResumen" style="display:none;padding:8px 12px;background:var(--teal-pale);border:1px solid var(--teal);border-radius:var(--radius-sm);font-size:13px;color:#5eead4;font-weight:600;text-align:center"></div>
     </div>
   </div>
 
-  <!-- NOTAS -->
+  <!-- ── GOTERO ── -->
+  <div class="card">
+    <div class="card-header"><span class="card-label">💧 Datos del gotero</span></div>
+    <div class="card-body" style="display:flex;flex-direction:column;gap:12px">
+      <div>
+        <div class="sublabel">Tipo de gotero</div>
+        <select id="tipoGotero" class="text-input">
+          <option value="">— Seleccionar —</option>
+          <option value="autocompensante">Autocompensante</option>
+          <option value="no_autocompensante">No autocompensante</option>
+          <option value="exudacion">Exudación / goteo lento</option>
+          <option value="microaspersor">Microaspersor</option>
+          <option value="otro">Otro</option>
+        </select>
+      </div>
+      <div class="row-2">
+        <div>
+          <div class="sublabel">Caudal nominal <span>(L/h)</span></div>
+          <input type="number" step="0.1" min="0" max="20" id="caudalNominal"
+            class="text-input" placeholder="Ej. 2.0" inputmode="decimal"
+            oninput="calcularResultados()">
+        </div>
+        <div>
+          <div class="sublabel">Presión medida <span>(bar)</span></div>
+          <input type="number" step="0.1" min="0" max="10" id="presionMedida"
+            class="text-input" placeholder="Ej. 1.0" inputmode="decimal">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MEDICIONES (3 puntos) ── -->
+  <div class="card" id="cardMediciones">
+    <div class="card-header"><span class="card-label">🧪 Mediciones (3 puntos del lateral)</span></div>
+    <div class="card-body">
+      <div style="font-size:11px;color:var(--text3);margin-bottom:8px;line-height:1.5">
+        Con vaso precipitado, recolectá agua de <b>un mismo tipo de gotero</b> durante unos segundos en 3 puntos del lateral: <b>inicio</b> (cerca de la válvula), <b>medio</b> y <b>final</b>.
+      </div>
+      <div class="med-head">
+        <span>Punto</span>
+        <span>Vol (ml)</span>
+        <span>Tiempo (s)</span>
+        <span>Caudal</span>
+      </div>
+
+      <div class="med-row">
+        <div class="med-label">📍 Inicio</div>
+        <input type="number" class="med-input" id="vol1" placeholder="—" inputmode="decimal" step="1" min="0" oninput="calcularResultados()">
+        <input type="number" class="med-input" id="tm1" placeholder="—" inputmode="decimal" step="1" min="0" oninput="calcularResultados()">
+        <div class="med-caudal" id="q1">— L/h</div>
+      </div>
+
+      <div class="med-row">
+        <div class="med-label">🔸 Medio</div>
+        <input type="number" class="med-input" id="vol2" placeholder="—" inputmode="decimal" step="1" min="0" oninput="calcularResultados()">
+        <input type="number" class="med-input" id="tm2" placeholder="—" inputmode="decimal" step="1" min="0" oninput="calcularResultados()">
+        <div class="med-caudal" id="q2">— L/h</div>
+      </div>
+
+      <div class="med-row">
+        <div class="med-label">🏁 Final</div>
+        <input type="number" class="med-input" id="vol3" placeholder="—" inputmode="decimal" step="1" min="0" oninput="calcularResultados()">
+        <input type="number" class="med-input" id="tm3" placeholder="—" inputmode="decimal" step="1" min="0" oninput="calcularResultados()">
+        <div class="med-caudal" id="q3">— L/h</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── RESULTADOS ── -->
+  <div class="card" id="cardResultados">
+    <div class="card-header"><span class="card-label">📊 Resultados</span></div>
+    <div class="card-body">
+      <div class="res-grid">
+        <div class="res-box">
+          <div class="res-label">Caudal promedio</div>
+          <div class="res-value" id="resAvg">—</div>
+          <div class="res-sub">L/h</div>
+        </div>
+        <div class="res-box">
+          <div class="res-label">Desviación vs nominal</div>
+          <div class="res-value" id="resDesv">—</div>
+          <div class="res-sub" id="resDesvSub">—</div>
+        </div>
+        <div class="res-box">
+          <div class="res-label">CU (Christiansen)</div>
+          <div class="res-value" id="resCU">—</div>
+          <div class="res-sub">%</div>
+        </div>
+        <div class="res-box">
+          <div class="res-label">Mín · Máx</div>
+          <div class="res-value" id="resMinMax" style="font-size:15px">—</div>
+          <div class="res-sub">L/h</div>
+        </div>
+      </div>
+      <div style="text-align:center">
+        <div class="clasif-chip clasif-none" id="clasifChip">🔍 Ingresá las mediciones</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── FOTOS ── -->
   <div class="card">
     <div class="card-header">
-      <span class="card-label">📝 Observaciones</span>
-      <span class="optional-tag">Opcional</span>
+      <span class="card-label">📷 Fotos (opcional)</span>
+      <span style="font-size:11px;color:var(--text3)" id="fotoContador">0 / 3</span>
     </div>
     <div class="card-body">
-      <textarea class="field-input" id="notasAforado" rows="3"
-        placeholder="Condiciones del día, estado del equipo, anomalías observadas..."
-        style="resize:vertical;font-family:inherit;"></textarea>
+      <div class="fotos-grid" id="fotosGrid"></div>
+      <button class="btn-add-foto" id="btnAddFoto" onclick="triggerCamera()">
+        <span>📸</span><span>Agregar foto</span>
+      </button>
+      <input type="file" id="fileInput" accept="image/*" style="display:none">
     </div>
   </div>
 
-  <!-- ── BOTÓN GUARDAR (dentro del scroll, como en fenología) ── -->
-  <button class="btn-submit" id="btnSubmit" onclick="handleSubmit()" style="width:100%;padding:16px;border-radius:var(--radius);border:none;background:var(--teal);color:#fff;font-size:16px;font-weight:700;cursor:pointer;letter-spacing:-0.2px;margin-top:8px">
-    💧 &nbsp;Guardar aforado
+  <!-- ── NOTAS ── -->
+  <div class="card">
+    <div class="card-header"><span class="card-label">📝 Observaciones (opcional)</span></div>
+    <div class="card-body">
+      <textarea class="field-textarea" id="notas" placeholder="Obstrucciones, problemas del sistema, condiciones del día..."></textarea>
+    </div>
+  </div>
+
+  <!-- ── BOTÓN ── -->
+  <button id="btnSubmit" onclick="handleSubmit()"
+    style="width:100%;padding:16px;border-radius:var(--radius);border:none;background:var(--teal);color:#000;font-size:16px;font-weight:700;cursor:pointer;letter-spacing:-0.2px;margin-top:4px">
+    💧&nbsp; Guardar aforado
   </button>
 
   <div style="height:24px"></div>
-</div><!-- /content -->
-</div><!-- /panelCaptura -->
+</div>
 
-<!-- ══════════════════ TAB: ANÁLISIS ══════════════════ -->
-<div class="tab-panel" id="panelAnalisis">
-<div class="content">
-
-  <!-- KPIs globales -->
-  <div class="kpi-row" id="kpiRow">
-    <div class="kpi-card">
-      <div class="kpi-val" id="kpiUdProm" style="color:var(--teal)">—</div>
-      <div class="kpi-label">UD% promedio sistema</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-val" id="kpiDesvMax" style="color:var(--amber)">—</div>
-      <div class="kpi-label">Desviación máx. caudal</div>
-    </div>
-  </div>
-
-  <!-- HEATMAP -->
-  <div class="card">
-    <div class="card-header"><span class="card-label">🗺 Mapa de uniformidad por cuartel</span></div>
-    <div class="card-body">
-      <div id="heatmapContainer">
-        <div class="empty-state">
-          <span class="empty-icon">📊</span>
-          Registra mediciones en la pestaña Medición para ver el mapa de calor
-        </div>
-      </div>
-      <div class="legend" id="heatmapLegend" style="display:none">
-        <div class="legend-item"><div class="legend-dot hc-low"  ></div>Subpresión (&lt;15%)</div>
-        <div class="legend-item"><div class="legend-dot hc-mid"  ></div>Advertencia (±15%)</div>
-        <div class="legend-item"><div class="legend-dot hc-ok"   ></div>Uniforme</div>
-        <div class="legend-item"><div class="legend-dot hc-high" ></div>Sobrepresión (&gt;15%)</div>
-        <div class="legend-item"><div class="legend-dot hc-none" ></div>Sin datos</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- GRÁFICO DE BARRAS comparativo caudal nominal vs real -->
-  <div class="card">
-    <div class="card-header"><span class="card-label">⚡ Caudal nominal vs. real por hilera</span></div>
-    <div class="card-body">
-      <div id="barrasContainer">
-        <div class="empty-state">
-          <span class="empty-icon">📏</span>
-          Las comparaciones aparecerán aquí tras registrar las mediciones
-        </div>
-      </div>
-    </div>
-  </div>
-
-</div><!-- /content -->
-</div><!-- /panelAnalisis -->
-
-<!-- ══════════════════ TAB: HISTORIAL ══════════════════ -->
-<div class="tab-panel" id="panelHistorial">
-<div class="content">
-
-  <div class="card">
-    <div class="card-header"><span class="card-label">🕐 Registros de aforado</span></div>
-    <div class="card-body" id="historialContent">
-      <div class="empty-state">
-        <span class="empty-icon">📋</span>
-        No hay registros de aforado aún.<br>Registra tu primera medición.
-      </div>
-    </div>
-  </div>
-
-</div><!-- /content -->
-</div><!-- /panelHistorial -->
-
-<!-- bottombar fijo removido - el botón ahora va dentro del scroll del panel -->
-<div id="bottomBar" style="display:none"></div>
-
-<!-- ── OVERLAY LOADING ── -->
+<!-- ── OVERLAYS ── -->
 <div class="overlay-loading-bg" id="overlayLoading">
   <div class="spinner"></div>
-  <div class="overlay-title">Guardando aforado...</div>
+  <div class="overlay-title">Guardando...</div>
 </div>
 
-<!-- ── OVERLAY ÉXITO ── -->
 <div class="overlay-success-bg" id="overlaySuccess">
-  <div class="success-icon">💧</div>
+  <div class="success-icon">✅</div>
   <div class="overlay-title">¡Aforado guardado!</div>
   <div class="success-msg" id="successMsg"></div>
-  <div class="success-btns">
-    <button class="btn-nuevo" onclick="resetForm()">＋ Nueva medición</button>
-    <a class="btn-inicio" href="app.html">← Inicio</a>
+  <div class="success-actions">
+    <button class="btn-nuevo" onclick="resetForm()">+ Nuevo aforo</button>
+    <a href="app.html">← Inicio</a>
   </div>
 </div>
 
-<!-- ── TOAST ── -->
 <div class="toast" id="toast"></div>
 
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="mapa-laquinta.js"></script>
 <script>
 // ══════════════════════════════════════════════════════
 //  CONFIG
@@ -828,41 +538,50 @@ const CONFIG = {
   GAS_URL:      'https://script.google.com/macros/s/AKfycbydi5imjeA5bXY5TlA7MBVGkG6-Aq4XhYC0soXGPUMl41lEvdL8rc-xhjeRv9m0_aJg/exec',
   ACCESS_TOKEN: 'LQ2026-Santina',
   CUARTELES:    ['C2', 'C3', 'C4'],
-  N_HILERAS:    59,
-  UMBRAL_DESV:  15,   // % desviación para alerta
-  // Hileras representativas para medir (cada ~7 hileras)
-  HILERAS_MUESTRA: [1, 8, 15, 22, 29, 36, 43, 50, 59],
+  MAX_FOTOS:    3,
 };
-
-// Estado de la aplicación
-let state = {
-  tab:            'captura',
-  cuartel:        null,
-  tipoGotero:     '',
-  caudalNominal:  null,
-  presionNominal: null,
-  presionMedida:  null,
-  duracionMin:    5,
-  mediciones:     {},   // { 'hilera_N': valor_ml }
-  notas:          '',
-  // Resultados calculados
-  ud:             null,
-  caudalPromReal: null,
-  desviaciones:   {},
+const SECTORES = {
+  S1: { hMin: 1,  hMax: 19, valvulas: [19] },
+  S2: { hMin: 20, hMax: 38, valvulas: [29] },
+  S3: { hMin: 39, hMax: 59, valvulas: [49] }
 };
+const VALVULAS_POR_SECTOR = { S1: [19], S2: [29], S3: [49] };
 
-// Historial local (en sesión)
-let historial = [];
+const STATE_KEY = 'aforado_state_v2';
+const OPERADOR_KEY = 'lq_operador_actual';
+const OPERADORES_LIST_KEY = 'lq_operadores_lista';
 
-// ── INIT ──────────────────────────────────────────────
+let appState = {
+  operador: '', sector: null, cuartel: null, valvula: null, lado: null,
+  tipoGotero: '', caudalNominal: '', presionMedida: '',
+  vol1: '', tm1: '', vol2: '', tm2: '', vol3: '', tm3: '',
+  notas: '', fotos: [], gps: null
+};
+let gpsData = null;
+let mapaLQ = null, mapaUsuarioMarker = null, mapaUsuarioCircle = null;
+let mapaCuartelLayers = {}, mapaWatchId = null;
+
+// ══════════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════════
 function init() {
   actualizarReloj();
   setInterval(actualizarReloj, 10000);
-  construirCuarteles();
-  // Duracion por defecto 5 min
-  document.getElementById('duracionMin').value = 5;
-  // Cargar historial si existe
-  cargarHistorialLocal();
+
+  // Cuarteles
+  const cGrid = document.getElementById('cuartelGrid');
+  CONFIG.CUARTELES.forEach(c => {
+    const btn = document.createElement('button');
+    btn.className = 'sel-btn'; btn.textContent = c; btn.dataset.val = c;
+    btn.onclick = () => selCuartel(c);
+    cGrid.appendChild(btn);
+  });
+
+  cargarOperador();
+  restaurarEstado();
+  pedirGPS();
+  initMapaLeaflet();
+  renderFotos();
 }
 
 function actualizarReloj() {
@@ -873,526 +592,449 @@ function actualizarReloj() {
     now.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
 }
 
-// ── TABS ──────────────────────────────────────────────
-function setTab(tab) {
-  state.tab = tab;
-  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('panel' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
-  document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
-
-  const bottomBar = document.getElementById('bottomBar');
-  bottomBar.style.display = tab === 'captura' ? 'block' : 'none';
-
-  if (tab === 'analisis') renderAnalisis();
-  if (tab === 'historial') renderHistorial();
-}
-
-// ── CUARTELES ─────────────────────────────────────────
-function construirCuarteles() {
-  const grid = document.getElementById('cuartelGrid');
-  CONFIG.CUARTELES.forEach(c => {
-    const btn = document.createElement('button');
-    btn.className   = 'sel-btn';
-    btn.textContent = c;
-    btn.dataset.val = c;
-    btn.onclick = () => seleccionarCuartel(c);
-    grid.appendChild(btn);
-  });
-}
-
-function seleccionarCuartel(c) {
-  state.cuartel    = c;
-  state.mediciones = {};
-  document.querySelectorAll('#cuartelGrid .sel-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.val === c);
-  });
-  document.getElementById('cardCuartel').classList.remove('error-card');
-  construirMediciones();
-}
-
-// ── SISTEMA ───────────────────────────────────────────
-function cambiarCaudalNom(delta) {
-  const inp = document.getElementById('caudalNominal');
-  const actual = parseFloat(inp.value) || 0;
-  inp.value = Math.max(0, Math.min(20, +(actual + delta).toFixed(1)));
-  onSistemaChange();
-}
-function cambiarPresionNom(delta) {
-  const inp = document.getElementById('presionNominal');
-  const actual = parseFloat(inp.value) || 0;
-  inp.value = Math.max(0, Math.min(10, +(actual + delta).toFixed(1)));
-  onSistemaChange();
-}
-function cambiarPresionMed(delta) {
-  const inp = document.getElementById('presionMedida');
-  const actual = parseFloat(inp.value) || 0;
-  inp.value = Math.max(0, Math.min(15, +(actual + delta).toFixed(1)));
-  calcularResultados();
-}
-function cambiarDuracion(delta) {
-  const inp = document.getElementById('duracionMin');
-  const actual = parseInt(inp.value) || 5;
-  inp.value = Math.max(1, Math.min(60, actual + delta));
-  onSistemaChange();
-}
-
-function onSistemaChange() {
-  state.caudalNominal  = parseFloat(document.getElementById('caudalNominal').value)  || null;
-  state.presionNominal = parseFloat(document.getElementById('presionNominal').value) || null;
-  state.duracionMin    = parseInt(document.getElementById('duracionMin').value)       || 5;
-
-  // Actualizar etiqueta de unidad
-  const dur = state.duracionMin;
-  document.getElementById('medUnidadTag').textContent = `ml / ${dur} min`;
-  document.getElementById('presNomDisplay').textContent = state.presionNominal ? state.presionNominal.toFixed(1) : '—';
-
-  calcularResultados();
-}
-
-// ── MEDICIONES ────────────────────────────────────────
-function construirMediciones() {
-  if (!state.cuartel) return;
-
-  const container = document.getElementById('medicionesContainer');
-  container.innerHTML = '';
-
-  const hileras = CONFIG.HILERAS_MUESTRA;
-
-  const title = document.createElement('div');
-  title.className = 'sublabel';
-  title.innerHTML = `Cuartel <strong style="color:var(--teal)">${state.cuartel}</strong> — Hileras representativas <span>(9 puntos de muestreo)</span>`;
-  container.appendChild(title);
-
-  hileras.forEach(h => {
-    const row = document.createElement('div');
-    row.className = 'medicion-row';
-    const dur = state.duracionMin || 5;
-    row.innerHTML = `
-      <div class="medicion-label">H${h}</div>
-      <input type="number" class="medicion-input" id="med_h${h}"
-        min="0" max="5000" step="1" placeholder="—" inputmode="numeric"
-        oninput="onMedicionInput(${h}, this.value)">
-      <div class="medicion-unit">ml</div>
-    `;
-    container.appendChild(row);
-  });
-}
-
-function onMedicionInput(hilera, val) {
-  const n = parseFloat(val);
-  if (!isNaN(n) && n >= 0) {
-    state.mediciones[`h${hilera}`] = n;
-  } else {
-    delete state.mediciones[`h${hilera}`];
+// ══════════════════════════════════════════════════════
+//  OPERADOR
+// ══════════════════════════════════════════════════════
+function cargarOperador() {
+  const inp = document.getElementById('operadorInput');
+  let user = null;
+  try { if (typeof window.lqGetUser === 'function') { const u = window.lqGetUser(); if (u && (u.name || u.email)) user = u; } } catch(_) {}
+  if (user) {
+    const nombre = user.name || user.email.split('@')[0];
+    appState.operador = nombre;
+    if (inp) { inp.value = nombre; inp.readOnly = true; inp.style.opacity = '0.85'; inp.style.cursor = 'not-allowed'; }
+    const hint = document.getElementById('operadorHint');
+    if (hint) { hint.innerHTML = '🔒 Autenticado como <b>' + (user.email || nombre) + '</b>'; hint.style.color = 'var(--green)'; }
+    try { localStorage.setItem(OPERADOR_KEY, nombre); } catch(_) {}
+    return;
   }
-  calcularResultados();
+  try {
+    const actual = localStorage.getItem(OPERADOR_KEY) || '';
+    appState.operador = actual;
+    if (inp) inp.value = actual;
+  } catch(_) {}
+  try {
+    const lista = JSON.parse(localStorage.getItem(OPERADORES_LIST_KEY) || '[]');
+    const dl = document.getElementById('operadoresList');
+    if (dl) dl.innerHTML = lista.map(n => `<option value="${n.replace(/"/g, '&quot;')}">`).join('');
+  } catch(_) {}
+}
+function onOperadorChange(val) {
+  const t = (val || '').trim();
+  appState.operador = t;
+  guardarEstado();
+  try { localStorage.setItem(OPERADOR_KEY, t); } catch(_) {}
+  if (t) { try {
+    const lista = JSON.parse(localStorage.getItem(OPERADORES_LIST_KEY) || '[]');
+    if (!lista.includes(t)) {
+      lista.push(t);
+      localStorage.setItem(OPERADORES_LIST_KEY, JSON.stringify(lista.slice(-20)));
+    }
+  } catch(_) {} }
 }
 
-// ── CÁLCULO UD% ───────────────────────────────────────
+// ══════════════════════════════════════════════════════
+//  SELECCIONES
+// ══════════════════════════════════════════════════════
+function selSector(s) {
+  appState.sector = s;
+  // Filtrar válvulas disponibles
+  const vdisp = VALVULAS_POR_SECTOR[s] || [];
+  document.querySelectorAll('#sectorGrid .sel-btn').forEach(b => b.classList.toggle('active', b.dataset.val === s));
+  document.querySelectorAll('#valvulaGrid .sel-btn').forEach(b => {
+    const v = parseInt(b.dataset.val);
+    const permitida = vdisp.includes(v);
+    b.disabled = !permitida;
+    if (!permitida && appState.valvula === v) {
+      appState.valvula = null; b.classList.remove('active');
+    }
+  });
+  // Si el sector tiene solo 1 válvula, auto-seleccionar
+  if (vdisp.length === 1) selValvula(vdisp[0]);
+  actualizarResumenLateral();
+  guardarEstado();
+}
+function selCuartel(c) {
+  appState.cuartel = c;
+  document.querySelectorAll('#cuartelGrid .sel-btn').forEach(b => b.classList.toggle('active', b.dataset.val === c));
+  resaltarCuartelEnMapa(c);
+  if (mapaLQ && mapaCuartelLayers[c]) {
+    mapaLQ.fitBounds(mapaCuartelLayers[c].getBounds(), { padding: [20, 20], animate: true });
+  }
+  actualizarResumenLateral();
+  guardarEstado();
+}
+function selValvula(v) {
+  appState.valvula = v;
+  document.querySelectorAll('#valvulaGrid .sel-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.val) === v));
+  actualizarResumenLateral();
+  guardarEstado();
+}
+function selLado(l) {
+  appState.lado = l;
+  document.querySelectorAll('#ladoGrid .sel-btn').forEach(b => b.classList.toggle('active', b.dataset.val === l));
+  actualizarResumenLateral();
+  guardarEstado();
+}
+function actualizarResumenLateral() {
+  const el = document.getElementById('lateralResumen');
+  const { sector, cuartel, valvula, lado } = appState;
+  if (sector && cuartel && valvula && lado) {
+    const ladoTxt = lado === 'N' ? 'Norte' : 'Sur';
+    el.style.display = 'block';
+    el.innerHTML = `✓ Aforando: <b>${cuartel} · H${valvula} · Lateral ${ladoTxt}</b> · Sector ${sector}`;
+  } else {
+    el.style.display = 'none';
+  }
+}
+
+// ══════════════════════════════════════════════════════
+//  CÁLCULOS
+// ══════════════════════════════════════════════════════
+function caudalLhDeMedicion(volMl, tiempoSeg) {
+  const v = parseFloat(volMl), t = parseFloat(tiempoSeg);
+  if (!v || !t || v <= 0 || t <= 0) return null;
+  // (ml/seg) × (3600 seg/h) / (1000 ml/L) = L/h
+  return (v * 3.6) / t;
+}
 function calcularResultados() {
-  const valores = Object.values(state.mediciones).filter(v => v > 0);
-  const dur = state.duracionMin || 5;
-  const nomLH = state.caudalNominal;
+  const q1 = caudalLhDeMedicion(document.getElementById('vol1').value, document.getElementById('tm1').value);
+  const q2 = caudalLhDeMedicion(document.getElementById('vol2').value, document.getElementById('tm2').value);
+  const q3 = caudalLhDeMedicion(document.getElementById('vol3').value, document.getElementById('tm3').value);
+  document.getElementById('q1').textContent = q1 != null ? q1.toFixed(2) + ' L/h' : '— L/h';
+  document.getElementById('q2').textContent = q2 != null ? q2.toFixed(2) + ' L/h' : '— L/h';
+  document.getElementById('q3').textContent = q3 != null ? q3.toFixed(2) + ' L/h' : '— L/h';
+  const qs = [q1, q2, q3].filter(x => x != null);
 
-  if (valores.length < 4) {
-    document.getElementById('cardResultados').style.display = 'none';
+  const resAvg = document.getElementById('resAvg');
+  const resCU = document.getElementById('resCU');
+  const resMM = document.getElementById('resMinMax');
+  const resDv = document.getElementById('resDesv');
+  const resDvSub = document.getElementById('resDesvSub');
+  const chip = document.getElementById('clasifChip');
+
+  if (qs.length === 0) {
+    resAvg.textContent = '—'; resCU.textContent = '—'; resMM.textContent = '—';
+    resDv.textContent = '—'; resDvSub.textContent = '—';
+    chip.className = 'clasif-chip clasif-none'; chip.textContent = '🔍 Ingresá las mediciones';
     return;
   }
+  const avg = qs.reduce((a,b) => a+b, 0) / qs.length;
+  const mn  = Math.min(...qs), mx = Math.max(...qs);
+  resAvg.textContent = avg.toFixed(2);
+  resMM.textContent = qs.length >= 2 ? mn.toFixed(2) + ' · ' + mx.toFixed(2) : '—';
 
-  // Convertir ml en duración → L/h
-  const lhValues = valores.map(ml => (ml / dur) * 60 / 1000);
-
-  // UD% = (promedio del cuartil inferior / promedio total) * 100
-  const sorted    = [...lhValues].sort((a, b) => a - b);
-  const q25count  = Math.max(1, Math.ceil(sorted.length * 0.25));
-  const q25vals   = sorted.slice(0, q25count);
-  const q25avg    = q25vals.reduce((s, v) => s + v, 0) / q25vals.length;
-  const totalAvg  = lhValues.reduce((s, v) => s + v, 0) / lhValues.length;
-  const ud        = (q25avg / totalAvg) * 100;
-
-  state.ud            = ud;
-  state.caudalPromReal = totalAvg;
-
-  // Desviaciones vs nominal
-  const desv = {};
-  if (nomLH) {
-    CONFIG.HILERAS_MUESTRA.forEach(h => {
-      const ml  = state.mediciones[`h${h}`];
-      if (ml !== undefined) {
-        const lh = (ml / dur) * 60 / 1000;
-        desv[`h${h}`] = ((lh - nomLH) / nomLH) * 100;
-      }
-    });
-  }
-  state.desviaciones = desv;
-
-  // Presión medida
-  state.presionMedida = parseFloat(document.getElementById('presionMedida').value) || null;
-
-  // Mostrar card de resultados
-  document.getElementById('cardResultados').style.display = 'block';
-  renderResultados(ud, totalAvg, nomLH, desv);
-}
-
-function renderResultados(ud, realLH, nomLH, desv) {
-  // UD badge
-  const udEl   = document.getElementById('udValue');
-  const udDesc = document.getElementById('udDesc');
-  udEl.textContent = ud.toFixed(1) + '%';
-  udEl.className   = 'ud-value ' + udClass(ud);
-
-  const desc = ud >= 90 ? 'Excelente — uniformidad óptima' :
-               ud >= 80 ? 'Bueno — uniformidad aceptable' :
-               ud >= 70 ? 'Regular — revisar sectores bajos' :
-                          'Deficiente — acción correctiva requerida';
-  udDesc.textContent = desc;
-
-  // Comparación caudal
-  const compEl = document.getElementById('comparaciones');
-  if (nomLH) {
-    const desviacionProm = ((realLH - nomLH) / nomLH) * 100;
-    const clase = Math.abs(desviacionProm) <= CONFIG.UMBRAL_DESV ? 'ok' :
-                  Math.abs(desviacionProm) <= 25 ? 'warn' : 'bad';
-    const pctNom  = Math.min(100, (nomLH  / Math.max(nomLH, realLH)) * 100);
-    const pctReal = Math.min(100, (realLH / Math.max(nomLH, realLH)) * 100);
-    compEl.innerHTML = `
-      <div class="compare-row">
-        <div class="compare-header">
-          <span class="compare-label">Caudal promedio</span>
-          <span class="compare-values">Nominal: ${nomLH.toFixed(2)} L/h · Real: ${realLH.toFixed(2)} L/h (${desviacionProm >= 0 ? '+' : ''}${desviacionProm.toFixed(1)}%)</span>
-        </div>
-        <div class="compare-bar-bg">
-          <div class="compare-bar-nominal" style="width:${pctNom}%"></div>
-          <div class="compare-bar-real bar-${clase}" style="width:${pctReal}%"></div>
-        </div>
-      </div>
-    `;
+  // CU Christiansen: 100 × (1 - Σ|xi - x̄| / (n × x̄))
+  if (qs.length >= 2) {
+    const sumDesv = qs.reduce((a, x) => a + Math.abs(x - avg), 0);
+    const cu = 100 * (1 - sumDesv / (qs.length * avg));
+    resCU.textContent = cu.toFixed(1);
+    // Clasificación
+    let cls, txt;
+    if (cu >= 90) { cls = 'exc'; txt = '🟢 Excelente'; }
+    else if (cu >= 80) { cls = 'bue'; txt = '🔵 Bueno'; }
+    else if (cu >= 70) { cls = 'reg'; txt = '🟡 Regular'; }
+    else { cls = 'def'; txt = '🔴 Deficiente'; }
+    chip.className = 'clasif-chip clasif-' + cls;
+    chip.textContent = txt + ' · CU ' + cu.toFixed(1) + '%';
+    appState._cu = cu; appState._clasif = txt;
   } else {
-    compEl.innerHTML = `<div class="medicion-unit" style="padding:8px 0">Ingresa el caudal nominal para comparar</div>`;
+    resCU.textContent = '—'; chip.className = 'clasif-chip clasif-none'; chip.textContent = '🔍 Ingresá al menos 2 mediciones';
+    appState._cu = null; appState._clasif = null;
   }
 
-  // Alertas
-  const alertasEl = document.getElementById('alertasContainer');
-  const alertas   = [];
-
-  // UD alerta
-  if (ud < 70) {
-    alertas.push({ type: 'red', icon: '⛔', msg: `UD ${ud.toFixed(1)}% — Uniformidad deficiente. Inspeccionar goteros tapados y variaciones de presión.` });
-  } else if (ud < 80) {
-    alertas.push({ type: 'amber', icon: '⚠️', msg: `UD ${ud.toFixed(1)}% — Uniformidad regular. Verificar hileras con bajo caudal.` });
+  // Desviación vs nominal
+  const qNom = parseFloat(document.getElementById('caudalNominal').value);
+  if (qNom && qNom > 0) {
+    const dv = ((avg - qNom) / qNom) * 100;
+    const s = dv >= 0 ? '+' : '';
+    resDv.textContent = s + dv.toFixed(1) + '%';
+    resDvSub.textContent = 'vs ' + qNom.toFixed(1) + ' L/h nominal';
+    resDv.style.color = Math.abs(dv) > 10 ? 'var(--amber)' : 'var(--green)';
+    appState._desv = dv;
   } else {
-    alertas.push({ type: 'green', icon: '✅', msg: `UD ${ud.toFixed(1)}% — Uniformidad ${ud >= 90 ? 'excelente' : 'aceptable'}.` });
+    resDv.textContent = '—'; resDvSub.textContent = 'Ingresá caudal nominal';
+    resDv.style.color = 'var(--text)';
+    appState._desv = null;
   }
-
-  // Alertas por hilera
-  const desvHileras = Object.entries(desv).filter(([, d]) => Math.abs(d) > CONFIG.UMBRAL_DESV);
-  if (desvHileras.length > 0) {
-    const names = desvHileras.map(([k, d]) => `${k.replace('h','H')} (${d >= 0 ? '+' : ''}${d.toFixed(1)}%)`).join(', ');
-    alertas.push({ type: 'amber', icon: '⚠️', msg: `Desviación >15% en: ${names}` });
-  }
-
-  // Alerta presión
-  if (state.presionMedida && state.presionNominal) {
-    const dpres = ((state.presionMedida - state.presionNominal) / state.presionNominal) * 100;
-    if (dpres < -15) {
-      alertas.push({ type: 'red', icon: '⛔', msg: `Subpresión ${dpres.toFixed(1)}% — Verificar filtros, caudal de bomba y pérdidas de carga.` });
-    } else if (dpres > 15) {
-      alertas.push({ type: 'amber', icon: '⚠️', msg: `Sobrepresión +${dpres.toFixed(1)}% — Ajustar regulador de presión.` });
-    }
-  }
-
-  alertasEl.innerHTML = alertas.map(a =>
-    `<div class="alert-row ${a.type}"><span class="alert-icon">${a.icon}</span>${a.msg}</div>`
-  ).join('');
+  appState._avg = avg; appState._min = mn; appState._max = mx;
+  appState._q1 = q1; appState._q2 = q2; appState._q3 = q3;
 }
 
-function udClass(ud) {
-  if (ud >= 90) return 'excellent';
-  if (ud >= 80) return 'good';
-  if (ud >= 70) return 'fair';
-  return 'poor';
+// ══════════════════════════════════════════════════════
+//  GPS
+// ══════════════════════════════════════════════════════
+function pedirGPS() {
+  const bar = document.getElementById('gpsBar');
+  const msg = document.getElementById('gpsMsg');
+  const cds = document.getElementById('gpsCoords');
+  bar.className = 'gps-bar buscando'; msg.textContent = '🛰 Buscando...'; cds.textContent = '';
+  if (!navigator.geolocation) { bar.className = 'gps-bar error'; msg.textContent = '⚠️ GPS no disponible'; return; }
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      gpsData = { lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: Math.round(pos.coords.accuracy), timestamp: new Date().toISOString() };
+      appState.gps = gpsData; guardarEstado();
+      bar.className = 'gps-bar ok'; msg.textContent = `📍 GPS ±${gpsData.accuracy}m`;
+      cds.textContent = `${gpsData.lat.toFixed(5)}, ${gpsData.lng.toFixed(5)}`;
+      actualizarPinGPS(gpsData);
+    },
+    err => { bar.className = 'gps-bar error'; msg.textContent = '⚠️ Error GPS'; },
+    { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
+  );
 }
 
-// ── ANÁLISIS / HEATMAP ────────────────────────────────
-function renderAnalisis() {
-  renderHeatmap();
-  renderBarras();
-  renderKPIs();
+// ══════════════════════════════════════════════════════
+//  MAPA LEAFLET
+// ══════════════════════════════════════════════════════
+function initMapaLeaflet() {
+  if (mapaLQ || typeof L === 'undefined' || !window.LQ_MAPA) return;
+  const el = document.getElementById('mapaLeaflet'); if (!el) return;
+  const POL = window.LQ_MAPA.CUARTELES_POLYS;
+  mapaLQ = L.map(el, { zoomControl: true, attributionControl: false });
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    { maxZoom: 22, maxNativeZoom: 19 }).addTo(mapaLQ);
+  Object.entries(POL).forEach(([nombre, coords]) => {
+    const poly = L.polygon(coords, { color: '#14b8a6', weight: 2, fillColor: '#14b8a6', fillOpacity: 0.12 }).addTo(mapaLQ);
+    poly.bindTooltip(nombre, { permanent: true, direction: 'center', className: 'cuartel-label' });
+    poly.on('click', () => selCuartel(nombre));
+    mapaCuartelLayers[nombre] = poly;
+  });
+  const hilerasLayer = L.layerGroup();
+  window.LQ_MAPA.HILERAS_DATA.forEach(h => {
+    L.polyline([[h[2], h[3]], [h[4], h[5]]], { color: '#ffffff', weight: 1, opacity: 0.45, interactive: false }).addTo(hilerasLayer);
+  });
+  const updateHilerasVis = () => { const z = mapaLQ.getZoom(); if (z >= 18) mapaLQ.addLayer(hilerasLayer); else mapaLQ.removeLayer(hilerasLayer); };
+  mapaLQ.on('zoomend', updateHilerasVis);
+  verTodos(); updateHilerasVis();
+  if (appState.cuartel) resaltarCuartelEnMapa(appState.cuartel);
+  if (gpsData) actualizarPinGPS(gpsData);
 }
-
-function renderHeatmap() {
-  const container  = document.getElementById('heatmapContainer');
-  const legendEl   = document.getElementById('heatmapLegend');
-  const N          = CONFIG.N_HILERAS;
-  const COLS       = 59;
-
-  if (historial.length === 0 && !state.cuartel) {
-    container.innerHTML = `<div class="empty-state"><span class="empty-icon">📊</span>Registra mediciones para ver el mapa de calor</div>`;
-    legendEl.style.display = 'none';
+function actualizarPinGPS(g) {
+  if (!mapaLQ) return;
+  const ll = [g.lat, g.lng];
+  if (mapaUsuarioMarker) { mapaUsuarioMarker.setLatLng(ll); mapaUsuarioCircle.setLatLng(ll).setRadius(g.accuracy || 5); }
+  else {
+    mapaUsuarioCircle = L.circle(ll, { radius: g.accuracy || 5, color: '#10b981', weight: 1, fillColor: '#10b981', fillOpacity: 0.15 }).addTo(mapaLQ);
+    mapaUsuarioMarker = L.circleMarker(ll, { radius: 7, color: '#fff', weight: 2, fillColor: '#10b981', fillOpacity: 1 }).addTo(mapaLQ);
+  }
+  actualizarEstimacionMapa(g);
+}
+function actualizarEstimacionMapa(g) {
+  const el = document.getElementById('mapEstimate');
+  if (!el || !window.LQ_MAPA) return;
+  const { cuartel, hilera, claro, distancia } = window.LQ_MAPA.detectarUbicacion(g.lat, g.lng);
+  const nom = window.LQ_MAPA.CUARTEL_NUM_TO_NAME[cuartel] || ('C' + cuartel);
+  if (distancia > 15) {
+    el.className = 'map-estimate warn';
+    el.innerHTML = `📍 Fuera de C2/C3/C4 · más cercano: <b>${nom}</b> H${hilera} <span style="opacity:.6;font-weight:400">(±${g.accuracy}m)</span>`;
     return;
   }
-
-  legendEl.style.display = 'flex';
-  container.innerHTML = '';
-
-  CONFIG.CUARTELES.forEach(cuartel => {
-    const cuartelDiv = document.createElement('div');
-    cuartelDiv.className = 'heatmap-cuartel';
-    cuartelDiv.innerHTML = `<div class="heatmap-cuartel-label">${cuartel} — 59 hileras</div>`;
-
-    const grid = document.createElement('div');
-    grid.className = 'heatmap-grid';
-    grid.style.gridTemplateColumns = `repeat(${COLS}, 1fr)`;
-
-    // Construir mapa de desviaciones para este cuartel
-    const desvMap = buildDesvMap(cuartel);
-
-    for (let h = 1; h <= N; h++) {
-      const cell = document.createElement('div');
-      cell.className = 'heatmap-cell';
-
-      const desv = desvMap[h];
-      if (desv === undefined) {
-        cell.classList.add('hc-none');
-        cell.title = `H${h}: sin datos`;
-      } else {
-        const cls = desvToClass(desv);
-        cell.classList.add(cls);
-        cell.setAttribute('data-val', `H${h}: ${desv >= 0 ? '+' : ''}${desv.toFixed(1)}%`);
-        cell.title = `H${h}: ${desv >= 0 ? '+' : ''}${desv.toFixed(1)}%`;
-      }
-      grid.appendChild(cell);
-    }
-
-    cuartelDiv.appendChild(grid);
-    container.appendChild(cuartelDiv);
+  el.className = 'map-estimate ok';
+  el.innerHTML = `📍 Estás en <b>${nom}</b> · Hilera <b>${hilera}</b> · Claro <b>${claro || '?'}</b> <span style="opacity:.55;font-weight:400">(±${g.accuracy}m)</span>`;
+}
+function resaltarCuartelEnMapa(c) {
+  if (!mapaLQ) return;
+  Object.entries(mapaCuartelLayers).forEach(([n, l]) => {
+    if (n === c) l.setStyle({ color: '#10b981', weight: 3, fillOpacity: 0.22 });
+    else l.setStyle({ color: '#14b8a6', weight: 2, fillOpacity: 0.08 });
   });
 }
-
-function buildDesvMap(cuartel) {
-  const map = {};
-  // Datos de historial
-  historial.filter(r => r.cuartel === cuartel).forEach(r => {
-    Object.entries(r.desviaciones || {}).forEach(([k, d]) => {
-      const h = parseInt(k.replace('h',''));
-      if (!isNaN(h)) map[h] = d;
-    });
-  });
-  // Datos actuales de sesión si coincide cuartel
-  if (state.cuartel === cuartel && Object.keys(state.desviaciones).length > 0) {
-    Object.entries(state.desviaciones).forEach(([k, d]) => {
-      const h = parseInt(k.replace('h',''));
-      if (!isNaN(h)) map[h] = d;
-    });
-  }
-  return map;
+function centrarEnMi() { if (gpsData && mapaLQ) mapaLQ.setView([gpsData.lat, gpsData.lng], 20, { animate: true }); else toast('📍 Activa el GPS primero'); }
+function verCuartel() {
+  if (!mapaLQ) return;
+  const c = appState.cuartel;
+  if (!c) { toast('🌳 Selecciona un cuartel primero'); return; }
+  const layer = mapaCuartelLayers[c]; if (layer) mapaLQ.fitBounds(layer.getBounds(), { padding: [20, 20] });
+}
+function verTodos() {
+  if (!mapaLQ) return;
+  const b = L.latLngBounds([]);
+  Object.values(mapaCuartelLayers).forEach(l => b.extend(l.getBounds()));
+  if (b.isValid()) mapaLQ.fitBounds(b, { padding: [20, 20] });
+}
+function toggleMapa() {
+  const body = document.getElementById('mapaBody');
+  const btn  = document.getElementById('mapToggleBtn');
+  const oculto = body.classList.toggle('hidden');
+  btn.textContent = oculto ? 'Mostrar' : 'Ocultar';
+  if (!oculto && mapaLQ) setTimeout(() => mapaLQ.invalidateSize(), 50);
 }
 
-function desvToClass(desv) {
-  if (desv < -15) return 'hc-low';
-  if (desv < -5)  return 'hc-mid';
-  if (desv <= 15) return 'hc-ok';
-  return 'hc-high';
+// ══════════════════════════════════════════════════════
+//  FOTOS
+// ══════════════════════════════════════════════════════
+function triggerCamera() {
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  const oldInput = document.getElementById('fileInput');
+  const newInput = document.createElement('input');
+  newInput.type = 'file'; newInput.id = 'fileInput'; newInput.accept = 'image/*';
+  if (!isIOS) newInput.capture = 'environment';
+  newInput.style.display = 'none';
+  newInput.addEventListener('change', handleFileSelect);
+  oldInput.parentNode.replaceChild(newInput, oldInput);
+  newInput.click();
 }
-
-function renderBarras() {
-  const container = document.getElementById('barrasContainer');
-  if (!state.cuartel || Object.keys(state.desviaciones).length === 0) {
-    container.innerHTML = `<div class="empty-state"><span class="empty-icon">📏</span>Las comparaciones aparecerán tras registrar mediciones</div>`;
-    return;
-  }
-
-  const nomLH = state.caudalNominal;
-  const dur   = state.duracionMin || 5;
-  container.innerHTML = '';
-
-  CONFIG.HILERAS_MUESTRA.forEach(h => {
-    const ml = state.mediciones[`h${h}`];
-    if (ml === undefined) return;
-    const realLH = (ml / dur) * 60 / 1000;
-    const desv   = state.desviaciones[`h${h}`];
-    const clase  = desv === undefined || Math.abs(desv) <= CONFIG.UMBRAL_DESV ? 'ok' :
-                   Math.abs(desv) <= 25 ? 'warn' : 'bad';
-
-    const maxLH  = Math.max(nomLH || realLH, realLH) * 1.1;
-    const pctN   = nomLH  ? ((nomLH  / maxLH) * 100).toFixed(1) : null;
-    const pctR   = ((realLH / maxLH) * 100).toFixed(1);
-    const desvTxt = desv !== undefined ? `${desv >= 0 ? '+' : ''}${desv.toFixed(1)}%` : '';
-
-    const el = document.createElement('div');
-    el.className = 'compare-row';
-    el.innerHTML = `
-      <div class="compare-header">
-        <span class="compare-label">Hilera ${h}</span>
-        <span class="compare-values">${realLH.toFixed(2)} L/h ${desvTxt ? '· ' + desvTxt : ''}</span>
-      </div>
-      <div class="compare-bar-bg">
-        ${pctN ? `<div class="compare-bar-nominal" style="width:${pctN}%"></div>` : ''}
-        <div class="compare-bar-real bar-${clase}" style="width:${pctR}%"></div>
-      </div>
-    `;
-    container.appendChild(el);
+async function handleFileSelect(e) {
+  const f = e.target.files[0]; if (!f) return;
+  const blob = await compressImage(f, 1280, 0.72);
+  const b64 = await blobToBase64(blob);
+  appState.fotos.push(b64);
+  guardarEstado();
+  renderFotos();
+}
+function compressImage(file, maxW, quality) {
+  return new Promise(resolve => {
+    const img = new Image(); const rdr = new FileReader();
+    rdr.onload = () => { img.src = rdr.result; };
+    img.onload = () => {
+      const scale = img.width > maxW ? maxW / img.width : 1;
+      const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
+      const cnv = document.createElement('canvas'); cnv.width = w; cnv.height = h;
+      cnv.getContext('2d').drawImage(img, 0, 0, w, h);
+      cnv.toBlob(b => resolve(b), 'image/jpeg', quality);
+    };
+    rdr.readAsDataURL(file);
   });
 }
-
-function renderKPIs() {
-  if (state.ud) {
-    document.getElementById('kpiUdProm').textContent = state.ud.toFixed(1) + '%';
-    document.getElementById('kpiUdProm').style.color =
-      state.ud >= 90 ? 'var(--green)' : state.ud >= 80 ? 'var(--teal)' :
-      state.ud >= 70 ? 'var(--amber)' : 'var(--red)';
-  }
-  const desvs = Object.values(state.desviaciones);
-  if (desvs.length > 0) {
-    const maxDesv = Math.max(...desvs.map(Math.abs));
-    document.getElementById('kpiDesvMax').textContent = maxDesv.toFixed(1) + '%';
-    document.getElementById('kpiDesvMax').style.color =
-      maxDesv <= CONFIG.UMBRAL_DESV ? 'var(--green)' :
-      maxDesv <= 25 ? 'var(--amber)' : 'var(--red)';
-  }
-}
-
-// ── HISTORIAL ─────────────────────────────────────────
-function renderHistorial() {
-  const el = document.getElementById('historialContent');
-  if (historial.length === 0) {
-    el.innerHTML = `<div class="empty-state"><span class="empty-icon">📋</span>No hay registros de aforado aún.<br>Registra tu primera medición.</div>`;
-    return;
-  }
-  el.innerHTML = historial.slice().reverse().map(r => `
-    <div class="historial-item">
-      <div class="historial-fecha">${r.fecha}</div>
-      <div class="historial-cuartel">${r.cuartel}</div>
-      <div class="historial-ud" style="color:${r.ud >= 90 ? 'var(--green)' : r.ud >= 80 ? 'var(--teal)' : r.ud >= 70 ? 'var(--amber)' : 'var(--red)'}">${r.ud.toFixed(1)}%</div>
-      <div class="historial-notas">${r.notas || r.tipoGotero || '—'}</div>
+function blobToBase64(blob) { return new Promise(r => { const rdr = new FileReader(); rdr.onload = () => r(rdr.result); rdr.readAsDataURL(blob); }); }
+function renderFotos() {
+  const grid = document.getElementById('fotosGrid');
+  const btn  = document.getElementById('btnAddFoto');
+  const cnt  = document.getElementById('fotoContador');
+  const n    = appState.fotos.length;
+  cnt.textContent = `${n} / ${CONFIG.MAX_FOTOS}`;
+  grid.innerHTML = appState.fotos.map((b64, i) => `
+    <div class="foto-thumb">
+      <img src="${b64}" alt="Foto ${i + 1}">
+      <button class="foto-delete" onclick="eliminarFoto(${i})">✕</button>
     </div>
   `).join('');
+  btn.style.display = n >= CONFIG.MAX_FOTOS ? 'none' : 'flex';
 }
+function eliminarFoto(i) { appState.fotos.splice(i, 1); guardarEstado(); renderFotos(); }
 
-function cargarHistorialLocal() {
+// ══════════════════════════════════════════════════════
+//  PERSISTENCIA
+// ══════════════════════════════════════════════════════
+function guardarEstado() {
+  const vals = ['tipoGotero','caudalNominal','presionMedida','vol1','tm1','vol2','tm2','vol3','tm3','notas'];
+  vals.forEach(id => { const el = document.getElementById(id); if (el) appState[id] = el.value; });
+  sessionStorage.setItem(STATE_KEY, JSON.stringify(appState));
+}
+function restaurarEstado() {
+  const saved = sessionStorage.getItem(STATE_KEY); if (!saved) return;
   try {
-    const saved = sessionStorage.getItem('aforado_historial_v1');
-    if (saved) historial = JSON.parse(saved);
+    const s = JSON.parse(saved);
+    if (s.sector)    selSector(s.sector);
+    if (s.cuartel)   selCuartel(s.cuartel);
+    if (s.valvula)   selValvula(s.valvula);
+    if (s.lado)      selLado(s.lado);
+    ['tipoGotero','caudalNominal','presionMedida','vol1','tm1','vol2','tm2','vol3','tm3','notas'].forEach(id => {
+      const el = document.getElementById(id); if (el && s[id]) el.value = s[id];
+    });
+    if (s.fotos?.length) appState.fotos = s.fotos;
+    if (s.operador) appState.operador = s.operador;
+    if (s.gps) { gpsData = s.gps; if (mapaLQ) actualizarPinGPS(s.gps); }
+    calcularResultados();
   } catch(_) {}
 }
 
-function guardarHistorialLocal() {
-  try {
-    sessionStorage.setItem('aforado_historial_v1', JSON.stringify(historial));
-  } catch(_) {}
+// ══════════════════════════════════════════════════════
+//  SUBMIT
+// ══════════════════════════════════════════════════════
+function toast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast visible' + (type === 'ok' ? ' ok' : '');
+  setTimeout(() => t.classList.remove('visible'), 3000);
 }
-
-// ── SUBMIT ────────────────────────────────────────────
 async function handleSubmit() {
-  if (!state.cuartel) {
-    document.getElementById('cardCuartel').classList.add('error-card');
-    document.getElementById('cardCuartel').scrollIntoView({ behavior: 'smooth', block: 'center' });
-    showToast('Selecciona un cuartel');
-    return;
-  }
-  const vals = Object.values(state.mediciones).filter(v => v > 0);
-  if (vals.length < 4) {
-    showToast('Ingresa al menos 4 mediciones de caudal');
-    return;
-  }
+  guardarEstado();
+  const { sector, cuartel, valvula, lado, operador, _avg } = appState;
+  if (!sector || !cuartel || !valvula || !lado) { toast('Completá Sector, Cuartel, Válvula y Lado'); return; }
+  if (_avg == null) { toast('Ingresá al menos una medición válida'); return; }
+  if (!operador) { toast('Ingresá tu nombre como operador'); return; }
 
   const btn = document.getElementById('btnSubmit');
-  btn.disabled = true;
+  btn.disabled = true; btn.textContent = '⏳ Guardando...';
   document.getElementById('overlayLoading').classList.add('visible');
 
-  const dur   = state.duracionMin || 5;
-  const notas = document.getElementById('notasAforado').value.trim();
-  const now   = new Date();
-
+  const now = new Date();
   const payload = {
-    action:         'aforado',
-    token:          CONFIG.ACCESS_TOKEN,
-    cuartel:        state.cuartel,
-    tipo_gotero:    document.getElementById('tipoGotero').value,
-    caudal_nominal: state.caudalNominal || '',
-    presion_nom:    state.presionNominal || '',
-    presion_med:    parseFloat(document.getElementById('presionMedida').value) || '',
-    duracion_min:   dur,
-    ud_pct:         state.ud ? state.ud.toFixed(2) : '',
-    caudal_real_avg: state.caudalPromReal ? state.caudalPromReal.toFixed(3) : '',
-    mediciones:     JSON.stringify(state.mediciones),
-    desviaciones:   JSON.stringify(state.desviaciones),
-    notas:          notas,
-    ts:             now.toISOString(),
-    fecha:          now.toLocaleDateString('es-CL'),
-    hora:           now.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
+    token:     CONFIG.ACCESS_TOKEN,
+    action:    'aforado',
+    fecha:     now.toISOString().slice(0,10),
+    hora:      now.toTimeString().slice(0,5),
+    sector, cuartel, valvula, lado,
+    tipo_gotero:       appState.tipoGotero || '',
+    caudal_nominal:    appState.caudalNominal || '',
+    presion_medida:    appState.presionMedida || '',
+    vol_1_ml:          appState.vol1 || '',
+    tm_1_seg:          appState.tm1 || '',
+    caudal_1_lh:       appState._q1 != null ? appState._q1.toFixed(3) : '',
+    vol_2_ml:          appState.vol2 || '',
+    tm_2_seg:          appState.tm2 || '',
+    caudal_2_lh:       appState._q2 != null ? appState._q2.toFixed(3) : '',
+    vol_3_ml:          appState.vol3 || '',
+    tm_3_seg:          appState.tm3 || '',
+    caudal_3_lh:       appState._q3 != null ? appState._q3.toFixed(3) : '',
+    caudal_avg_lh:     appState._avg != null ? appState._avg.toFixed(3) : '',
+    caudal_min_lh:     appState._min != null ? appState._min.toFixed(3) : '',
+    caudal_max_lh:     appState._max != null ? appState._max.toFixed(3) : '',
+    cu_pct:            appState._cu != null ? appState._cu.toFixed(2) : '',
+    desviacion_pct:    appState._desv != null ? appState._desv.toFixed(2) : '',
+    clasificacion:     appState._clasif || '',
+    operador,
+    notas:             appState.notas || '',
+    fotos:             appState.fotos,
+    gps_lat: gpsData?.lat || '', gps_lng: gpsData?.lng || '', gps_acc: gpsData?.accuracy || ''
   };
-
-  // Guardar en historial local
-  historial.push({
-    fecha:        payload.fecha,
-    hora:         payload.hora,
-    cuartel:      state.cuartel,
-    ud:           state.ud || 0,
-    tipoGotero:   payload.tipo_gotero,
-    notas:        notas,
-    desviaciones: state.desviaciones,
-    mediciones:   state.mediciones,
-  });
-  guardarHistorialLocal();
 
   try {
     await fetch(CONFIG.GAS_URL, {
-      method:  'POST',
-      mode:    'no-cors',
+      method: 'POST', mode: 'no-cors',
       headers: { 'Content-Type': 'text/plain' },
-      body:    JSON.stringify(payload),
+      body: JSON.stringify(payload)
     });
     mostrarExito(payload);
   } catch(err) {
-    // Guardado local aunque falle el servidor
-    mostrarExito(payload);
+    document.getElementById('overlayLoading').classList.remove('visible');
+    toast('Error al guardar: ' + (err.message || err));
+    btn.disabled = false; btn.textContent = '💧  Guardar aforado';
   }
 }
-
-function mostrarExito(payload) {
+function mostrarExito(p) {
   document.getElementById('overlayLoading').classList.remove('visible');
-  const ud = state.ud ? state.ud.toFixed(1) + '%' : '—';
+  const ladoTxt = p.lado === 'N' ? 'Norte' : 'Sur';
   const lines = [
-    `🌳 Cuartel ${payload.cuartel}`,
-    `💧 UD = ${ud} — ${state.ud >= 90 ? 'Excelente' : state.ud >= 80 ? 'Bueno' : state.ud >= 70 ? 'Regular' : 'Deficiente'}`,
-    state.caudalNominal ? `⚡ Caudal nominal: ${state.caudalNominal} L/h · Real: ${state.caudalPromReal ? state.caudalPromReal.toFixed(2) : '—'} L/h` : '',
-    `📏 ${Object.keys(state.mediciones).length} puntos medidos`,
-    payload.notas ? `📝 ${payload.notas.slice(0, 60)}` : '',
+    `📍 ${p.cuartel} · H${p.valvula} · Lateral ${ladoTxt}`,
+    `💧 Caudal promedio: ${p.caudal_avg_lh} L/h`,
+    p.cu_pct ? `📊 CU: ${p.cu_pct}%` : '',
+    p.clasificacion ? p.clasificacion : '',
+    p.desviacion_pct ? `📉 Desv. vs nominal: ${p.desviacion_pct}%` : '',
+    p.fotos?.length ? `📷 ${p.fotos.length} foto(s) enviada(s)` : ''
   ].filter(Boolean).join('\n');
   document.getElementById('successMsg').textContent = lines;
   document.getElementById('overlaySuccess').classList.add('visible');
+  sessionStorage.removeItem(STATE_KEY);
 }
-
 function resetForm() {
   document.getElementById('overlaySuccess').classList.remove('visible');
-  state.mediciones   = {};
-  state.desviaciones = {};
-  state.ud           = null;
-  state.caudalPromReal = null;
-  state.cuartel      = null;
-
-  document.querySelectorAll('#cuartelGrid .sel-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('medicionesContainer').innerHTML = `<div class="empty-state"><span class="empty-icon">🌳</span>Selecciona un cuartel para ingresar las mediciones</div>`;
-  document.getElementById('cardResultados').style.display = 'none';
-  document.getElementById('notasAforado').value = '';
-  document.getElementById('presionMedida').value = '';
-  document.getElementById('btnSubmit').disabled = false;
+  const op = appState.operador;
+  appState = { operador: op, sector: null, cuartel: null, valvula: null, lado: null, tipoGotero: '', caudalNominal: '', presionMedida: '', vol1: '', tm1: '', vol2: '', tm2: '', vol3: '', tm3: '', notas: '', fotos: [], gps: gpsData };
+  sessionStorage.removeItem(STATE_KEY);
+  document.querySelectorAll('.sel-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('lateralResumen').style.display = 'none';
+  ['tipoGotero','caudalNominal','presionMedida','vol1','tm1','vol2','tm2','vol3','tm3','notas'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; });
+  renderFotos();
+  calcularResultados();
+  const btn = document.getElementById('btnSubmit');
+  btn.disabled = false; btn.textContent = '💧  Guardar aforado';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// ── TOAST ─────────────────────────────────────────────
-let toastTimer;
-function showToast(msg, type) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className   = 'toast visible' + (type === 'ok' ? ' ok' : '');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('visible'), 3200);
-}
-
-// ── START ─────────────────────────────────────────────
-window.addEventListener('DOMContentLoaded', init);
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+else init();
 </script>
 </body>
 </html>

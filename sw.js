@@ -2,7 +2,7 @@
 // Estrategia: Network-first para GAS, Cache-first con revalidación para assets.
 // Versión: bump cuando cambies archivos estáticos para forzar actualización.
 
-const CACHE_NAME = 'laquinta-opus-v16';
+const CACHE_NAME = 'laquinta-opus-v17';
 
 // Permitir al cliente pedir skipWaiting si detecta SW nuevo waiting
 self.addEventListener('message', function(e) {

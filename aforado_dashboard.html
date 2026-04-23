@@ -188,6 +188,7 @@
       border-radius: 99px;
     }
     .ud-green  { background: rgba(16,185,129,0.15); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.3); }
+    .ud-blue   { background: rgba(59,130,246,0.15); color: #93c5fd; border: 1px solid rgba(59,130,246,0.3); }
     .ud-amber  { background: rgba(245,158,11,0.15);  color: #fcd34d; border: 1px solid rgba(245,158,11,0.3); }
     .ud-red    { background: rgba(239,68,68,0.15);   color: #fca5a5; border: 1px solid rgba(239,68,68,0.3); }
 
@@ -276,9 +277,9 @@
     <div class="kpi-val" id="kTotal">—</div>
   </div>
   <div class="kpi">
-    <div class="kpi-lbl">UD% promedio</div>
+    <div class="kpi-lbl">CU% promedio</div>
     <div class="kpi-val" id="kUdProm">—</div>
-    <div class="kpi-sub">Uniformidad distribución</div>
+    <div class="kpi-sub">Christiansen</div>
   </div>
   <div class="kpi">
     <div class="kpi-lbl">Mejor cuartel</div>
@@ -294,12 +295,13 @@
 
 <!-- GRÁFICO -->
 <div class="chart-section">
-  <div class="section-title">UNIFORMIDAD DE DISTRIBUCIÓN (UD%) POR CUARTEL</div>
+  <div class="section-title">COEFICIENTE DE UNIFORMIDAD (CU%) POR CUARTEL</div>
   <div class="chart-wrap">
     <div class="leyenda">
-      <div class="leyenda-item"><div class="leyenda-dot" style="background:#10b981"></div> ≥ 90% Óptimo</div>
-      <div class="leyenda-item"><div class="leyenda-dot" style="background:#f59e0b"></div> 80–89% Aceptable</div>
-      <div class="leyenda-item"><div class="leyenda-dot" style="background:#ef4444"></div> &lt; 80% Deficiente</div>
+      <div class="leyenda-item"><div class="leyenda-dot" style="background:#10b981"></div> ≥ 90% Excelente</div>
+      <div class="leyenda-item"><div class="leyenda-dot" style="background:#3b82f6"></div> 80–89% Bueno</div>
+      <div class="leyenda-item"><div class="leyenda-dot" style="background:#f59e0b"></div> 70–79% Regular</div>
+      <div class="leyenda-item"><div class="leyenda-dot" style="background:#ef4444"></div> &lt; 70% Deficiente</div>
     </div>
     <div class="chart-canvas-wrap">
       <canvas id="chartUD"></canvas>
@@ -319,14 +321,17 @@
       <thead>
         <tr>
           <th>Fecha</th>
+          <th>Sector</th>
           <th>Cuartel</th>
+          <th>Lateral</th>
           <th>Gotero</th>
-          <th>Caudal nom.</th>
-          <th>Caudal real</th>
-          <th>P. nom.</th>
-          <th>P. med.</th>
-          <th>Duración</th>
-          <th>UD%</th>
+          <th>Q nom.</th>
+          <th>Q promedio</th>
+          <th>Q min-máx</th>
+          <th>CU%</th>
+          <th>Clasif.</th>
+          <th>Desv.</th>
+          <th>Operador</th>
           <th>Notas</th>
           <th></th>
         </tr>
@@ -418,7 +423,10 @@ function colorClass(ud) {
 function renderKPIs(lista) {
   document.getElementById('kTotal').textContent = lista.length;
 
-  const conUD = lista.filter(a => a.ud_pct !== '');
+  const conUD = lista.filter(a => {
+    const v = a.cu_pct || a.ud_pct;
+    return v !== '' && v != null;
+  });
   if (conUD.length === 0) {
     document.getElementById('kUdProm').textContent = '—';
     document.getElementById('kMejor').textContent  = '—';
@@ -427,18 +435,17 @@ function renderKPIs(lista) {
   }
 
   // Promedio UD%
-  const udVals = conUD.map(a => parseFloat(a.ud_pct));
+  const udVals = conUD.map(a => parseFloat(a.cu_pct || a.ud_pct));
   const prom = udVals.reduce((s,v) => s+v, 0) / udVals.length;
   const udEl = document.getElementById('kUdProm');
   udEl.textContent = prom.toFixed(1) + '%';
   udEl.className = 'kpi-val ' + colorClass(prom);
 
-  // Por cuartel
-  const porCuartel = {};
+  // Por cuartel  const porCuartel = {};
   conUD.forEach(a => {
     if (!a.cuartel) return;
     if (!porCuartel[a.cuartel]) porCuartel[a.cuartel] = [];
-    porCuartel[a.cuartel].push(parseFloat(a.ud_pct));
+    porCuartel[a.cuartel].push(parseFloat(a.cu_pct || a.ud_pct));
   });
   const promedios = Object.entries(porCuartel).map(([c, vals]) => ({
     cuartel: c,
@@ -449,10 +456,10 @@ function renderKPIs(lista) {
   if (promedios.length > 0) {
     const mejor = promedios[0];
     document.getElementById('kMejor').textContent = mejor.cuartel;
-    document.getElementById('kMejorSub').textContent = mejor.avg.toFixed(1) + '% UD';
+    document.getElementById('kMejorSub').textContent = mejor.avg.toFixed(1) + '% CU';
     const peor = promedios[promedios.length - 1];
     document.getElementById('kPeor').textContent = peor.cuartel;
-    document.getElementById('kPeorSub').textContent = peor.avg.toFixed(1) + '% UD';
+    document.getElementById('kPeorSub').textContent = peor.avg.toFixed(1) + '% CU';
   }
 }
 
@@ -469,8 +476,8 @@ function renderGrafico(lista) {
     const vals = porCuartel[c];
     return (vals.reduce((s,v)=>s+v,0)/vals.length).toFixed(1);
   });
-  const colors = data.map(v => v >= 90 ? '#10b981' : v >= 80 ? '#f59e0b' : '#ef4444');
-  const borderColors = data.map(v => v >= 90 ? '#059669' : v >= 80 ? '#d97706' : '#dc2626');
+  const colors = data.map(v => v >= 90 ? '#10b981' : v >= 80 ? '#3b82f6' : v >= 70 ? '#f59e0b' : '#ef4444');
+  const borderColors = data.map(v => v >= 90 ? '#059669' : v >= 80 ? '#2563eb' : v >= 70 ? '#d97706' : '#dc2626');
 
   const ctx = document.getElementById('chartUD').getContext('2d');
   if (chartUD) chartUD.destroy();
@@ -495,7 +502,7 @@ function renderGrafico(lista) {
         legend: { display: false },
         tooltip: {
           callbacks: {
-            label: ctx => ` UD% ${ctx.raw}%`
+            label: ctx => ` CU ${ctx.raw}%`
           }
         }
       },
@@ -520,11 +527,19 @@ function renderGrafico(lista) {
 }
 
 // ── Tabla ────────────────────────────────────────────────────────
-function udBadge(ud) {
-  if (ud === '' || ud === null || ud === undefined) return '—';
-  const v = parseFloat(ud);
-  const cls = v >= 90 ? 'ud-green' : v >= 80 ? 'ud-amber' : 'ud-red';
-  return `<span class="ud-badge ${cls}">${v.toFixed(1)}%</span>`;
+function cuBadge(v) {
+  if (v === '' || v === null || v === undefined) return '—';
+  const n = parseFloat(v);
+  const cls = n >= 90 ? 'ud-green' : n >= 80 ? 'ud-blue' : n >= 70 ? 'ud-amber' : 'ud-red';
+  return `<span class="ud-badge ${cls}">${n.toFixed(1)}%</span>`;
+}
+function clasifChip(cu) {
+  if (cu === '' || cu === null || cu === undefined) return '—';
+  const n = parseFloat(cu);
+  if (n >= 90) return '🟢 Excelente';
+  if (n >= 80) return '🔵 Bueno';
+  if (n >= 70) return '🟡 Regular';
+  return '🔴 Deficiente';
 }
 
 function renderTabla(lista) {
@@ -541,21 +556,33 @@ function renderTabla(lista) {
   state.style.display = 'none';
   wrap.style.display  = '';
 
-  document.getElementById('tbody').innerHTML = lista.map(a => `
+  document.getElementById('tbody').innerHTML = lista.map(a => {
+    // Compatibilidad v1/v2
+    const cu = a.cu_pct || a.ud_pct;
+    const qAvg = a.caudal_avg || a.caudal_real;
+    const qNom = a.caudal_nominal;
+    const minMax = (a.caudal_min && a.caudal_max) ? `${parseFloat(a.caudal_min).toFixed(2)} – ${parseFloat(a.caudal_max).toFixed(2)}` : '—';
+    const ladoTxt = a.lado === 'N' ? 'Norte' : a.lado === 'S' ? 'Sur' : '';
+    const lateralCell = a.valvula ? `H${esc(a.valvula)}${ladoTxt ? ' · ' + ladoTxt : ''}` : '—';
+    const desvCell = a.desviacion_pct ? (parseFloat(a.desviacion_pct) >= 0 ? '+' : '') + parseFloat(a.desviacion_pct).toFixed(1) + '%' : '—';
+    return `
     <tr>
       <td>${esc(a.fecha || '—')}</td>
+      <td>${esc(a.sector || '—')}</td>
       <td>${esc(a.cuartel || '—')}</td>
+      <td>${lateralCell}</td>
       <td>${esc(a.tipo_gotero || '—')}</td>
-      <td>${a.caudal_nominal ? esc(a.caudal_nominal) + ' L/h' : '—'}</td>
-      <td>${a.caudal_real ? esc(a.caudal_real) + ' L/h' : '—'}</td>
-      <td>${a.presion_nom ? esc(a.presion_nom) + ' bar' : '—'}</td>
-      <td>${a.presion_med ? esc(a.presion_med) + ' bar' : '—'}</td>
-      <td>${a.duracion_min ? esc(a.duracion_min) + ' min' : '—'}</td>
-      <td>${udBadge(a.ud_pct)}</td>
-      <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis">${esc(a.notas || '—')}</td>
+      <td>${qNom ? parseFloat(qNom).toFixed(1) + ' L/h' : '—'}</td>
+      <td>${qAvg ? parseFloat(qAvg).toFixed(2) + ' L/h' : '—'}</td>
+      <td style="font-size:11px;color:var(--text3)">${minMax}</td>
+      <td>${cuBadge(cu)}</td>
+      <td style="font-size:11px">${clasifChip(cu)}</td>
+      <td>${desvCell}</td>
+      <td>${esc(a.operador || '—')}</td>
+      <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px">${esc(a.notas || '—')}</td>
       <td><button class="btn-del" onclick="confirmarEliminar(${a.fila})">🗑</button></td>
     </tr>
-  `).join('');
+  `;}).join('');
 }
 
 // ── Eliminar ─────────────────────────────────────────────────────
