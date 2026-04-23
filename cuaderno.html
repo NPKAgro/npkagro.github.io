@@ -10,6 +10,8 @@
   <title>Cuaderno de Campo · La Quinta</title>
   <script>window.LQ_AUTH_MODE = 'equipo'; window.LQ_AUTH_SHOW_BAR = false;</script>
   <script src="auth.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -40,7 +42,7 @@
       background: var(--bg);
       color: var(--text);
       min-height: 100dvh;
-      padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 110px);
+      padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 140px);
       -webkit-tap-highlight-color: transparent;
     }
     ::-webkit-scrollbar { width: 4px; }
@@ -183,6 +185,11 @@
     .btn-grid-3 {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .btn-grid-5 {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
       gap: 8px;
     }
     .sel-btn {
@@ -459,6 +466,26 @@
     }
     .toast.visible { display: block; }
     .toast.ok { border-color: rgba(16,185,129,0.4); color: var(--green); }
+
+    /* ── MAPA LEAFLET ── */
+    .map-toggle { background: var(--bg3); border: 1px solid var(--border); color: var(--text2); padding: 4px 10px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 600; cursor: pointer; }
+    .map-toggle:active { border-color: var(--accent); color: var(--accent); }
+    .map-body { padding: 0 !important; }
+    .map-body.hidden { display: none; }
+    #mapaLeaflet { width: 100%; height: 260px; background: #0b0d13; }
+    .map-estimate { padding: 10px 14px; font-size: 13px; font-weight: 600; color: var(--text2); background: var(--bg3); border-bottom: 1px solid var(--border); text-align: center; line-height: 1.4; }
+    .map-estimate.ok   { color: var(--text); }
+    .map-estimate.warn { color: var(--amber); }
+    .map-estimate b { color: var(--green); font-weight: 700; }
+    .map-estimate.warn b { color: var(--amber); }
+    .map-actions { display: flex; gap: 6px; padding: 10px 12px; border-top: 1px solid var(--border); background: var(--bg3); }
+    .map-btn { flex: 1; background: var(--bg2); border: 1px solid var(--border); color: var(--text2); padding: 8px 6px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 600; cursor: pointer; }
+    .map-btn:active { border-color: var(--accent); color: var(--accent); }
+    .map-hint { padding: 0 14px 12px; font-size: 11px; color: var(--text3); text-align: center; background: var(--bg3); }
+    .leaflet-container { background: #0b0d13; font-family: inherit; outline: none; }
+    .leaflet-control-zoom a { background: rgba(15,17,23,0.9) !important; color: #fff !important; border-color: rgba(255,255,255,0.15) !important; }
+    .leaflet-tooltip.cuartel-label { background: rgba(15,17,23,0.85); color: #fff; border: 1px solid rgba(255,255,255,0.25); border-radius: 4px; font-size: 12px; font-weight: 700; padding: 2px 6px; box-shadow: none; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
+    .leaflet-tooltip.cuartel-label::before { display: none; }
   </style>
 </head>
 <body>
@@ -494,6 +521,24 @@
     </div>
     <div class="card-body">
       <div class="cat-grid" id="catGrid"></div>
+    </div>
+  </div>
+
+  <!-- ── MAPA ── -->
+  <div class="card" id="cardMapa">
+    <div class="card-header">
+      <span class="card-label">🗺 Ubicación en el campo</span>
+      <button type="button" class="map-toggle" id="mapToggleBtn" onclick="toggleMapa()">Ocultar</button>
+    </div>
+    <div class="card-body map-body" id="mapaBody">
+      <div class="map-estimate" id="mapEstimate">📍 Activa el GPS para ver tu ubicación</div>
+      <div id="mapaLeaflet"></div>
+      <div class="map-actions">
+        <button type="button" class="map-btn" onclick="centrarEnMi()">📍 Centrarme</button>
+        <button type="button" class="map-btn" onclick="verCuartel()">🎯 Ver cuartel</button>
+        <button type="button" class="map-btn" onclick="verTodos()">🔍 Ver todos</button>
+      </div>
+      <div class="map-hint">Referencia visual · detección exacta de hilera y claro desde los KMZ del campo.</div>
     </div>
   </div>
 
@@ -602,6 +647,9 @@
 <!-- ── TOAST ── -->
 <div class="toast" id="toast"></div>
 
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="mapa-laquinta.js"></script>
 <script>
 // ══════════════════════════════════════════════════════
 //  CONFIG
@@ -627,6 +675,116 @@ const CATEGORIAS = [
 
 const STATE_KEY = 'cuaderno_state_v1';
 let appState = { categoria: null, cuartel: null, hilera: null, claro: null, planta: null, fotos: [], gps: null };
+
+// ══════════════════════════════════════════════════════
+//  MAPA LEAFLET
+// ══════════════════════════════════════════════════════
+let mapaLQ = null, mapaUsuarioMarker = null, mapaUsuarioCircle = null;
+let mapaCuartelLayers = {}, mapaWatchId = null;
+
+function initMapaLeaflet() {
+  if (mapaLQ || typeof L === 'undefined' || !window.LQ_MAPA) return;
+  const el = document.getElementById('mapaLeaflet');
+  if (!el) return;
+  const POL = window.LQ_MAPA.CUARTELES_POLYS;
+  mapaLQ = L.map(el, { zoomControl: true, attributionControl: false });
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    { maxZoom: 22, maxNativeZoom: 19 }).addTo(mapaLQ);
+  Object.entries(POL).forEach(([nombre, coords]) => {
+    const poly = L.polygon(coords, { color: '#3b82f6', weight: 2, fillColor: '#3b82f6', fillOpacity: 0.12 }).addTo(mapaLQ);
+    poly.bindTooltip(nombre, { permanent: true, direction: 'center', className: 'cuartel-label' });
+    poly.on('click', () => seleccionarCuartel(nombre));
+    mapaCuartelLayers[nombre] = poly;
+  });
+  // Dibujar hileras en zoom alto
+  const hilerasLayer = L.layerGroup();
+  window.LQ_MAPA.HILERAS_DATA.forEach(h => {
+    L.polyline([[h[2], h[3]], [h[4], h[5]]], { color: '#ffffff', weight: 1, opacity: 0.45, interactive: false }).addTo(hilerasLayer);
+  });
+  const updateHilerasVis = () => {
+    const z = mapaLQ.getZoom();
+    if (z >= 18) mapaLQ.addLayer(hilerasLayer); else mapaLQ.removeLayer(hilerasLayer);
+  };
+  mapaLQ.on('zoomend', updateHilerasVis);
+  verTodos();
+  updateHilerasVis();
+  if (appState.cuartel) resaltarCuartelEnMapa(appState.cuartel);
+  if (gpsData) actualizarPinGPS(gpsData);
+  iniciarWatchGPSMapa();
+}
+
+function iniciarWatchGPSMapa() {
+  if (!navigator.geolocation || mapaWatchId !== null) return;
+  try {
+    mapaWatchId = navigator.geolocation.watchPosition(pos => {
+      const d = { lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: Math.round(pos.coords.accuracy), timestamp: new Date().toISOString() };
+      gpsData = d;
+      appState.gps = d;
+      guardarEstado();
+      actualizarPinGPS(d);
+    }, _e => {}, { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 });
+  } catch (_) {}
+}
+
+function actualizarPinGPS(g) {
+  if (!mapaLQ) return;
+  const ll = [g.lat, g.lng];
+  if (mapaUsuarioMarker) {
+    mapaUsuarioMarker.setLatLng(ll);
+    mapaUsuarioCircle.setLatLng(ll).setRadius(g.accuracy || 5);
+  } else {
+    mapaUsuarioCircle = L.circle(ll, { radius: g.accuracy || 5, color: '#10b981', weight: 1, fillColor: '#10b981', fillOpacity: 0.15 }).addTo(mapaLQ);
+    mapaUsuarioMarker = L.circleMarker(ll, { radius: 7, color: '#fff', weight: 2, fillColor: '#10b981', fillOpacity: 1 }).addTo(mapaLQ);
+  }
+  actualizarEstimacionMapa(g);
+}
+
+function actualizarEstimacionMapa(g) {
+  const el = document.getElementById('mapEstimate');
+  if (!el || !window.LQ_MAPA) return;
+  const { cuartel, hilera, claro, distancia } = window.LQ_MAPA.detectarUbicacion(g.lat, g.lng);
+  const nom = window.LQ_MAPA.CUARTEL_NUM_TO_NAME[cuartel] || ('C' + cuartel);
+  if (distancia > 15) {
+    el.className = 'map-estimate warn';
+    el.innerHTML = `📍 Fuera de C2 / C3 / C4 · más cercano: <b>${nom}</b> H${hilera} <span style="opacity:.6;font-weight:400">(±${g.accuracy}m)</span>`;
+    return;
+  }
+  el.className = 'map-estimate ok';
+  const ct = claro != null ? claro : '?';
+  el.innerHTML = `📍 Estás en <b>${nom}</b> · Hilera <b>${hilera}</b> · Claro <b>${ct}</b> <span style="opacity:.55;font-weight:400">(±${g.accuracy}m · a ${distancia.toFixed(1)}m)</span>`;
+}
+
+function resaltarCuartelEnMapa(c) {
+  if (!mapaLQ) return;
+  Object.entries(mapaCuartelLayers).forEach(([n, l]) => {
+    if (n === c) l.setStyle({ color: '#10b981', weight: 3, fillOpacity: 0.22 });
+    else l.setStyle({ color: '#3b82f6', weight: 2, fillOpacity: 0.08 });
+  });
+}
+function centrarEnMi() {
+  if (gpsData && mapaLQ) mapaLQ.setView([gpsData.lat, gpsData.lng], 20, { animate: true });
+  else toast && toast('📍 Activa el GPS primero');
+}
+function verCuartel() {
+  if (!mapaLQ) return;
+  const c = appState.cuartel;
+  if (!c) { if (typeof toast === 'function') toast('🌳 Selecciona un cuartel primero'); return; }
+  const layer = mapaCuartelLayers[c];
+  if (layer) mapaLQ.fitBounds(layer.getBounds(), { padding: [20, 20] });
+}
+function verTodos() {
+  if (!mapaLQ) return;
+  const b = L.latLngBounds([]);
+  Object.values(mapaCuartelLayers).forEach(l => b.extend(l.getBounds()));
+  if (b.isValid()) mapaLQ.fitBounds(b, { padding: [20, 20] });
+}
+function toggleMapa() {
+  const body = document.getElementById('mapaBody');
+  const btn  = document.getElementById('mapToggleBtn');
+  const oculto = body.classList.toggle('hidden');
+  btn.textContent = oculto ? 'Mostrar' : 'Ocultar';
+  if (!oculto && mapaLQ) setTimeout(() => mapaLQ.invalidateSize(), 50);
+}
 let gpsData  = null;
 
 // ══════════════════════════════════════════════════════
@@ -680,6 +838,9 @@ function init() {
   // GPS
   pedirGPS();
 
+  // Mapa
+  initMapaLeaflet();
+
   // Render fotos
   renderFotos();
 }
@@ -720,6 +881,7 @@ function pedirGPS() {
       bar.className      = 'gps-bar ok';
       msg.textContent    = `📍 GPS ±${gpsData.accuracy}m`;
       coords.textContent = `${gpsData.lat.toFixed(5)}, ${gpsData.lng.toFixed(5)}`;
+      actualizarPinGPS(gpsData);
     },
     err => {
       bar.className   = 'gps-bar error';
@@ -752,6 +914,7 @@ function restaurarEstado() {
       document.getElementById('gpsBar').className = 'gps-bar ok';
       document.getElementById('gpsMsg').textContent    = `📍 GPS ±${s.gps.accuracy}m`;
       document.getElementById('gpsCoords').textContent = `${s.gps.lat.toFixed(5)}, ${s.gps.lng.toFixed(5)}`;
+      if (mapaLQ) actualizarPinGPS(s.gps);
     }
   } catch(_) {}
 }
@@ -772,6 +935,10 @@ function seleccionarCuartel(c) {
     b.classList.toggle('active', b.dataset.val === c);
   });
   document.getElementById('cardCuartel').classList.remove('error-card');
+  resaltarCuartelEnMapa(c);
+  if (mapaLQ && mapaCuartelLayers[c]) {
+    mapaLQ.fitBounds(mapaCuartelLayers[c].getBounds(), { padding: [20, 20], animate: true });
+  }
   actualizarResumen();
 }
 
