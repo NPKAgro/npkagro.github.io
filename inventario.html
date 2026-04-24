@@ -120,44 +120,44 @@
       background: var(--bg2);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 12px 14px;
+      padding: 11px 14px;
       cursor: pointer;
       transition: border-color 0.12s;
+      display: flex;
+      align-items: center;
+      gap: 12px;
     }
     .prod-card:active { border-color: var(--accent); }
-    .prod-head {
-      display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;
-    }
+    .prod-card-left { flex: 1; min-width: 0; }
     .prod-name {
-      font-size: 14px; font-weight: 700; flex: 1; line-height: 1.3;
+      font-size: 14px; font-weight: 700; line-height: 1.3;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    .prod-badge {
-      font-size: 10px;
-      font-weight: 700;
-      padding: 3px 7px;
+    .prod-ia {
+      font-size: 11px; color: var(--text3); margin-top: 2px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .prod-subcat {
+      display: inline-block;
+      font-size: 10px; font-weight: 600;
+      color: var(--text3);
+      background: var(--bg3);
+      border: 1px solid var(--border);
       border-radius: 99px;
-      letter-spacing: 0.3px;
+      padding: 2px 7px;
+      margin-top: 5px;
       text-transform: uppercase;
-      flex-shrink: 0;
+      letter-spacing: 0.3px;
     }
-    .prod-badge.OK { background: rgba(16,185,129,0.15); color: #6ee7b7; }
-    .prod-badge.BAJO { background: rgba(245,158,11,0.15); color: #fbbf24; }
-    .prod-badge.AGOTADO { background: rgba(239,68,68,0.15); color: #fca5a5; }
-    .prod-badge.DESCUADRE { background: rgba(239,68,68,0.25); color: #fca5a5; }
-
-    .prod-meta {
-      display: flex; gap: 12px; margin-top: 6px; font-size: 11px; color: var(--text3);
-      flex-wrap: wrap;
-    }
-    .prod-stock {
-      display: flex; justify-content: space-between; align-items: baseline;
-      margin-top: 6px;
-    }
+    .prod-card-right { text-align: right; flex-shrink: 0; }
     .prod-stock-val {
-      font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums;
+      font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums;
+      color: var(--green);
+      line-height: 1;
     }
-    .prod-stock-unit { font-size: 12px; color: var(--text3); margin-left: 4px; }
-    .prod-stock-min { font-size: 11px; color: var(--text3); }
+    .prod-stock-val.bajo { color: var(--amber); }
+    .prod-stock-unit { font-size: 11px; color: var(--text3); margin-top: 2px; }
+    .prod-stock-min { font-size: 10px; color: var(--text3); margin-top: 1px; }
 
     .empty {
       text-align: center; padding: 40px 20px; color: var(--text3); font-size: 13px;
@@ -284,23 +284,8 @@
   <input type="text" id="searchInput" placeholder="Buscar producto..." />
 </div>
 
-<div class="filter-chips" id="chips">
-  <div class="chip active" data-cat="todos">Todos</div>
-  <div class="chip" data-cat="bajo_stock">⚠️ Bajo stock</div>
-  <div class="chip" data-cat="Fungicida">Fungicidas</div>
-  <div class="chip" data-cat="Insecticida">Insecticidas</div>
-  <div class="chip" data-cat="Acaricida">Acaricidas</div>
-  <div class="chip" data-cat="Herbicida">Herbicidas</div>
-  <div class="chip" data-cat="Nematicida">Nematicidas</div>
-  <div class="chip" data-cat="Regulador">Reguladores</div>
-  <div class="chip" data-cat="Post-cosecha">Post-cosecha</div>
-  <div class="chip" data-cat="Fertilizante Foliar">Foliar</div>
-  <div class="chip" data-cat="Fertirriego">Fertirriego</div>
-  <div class="chip" data-cat="Bioestimulante">Bioestimulantes</div>
-  <div class="chip" data-cat="Biológico">Biológicos</div>
-  <div class="chip" data-cat="Coadyuvante">Coadyuvantes</div>
-  <div class="chip" data-cat="Otro">Otros</div>
-</div>
+<div class="filter-chips" id="chipsGrupo"></div>
+<div class="filter-chips" id="chipsSubcat" style="display:none;padding-top:0"></div>
 
 <div class="list" id="listContainer">
   <div class="loader"><span class="spin">⏳</span> Cargando inventario...</div>
@@ -374,11 +359,85 @@ const GAS_TOKEN   = 'LQ2026-Santina';
 const state = {
   inventario: [],
   productos:  [],
-  filtroCat:  'todos',
+  filtroGrupo:  'todos',
+  filtroSubcat: 'todas',
   busqueda:   '',
   seleccionado: null,
   gps: null
 };
+
+// ── Categorización (igual que el dashboard) ──
+const _GRUPOS_ORDEN = ['Plaguicidas','Fertilizantes','Coadyuvantes','EPP','Maquinaria','Envases y Otros'];
+
+function _grupoInv(p) {
+  const cat   = (p._categoria || p.categoria || '').toLowerCase();
+  const notas = ((p._notas || p.notas || '') + ' ' + (p.ubicacion || '')).toLowerCase();
+  const nombre = (p.nombre_comercial || '').toLowerCase();
+  if (cat === 'otro' || cat === '' || cat === 'otros') {
+    if (/\bepp\b/.test(notas)) return 'EPP';
+    if (/tractor|moto|maquinaria/.test(notas) || /\baceite\b|\bgrasa\b|\brefrigerante\b|\bfiltro\b/.test(nombre)) return 'Maquinaria';
+    return 'Envases y Otros';
+  }
+  if (['fungicida','insecticida','acaricida','herbicida','nematicida','post-cosecha','biológico','biologico','regulador'].includes(cat)) return 'Plaguicidas';
+  if (['fertilizante foliar','fertirriego','bioestimulante'].includes(cat)) return 'Fertilizantes';
+  if (cat === 'coadyuvante') return 'Coadyuvantes';
+  return 'Envases y Otros';
+}
+
+function _subGrupoInv(p) {
+  const cat = (p._categoria || p.categoria || '').toLowerCase();
+  const g = _grupoInv(p);
+  if (g === 'Plaguicidas') {
+    if (cat === 'fungicida')    return 'Fungicidas';
+    if (cat === 'insecticida')  return 'Insecticidas';
+    if (cat === 'acaricida')    return 'Acaricidas';
+    if (cat === 'herbicida')    return 'Herbicidas';
+    if (cat === 'nematicida')   return 'Nematicidas';
+    if (cat === 'post-cosecha') return 'Post-cosecha';
+    if (cat === 'regulador')    return 'Reguladores';
+    if (cat === 'biológico' || cat === 'biologico') return 'Biológicos';
+    return 'Otros';
+  }
+  if (g === 'Fertilizantes') {
+    if (cat === 'fertilizante foliar') return 'Foliares';
+    if (cat === 'fertirriego')         return 'Fertirriego';
+    if (cat === 'bioestimulante')      return 'Bioestimulantes';
+    return 'Otros';
+  }
+  return null;
+}
+
+// Formato nombre: title case + elementos químicos + siglas de formulación
+const _CODIGOS_FORM = new Set(['WP','EC','SL','SC','WG','SP','EW','CS','ME','DF','OD','AS','FS','GR','ES','DP','WDG','OL','SG','WS','SE','LS','EG','UL','CG','AP','TP','BR','PA','WDC','ZC']);
+const _ELEM_MAP = {};
+['Na','Mg','Ca','Mn','Fe','Zn','Cu','Al','Si','Mo','Co','Ni','Cr','B','K','P','N','S','Cl','Br','I'].forEach(e => { _ELEM_MAP[e.toUpperCase()] = e; });
+const _LOWER_ART = new Set(['de','del','la','las','el','los','y','o','con','sin','en']);
+
+function _fmtNombre(s) {
+  if (!s) return '';
+  return String(s).split(/(\s+)/).map(tok => {
+    if (!tok || /^\s+$/.test(tok)) return tok;
+    const up = tok.toUpperCase();
+    if (_CODIGOS_FORM.has(up)) return up;
+    if (tok.length <= 2 && _ELEM_MAP[up]) return _ELEM_MAP[up];
+    if (/\d/.test(tok)) {
+      return tok.replace(/([a-zA-ZáéíóúñÁÉÍÓÚÑ]+)/g, sub => {
+        const su = sub.toUpperCase();
+        if (_CODIGOS_FORM.has(su)) return su;
+        if (sub.length <= 2 && _ELEM_MAP[su]) return _ELEM_MAP[su];
+        return sub.charAt(0).toUpperCase() + sub.slice(1).toLowerCase();
+      });
+    }
+    if (_LOWER_ART.has(tok.toLowerCase())) return tok.toLowerCase();
+    return tok.charAt(0).toUpperCase() + tok.slice(1).toLowerCase();
+  }).join('');
+}
+
+function _fmtStock(n) {
+  const num = Number(n) || 0;
+  if (Number.isInteger(num)) return num.toLocaleString('es-CL');
+  return num.toLocaleString('es-CL', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+}
 
 function esc(s){
   return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -418,14 +477,74 @@ async function cargarDatos(){
   }
 }
 
+function _renderChips() {
+  // Grupo chips
+  const grupoCount = {};
+  state.inventario.forEach(p => {
+    const g = _grupoInv(p);
+    grupoCount[g] = (grupoCount[g] || 0) + 1;
+  });
+  const bajo = state.inventario.filter(i => {
+    const s = Number(i.stock_actual || 0), m = Number(i.stock_minimo || 0);
+    return m > 0 && s <= m;
+  }).length;
+
+  let html = `<div class="chip ${state.filtroGrupo==='todos'?'active':''}" onclick="setGrupo('todos')">Todos (${state.inventario.length})</div>`;
+  if (bajo > 0) html += `<div class="chip ${state.filtroGrupo==='bajo_stock'?'active':''}" onclick="setGrupo('bajo_stock')">⚠ Bajo stock (${bajo})</div>`;
+  _GRUPOS_ORDEN.forEach(g => {
+    const n = grupoCount[g] || 0;
+    if (!n) return;
+    html += `<div class="chip ${state.filtroGrupo===g?'active':''}" onclick="setGrupo('${g}')">${g} (${n})</div>`;
+  });
+  document.getElementById('chipsGrupo').innerHTML = html;
+
+  // Subcat chips (solo Plaguicidas y Fertilizantes)
+  const subcatEl = document.getElementById('chipsSubcat');
+  if (state.filtroGrupo === 'Plaguicidas' || state.filtroGrupo === 'Fertilizantes') {
+    const subCount = {};
+    state.inventario.filter(p => _grupoInv(p) === state.filtroGrupo).forEach(p => {
+      const s = _subGrupoInv(p) || 'Otros';
+      subCount[s] = (subCount[s] || 0) + 1;
+    });
+    const total = Object.values(subCount).reduce((a,b)=>a+b,0);
+    let sh = `<div class="chip ${state.filtroSubcat==='todas'?'active':''}" onclick="setSubcat('todas')">Todos (${total})</div>`;
+    Object.keys(subCount).sort().forEach(s => {
+      sh += `<div class="chip ${state.filtroSubcat===s?'active':''}" onclick="setSubcat('${s}')">${s} (${subCount[s]})</div>`;
+    });
+    subcatEl.innerHTML = sh;
+    subcatEl.style.display = '';
+  } else {
+    subcatEl.style.display = 'none';
+    subcatEl.innerHTML = '';
+  }
+}
+
+function setGrupo(g) {
+  state.filtroGrupo = g;
+  state.filtroSubcat = 'todas';
+  render();
+}
+function setSubcat(s) {
+  state.filtroSubcat = s;
+  render();
+}
+
 function render(){
   let items = state.inventario.slice();
 
-  // Filtro categoría
-  if (state.filtroCat === 'bajo_stock') {
-    items = items.filter(i => i.estado === 'BAJO' || i.estado === 'AGOTADO' || i.estado === 'DESCUADRE');
-  } else if (state.filtroCat !== 'todos') {
-    items = items.filter(i => (i.categoria||'') === state.filtroCat);
+  // Filtro grupo
+  if (state.filtroGrupo === 'bajo_stock') {
+    items = items.filter(i => {
+      const s = Number(i.stock_actual || 0), m = Number(i.stock_minimo || 0);
+      return m > 0 && s <= m;
+    });
+  } else if (state.filtroGrupo !== 'todos') {
+    items = items.filter(i => _grupoInv(i) === state.filtroGrupo);
+  }
+
+  // Filtro subcategoría
+  if (state.filtroSubcat !== 'todas') {
+    items = items.filter(i => (_subGrupoInv(i) || 'Otros') === state.filtroSubcat);
   }
 
   // Búsqueda
@@ -433,24 +552,29 @@ function render(){
   if (q) {
     items = items.filter(i =>
       (i.nombre_comercial||'').toLowerCase().includes(q) ||
-      (i.codigo||'').toLowerCase().includes(q)
+      (i.codigo||'').toLowerCase().includes(q) ||
+      (i._ingrediente||'').toLowerCase().includes(q)
     );
   }
 
-  // Orden: BAJO/AGOTADO primero, luego nombre
+  // Orden: bajo stock primero, luego alfabético
   items.sort((a,b) => {
-    const rank = { AGOTADO: 0, DESCUADRE: 0, BAJO: 1, OK: 2, SIN_STOCK: 3 };
-    const ra = rank[a.estado] ?? 2, rb = rank[b.estado] ?? 2;
-    if (ra !== rb) return ra - rb;
+    const bajA = (Number(a.stock_minimo||0) > 0 && Number(a.stock_actual||0) <= Number(a.stock_minimo||0)) ? 0 : 1;
+    const bajB = (Number(b.stock_minimo||0) > 0 && Number(b.stock_actual||0) <= Number(b.stock_minimo||0)) ? 0 : 1;
+    if (bajA !== bajB) return bajA - bajB;
     return (a.nombre_comercial||'').localeCompare(b.nombre_comercial||'');
   });
 
-  // Resumen (solo productos con stock)
+  // Resumen
   document.getElementById('sumTotal').textContent = state.inventario.length;
-  document.getElementById('sumBajo').textContent  =
-    state.inventario.filter(i => i.estado === 'BAJO').length;
-  document.getElementById('sumAgot').textContent  =
-    state.inventario.filter(i => i.estado === 'AGOTADO' || i.estado === 'DESCUADRE').length;
+  const bajoCnt = state.inventario.filter(i => {
+    const s = Number(i.stock_actual||0), m = Number(i.stock_minimo||0);
+    return m > 0 && s <= m;
+  }).length;
+  document.getElementById('sumBajo').textContent = bajoCnt;
+  document.getElementById('sumAgot').textContent = state.inventario.filter(i => i.estado === 'AGOTADO' || i.estado === 'DESCUADRE').length;
+
+  _renderChips();
 
   const cont = document.getElementById('listContainer');
   if (!items.length) {
@@ -458,25 +582,29 @@ function render(){
     return;
   }
 
-  cont.innerHTML = items.map(i => `
+  cont.innerHTML = items.map(i => {
+    const s = Number(i.stock_actual || 0);
+    const m = Number(i.stock_minimo || 0);
+    const esBajo = m > 0 && s <= m;
+    const nombre = _fmtNombre(i.nombre_comercial);
+    const ia = _fmtNombre(i._ingrediente || '');
+    const subcat = _subGrupoInv(i) || _grupoInv(i);
+    const stockStr = _fmtStock(s);
+    const stockColor = esBajo ? 'bajo' : '';
+    return `
     <div class="prod-card" onclick="abrirModalConsumo('${esc(i.codigo)}')">
-      <div class="prod-head">
-        <div class="prod-name">${esc(i.nombre_comercial)}</div>
-        <div class="prod-badge ${esc(i.estado)}">${esc(i.estado)}</div>
+      <div class="prod-card-left">
+        <div class="prod-name">${esc(nombre)}</div>
+        ${ia ? `<div class="prod-ia">${esc(ia)}</div>` : ''}
+        <span class="prod-subcat">${esc(subcat)}</span>
       </div>
-      <div class="prod-meta">
-        <span>${esc(i.codigo)}</span>
-        ${i.categoria ? '<span>· '+esc(i.categoria)+'</span>' : ''}
-        ${i.ultima_salida ? '<span>· Último uso: '+esc(fmtFecha(i.ultima_salida))+'</span>' : ''}
+      <div class="prod-card-right">
+        <div class="prod-stock-val ${stockColor}">${stockStr}</div>
+        <div class="prod-stock-unit">${esc(i.unidad || '')}</div>
+        ${m > 0 ? `<div class="prod-stock-min">mín ${_fmtStock(m)}</div>` : ''}
       </div>
-      <div class="prod-stock">
-        <div>
-          <span class="prod-stock-val">${fmtNum(i.stock_actual)}</span><span class="prod-stock-unit">${esc(i.unidad)}</span>
-        </div>
-        ${i.stock_minimo > 0 ? '<div class="prod-stock-min">Mín: '+fmtNum(i.stock_minimo)+' '+esc(i.unidad)+'</div>' : ''}
-      </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 }
 
 function fmtNum(n){
@@ -497,7 +625,7 @@ function abrirModalConsumo(codigo){
   llenarProductosSelect(codigo);
   document.getElementById('modalTitle').textContent = 'Registrar consumo';
   document.getElementById('modalSub').textContent   =
-    item ? `Stock actual: ${fmtNum(item.stock_actual)} ${item.unidad}` : '';
+    item ? `Stock actual: ${_fmtStock(item.stock_actual)} ${item.unidad}` : '';
   document.getElementById('mCantidad').value = '';
   document.getElementById('mFecha').value    = new Date().toISOString().slice(0,10);
   document.getElementById('mCuartel').value  = '';
@@ -514,7 +642,7 @@ function llenarProductosSelect(codigoSel){
   const sel = document.getElementById('mProducto');
   const opts = state.inventario.slice().sort((a,b)=> (a.nombre_comercial||'').localeCompare(b.nombre_comercial||''));
   sel.innerHTML = opts.map(i =>
-    `<option value="${esc(i.codigo)}" ${i.codigo===codigoSel?'selected':''}>${esc(i.nombre_comercial)} (${fmtNum(i.stock_actual)} ${esc(i.unidad)})</option>`
+    `<option value="${esc(i.codigo)}" ${i.codigo===codigoSel?'selected':''}>${esc(_fmtNombre(i.nombre_comercial))} (${_fmtStock(i.stock_actual)} ${esc(i.unidad)})</option>`
   ).join('');
 }
 
@@ -586,14 +714,7 @@ document.getElementById('searchInput').addEventListener('input', e => {
   state.busqueda = e.target.value;
   render();
 });
-document.querySelectorAll('.chip').forEach(c => {
-  c.addEventListener('click', () => {
-    document.querySelectorAll('.chip').forEach(x => x.classList.remove('active'));
-    c.classList.add('active');
-    state.filtroCat = c.dataset.cat;
-    render();
-  });
-});
+// Chips generados dinámicamente en _renderChips() — no se necesita listener estático
 
 cargarDatos();
 </script>
