@@ -402,29 +402,15 @@ async function cargarDatos(){
     const prod = await prodRes.json();
     state.inventario = inv.inventario || [];
     state.productos  = prod.productos  || [];
-    // Merge: productos del catálogo sin stock → mostrar con stock=0
-    const codigosConStock = new Set(state.inventario.map(i => i.codigo));
-    state.productos.forEach(p => {
-      if (!codigosConStock.has(p.codigo)) {
-        state.inventario.push({
-          codigo: p.codigo,
-          nombre_comercial: p.nombre_comercial,
-          unidad: p.unidad,
-          stock_actual: 0,
-          stock_minimo: 0,
-          ultima_entrada: '',
-          ultima_salida: '',
-          ubicacion: '',
-          estado: 'SIN_STOCK',
-          costo_promedio: 0,
-          categoria: p.categoria
-        });
-      } else {
-        // Adjuntar categoría al item de inventario para filtrar
-        const item = state.inventario.find(i => i.codigo === p.codigo);
-        if (item) item.categoria = p.categoria;
-      }
+    // Solo adjuntar categoría a items que ya tienen stock
+    const prodMap = {};
+    state.productos.forEach(p => { prodMap[p.codigo] = p; });
+    state.inventario.forEach(item => {
+      const p = prodMap[item.codigo];
+      if (p) item.categoria = p.categoria;
     });
+    // Solo mostrar productos con existencia real (stock_actual > 0)
+    state.inventario = state.inventario.filter(i => (Number(i.stock_actual) || 0) > 0);
     render();
   } catch(err) {
     document.getElementById('listContainer').innerHTML =
@@ -459,7 +445,7 @@ function render(){
     return (a.nombre_comercial||'').localeCompare(b.nombre_comercial||'');
   });
 
-  // Resumen
+  // Resumen (solo productos con stock)
   document.getElementById('sumTotal').textContent = state.inventario.length;
   document.getElementById('sumBajo').textContent  =
     state.inventario.filter(i => i.estado === 'BAJO').length;

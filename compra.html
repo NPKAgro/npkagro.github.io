@@ -34,7 +34,7 @@
       background: var(--bg);
       color: var(--text);
       min-height: 100dvh;
-      padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 140px);
+      padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 24px);
       -webkit-tap-highlight-color: transparent;
     }
     .header {
@@ -145,12 +145,8 @@
 
     /* Fixed submit bar */
     .submit-bar {
-      position: fixed;
-      bottom: 0; left: 0; right: 0;
-      background: var(--bg2);
-      border-top: 1px solid var(--border);
-      padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
-      display: flex; gap: 8px; z-index: 40;
+      padding: 16px;
+      display: flex; gap: 8px;
     }
     .total-info {
       flex: 1;
@@ -167,10 +163,11 @@
       color: #000;
       border: none;
       border-radius: var(--radius);
-      padding: 12px 24px;
-      font-size: 14px;
+      padding: 14px 24px;
+      font-size: 15px;
       font-weight: 700;
       cursor: pointer;
+      flex: 1;
     }
     .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
 
