@@ -34,7 +34,7 @@
       background: var(--bg);
       color: var(--text);
       min-height: 100dvh;
-      padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 120px);
+      padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 100px);
       -webkit-tap-highlight-color: transparent;
     }
     .header {
@@ -427,8 +427,7 @@
 
 <div class="submit-bar">
   <div class="total-info">
-    <div>Total factura</div>
-    <div class="total-val" id="totalVal">$ 0</div>
+    <div id="itemCountTxt" style="color:var(--text3); font-size:13px">Sin productos</div>
   </div>
   <button class="btn-submit" id="btnSubmit" onclick="enviarCompra()">Guardar compra</button>
 </div>
@@ -453,15 +452,9 @@
           <label>Producto</label>
           <input type="text" id="selProdName" readonly>
         </div>
-        <div class="row">
-          <div class="field">
-            <label id="selCantLbl">Cantidad</label>
-            <input type="number" step="0.01" min="0" id="selCantidad" inputmode="decimal">
-          </div>
-          <div class="field">
-            <label>Precio unitario CLP</label>
-            <input type="number" step="1" min="0" id="selPrecio" inputmode="decimal">
-          </div>
+        <div class="field">
+          <label id="selCantLbl">Cantidad</label>
+          <input type="number" step="0.01" min="0" id="selCantidad" inputmode="decimal">
         </div>
       </div>
     </div>
@@ -517,10 +510,6 @@
           <label>Cantidad comprada *</label>
           <input type="number" step="0.01" min="0" id="nvCantidad" inputmode="decimal">
         </div>
-      </div>
-      <div class="field">
-        <label>Precio unitario CLP *</label>
-        <input type="number" step="1" min="0" id="nvPrecio" inputmode="decimal">
       </div>
       <div class="field">
         <label>Ingrediente activo (opcional)</label>
@@ -627,7 +616,6 @@ function seleccionarProducto(codigo){
   document.getElementById('selProdName').value = p.nombre_comercial + ' (' + p.codigo + ')';
   document.getElementById('selCantLbl').textContent = 'Cantidad (' + p.unidad + ')';
   document.getElementById('selCantidad').value = '';
-  document.getElementById('selPrecio').value   = p.precio_ref_clp || '';
   document.getElementById('selCantidad').focus();
 }
 
@@ -644,7 +632,7 @@ function abrirModalProducto(){
   document.getElementById('searchProd').value = '';
   document.getElementById('selectedProdForm').style.display = 'none';
   // Reset nuevo
-  ['nvNombre','nvCategoria','nvUnidad','nvCantidad','nvPrecio','nvIA','nvUso','nvCarencia','nvDosis'].forEach(id => {
+  ['nvNombre','nvCategoria','nvUnidad','nvCantidad','nvIA','nvUso','nvCarencia','nvDosis'].forEach(id => {
     const el = document.getElementById(id);
     if (el && el.tagName === 'SELECT') el.value = el.id === 'nvUnidad' ? 'L' : '';
     else if (el) el.value = '';
@@ -677,16 +665,13 @@ async function agregarItem(){
   if (state.modalTab === 'existente') {
     if (!state.selectedProd) { toast('Selecciona un producto', 'error'); btn.disabled = false; return; }
     const cant   = parseFloat(document.getElementById('selCantidad').value);
-    const precio = parseFloat(document.getElementById('selPrecio').value);
     if (!cant || cant <= 0)   { toast('Cantidad inválida', 'error'); btn.disabled = false; return; }
-    if ((!precio || precio <= 0) && !desdeIA) { toast('Precio inválido', 'error'); btn.disabled = false; return; }
     state.items.push({
       codigo:    state.selectedProd.codigo,
       nombre_comercial: state.selectedProd.nombre_comercial,
       unidad:    state.selectedProd.unidad,
       categoria: state.selectedProd.categoria,
       cantidad:  cant,
-      precio_unitario: precio || 0,
       ia_detectado: desdeIA || undefined
     });
     if (desdeIA) {
@@ -701,7 +686,6 @@ async function agregarItem(){
     const categoria = document.getElementById('nvCategoria').value;
     const unidad    = document.getElementById('nvUnidad').value;
     const cantidad  = parseFloat(document.getElementById('nvCantidad').value);
-    const precio    = parseFloat(document.getElementById('nvPrecio').value);
     const ia        = document.getElementById('nvIA').value.trim();
     const uso       = document.getElementById('nvUso').value.trim();
     const carencia  = parseInt(document.getElementById('nvCarencia').value);
@@ -711,7 +695,6 @@ async function agregarItem(){
     if (!categoria)       { toast('Falta categoría', 'error'); btn.disabled = false; return; }
     if (!unidad)          { toast('Falta unidad', 'error'); btn.disabled = false; return; }
     if (!cantidad || cantidad <= 0) { toast('Cantidad inválida', 'error'); btn.disabled = false; return; }
-    if ((!precio || precio <= 0) && !desdeIA) { toast('Precio inválido', 'error'); btn.disabled = false; return; }
 
     // Generar código nuevo CAT-NNN
     const prefijos = {
@@ -744,7 +727,7 @@ async function agregarItem(){
           action: 'upsert_producto',
           codigo, nombre_comercial: nombre, ingrediente_activo: ia,
           categoria, unidad, proveedor: proveedorSel,
-          precio_ref_clp: precio || 0, dosis_referencia: dosis,
+          precio_ref_clp: 0, dosis_referencia: dosis,
           carencia_dias: carencia || '', uso_principal: uso,
           activo: true, notas: desdeIA ? 'Agregado desde IA factura' : 'Agregado desde compra.html'
         })
@@ -753,11 +736,11 @@ async function agregarItem(){
       state.productos.push({
         codigo, nombre_comercial: nombre, ingrediente_activo: ia,
         categoria, unidad, proveedor: proveedorSel,
-        precio_ref_clp: precio || 0
+        precio_ref_clp: 0
       });
       state.items.push({
         codigo, nombre_comercial: nombre, unidad, categoria,
-        cantidad, precio_unitario: precio || 0,
+        cantidad,
         nuevo: true,
         ia_detectado: desdeIA || undefined
       });
@@ -781,7 +764,7 @@ function renderItems(){
   const cont = document.getElementById('itemsList');
   if (!state.items.length) {
     cont.innerHTML = '<div style="padding:10px; color:var(--text3); font-size:12px; text-align:center">Sin productos agregados</div>';
-    document.getElementById('totalVal').textContent = '$ 0';
+    document.getElementById('itemCountTxt').textContent = 'Sin productos';
     return;
   }
   cont.innerHTML = state.items.map((it, i) => {
@@ -789,20 +772,17 @@ function renderItems(){
     if (it.nuevo) badges += '<span style="color:var(--accent); font-size:10px; font-weight:700; text-transform:uppercase; margin-left:6px">· nuevo</span>';
     if (it.ia_detectado) badges += '<span class="ia-badge">✨ IA</span>';
     const cls = it.ia_detectado ? 'item ia-mark' : 'item';
-    const precioTxt = it.precio_unitario > 0
-      ? fmtCLP(it.precio_unitario) + ' = <strong>' + fmtCLP(it.cantidad * it.precio_unitario) + '</strong>'
-      : '<span style="color:var(--text3)">sin precio</span>';
     return `
     <div class="${cls}">
       <div class="item-info">
         <div class="item-name">${esc(it.nombre_comercial)}${badges}</div>
-        <div class="item-meta">${fmtNum(it.cantidad)} ${esc(it.unidad)} × ${precioTxt}</div>
+        <div class="item-meta">${fmtNum(it.cantidad)} ${esc(it.unidad)}</div>
       </div>
       <button class="item-remove" onclick="removerItem(${i})" title="Quitar">×</button>
     </div>`;
   }).join('');
-  const total = state.items.reduce((s, it) => s + (Number(it.cantidad)||0) * (Number(it.precio_unitario)||0), 0);
-  document.getElementById('totalVal').textContent = fmtCLP(total);
+  const n = state.items.length;
+  document.getElementById('itemCountTxt').textContent = n + ' producto' + (n===1?'':'s') + ' agregado' + (n===1?'':'s');
 }
 
 function removerItem(i){ state.items.splice(i, 1); renderItems(); }
@@ -907,7 +887,6 @@ async function detectarConIA(){
           unidad: it.match.unidad || it.unidad || 'L',
           categoria: it.match.categoria || '',
           cantidad: Number(it.cantidad) || 0,
-          precio_unitario: 0,  // IA no extrae precios de la factura; completá manual si lo necesitás
           ia_detectado: true,
           ia_nombre_original: it.producto || '',
           ia_match_score: it.match.score || 0

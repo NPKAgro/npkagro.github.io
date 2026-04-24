@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="MO LQ">
+  <meta name="theme-color" content="#0f1117">
+  <link rel="manifest" href="manifest.json">
+  <meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
+  <title>Mano de Obra · La Quinta</title>
+  <script>window.LQ_AUTH_MODE = 'equipo'; window.LQ_AUTH_SHOW_BAR = false;</script>
+  <script src="auth.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:      #0f1117;
+      --bg2:     #161b24;
+      --bg3:     #1e2534;
+      --border:  rgba(255,255,255,0.08);
+      --text:    #f0f2f5;
+      --text2:   #8b93a5;
+      --text3:   #555e70;
+      --accent:  #ec4899;
+      --accent2: #db2777;
+      --green:   #10b981;
+      --red:     #ef4444;
+      --radius:  10px;
+    }
+    html, body { height: 100%; }
+    body {
+      font-family: -apple-system, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+      padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 100px);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .header {
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 18px;
+      display: flex; align-items: center; gap: 12px;
+      position: sticky; top: 0; z-index: 50;
+    }
+    .header-back {
+      width: 36px; height: 36px;
+      border-radius: 8px; background: var(--bg3);
+      border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; color: var(--text2);
+      text-decoration: none; flex-shrink: 0;
+    }
+    .header-brand { display: flex; flex-direction: column; line-height: 1.25; flex: 1; }
+    .header-empresa { font-size: 15px; font-weight: 700; }
+    .header-empresa span { color: var(--accent); }
+    .header-predio { font-size: 11px; color: var(--text3); }
+
+    .content { padding: 16px; max-width: 680px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+
+    .section {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+    }
+    .section-title {
+      font-size: 13px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.4px;
+      color: var(--text2); margin-bottom: 10px;
+    }
+    .field { margin-bottom: 10px; }
+    .field:last-child { margin-bottom: 0; }
+    .field label {
+      font-size: 11px; color: var(--text3);
+      text-transform: uppercase; letter-spacing: 0.3px;
+      display: block; margin-bottom: 4px;
+    }
+    .field input, .field select, .field textarea {
+      width: 100%;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 14px;
+      padding: 10px 12px;
+      font-family: inherit;
+    }
+    .field textarea { resize: none; min-height: 56px; }
+    .field input:focus, .field select:focus, .field textarea:focus {
+      outline: none; border-color: var(--accent);
+    }
+    .row { display: flex; gap: 8px; }
+    .row > * { flex: 1; }
+
+    /* Total badge */
+    .total-badge {
+      background: rgba(236,72,153,0.12);
+      border: 1px solid rgba(236,72,153,0.35);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 13px;
+      color: var(--text2);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .total-badge .total-val {
+      font-size: 20px; font-weight: 700; color: var(--accent);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Worker list */
+    .worker-item {
+      background: var(--bg3);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 6px;
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 8px;
+      border: 1px solid var(--border);
+    }
+    .worker-info { flex: 1; font-size: 13px; }
+    .worker-name { font-weight: 700; margin-bottom: 2px; }
+    .worker-meta { font-size: 11px; color: var(--text3); }
+    .worker-remove {
+      background: none; border: none; color: var(--red);
+      font-size: 16px; cursor: pointer; padding: 4px 8px;
+    }
+    .btn-add-worker {
+      width: 100%;
+      background: var(--bg3);
+      border: 1px dashed var(--border);
+      color: var(--text2);
+      padding: 12px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 4px;
+    }
+    .btn-add-worker:active { border-color: var(--accent); color: var(--accent); }
+
+    /* Fixed submit bar */
+    .submit-bar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: var(--bg2);
+      border-top: 1px solid var(--border);
+      padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
+      display: flex; gap: 8px; z-index: 40;
+    }
+    .submit-count {
+      flex: 1;
+      display: flex; flex-direction: column; justify-content: center;
+      font-size: 13px; color: var(--text3);
+    }
+    .btn-submit {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      padding: 12px 24px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Modal */
+    .overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.75);
+      display: none; align-items: flex-end; justify-content: center;
+      z-index: 100;
+    }
+    .overlay.visible { display: flex; }
+    .modal {
+      width: 100%; max-width: 560px;
+      background: var(--bg2);
+      border-radius: 16px 16px 0 0;
+      padding: 18px;
+      max-height: 90vh; overflow-y: auto;
+      animation: slideUp 0.2s ease-out;
+    }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    .modal-title { font-size: 16px; font-weight: 700; margin-bottom: 14px; }
+    .modal-actions { display: flex; gap: 8px; margin-top: 14px; }
+    .btn-cancel, .btn-ok {
+      flex: 1; padding: 12px; border-radius: var(--radius);
+      border: none; font-size: 14px; font-weight: 700; cursor: pointer;
+    }
+    .btn-cancel { background: var(--bg3); color: var(--text); border: 1px solid var(--border); }
+    .btn-ok     { background: var(--accent); color: #fff; }
+    .btn-ok:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .toast {
+      position: fixed; bottom: 120px; left: 50%; transform: translateX(-50%);
+      background: var(--bg3); border: 1px solid var(--border); color: var(--text);
+      padding: 10px 16px; border-radius: 99px; font-size: 13px;
+      z-index: 200; opacity: 0; transition: opacity 0.2s;
+      pointer-events: none;
+    }
+    .toast.visible { opacity: 1; }
+    .toast.ok    { border-color: var(--green); color: #6ee7b7; }
+    .toast.error { border-color: var(--red);   color: #fca5a5; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <a class="header-back" href="app.html">←</a>
+  <div class="header-brand">
+    <div class="header-empresa">La <span>Quinta</span></div>
+    <div class="header-predio">Registro de mano de obra</div>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- Datos de la jornada -->
+  <div class="section">
+    <div class="section-title">📅 Datos de la jornada</div>
+    <div class="row">
+      <div class="field">
+        <label>Fecha</label>
+        <input type="date" id="fecha">
+      </div>
+      <div class="field">
+        <label>Labor principal</label>
+        <select id="labor_principal">
+          <option value="">— seleccionar —</option>
+          <option value="Tractorista / Regador / MO">Tractorista / Regador / MO</option>
+          <option value="Poda / Amarra / etc.">Poda / Amarra / etc.</option>
+          <option value="Orden / Retiro ramas / Incisiones">Orden / Retiro ramas / Incisiones</option>
+          <option value="Aplicación / Rastra">Aplicación / Rastra</option>
+          <option value="Cosecha">Cosecha</option>
+          <option value="Otra labor">Otra labor</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label>Sublabor / descripción</label>
+      <input type="text" id="sublabor" placeholder="Ej: Arreglo pasadas malas">
+    </div>
+  </div>
+
+  <!-- Trabajadores -->
+  <div class="section">
+    <div class="section-title">👷 Trabajadores</div>
+    <div id="workersList"></div>
+    <button class="btn-add-worker" onclick="abrirModal()">+ Agregar persona</button>
+  </div>
+
+  <!-- Resumen total -->
+  <div class="section">
+    <div class="total-badge">
+      <span>Total jornada</span>
+      <span class="total-val" id="totalVal">$ 0</span>
+    </div>
+  </div>
+
+  <!-- Observaciones -->
+  <div class="section">
+    <div class="field">
+      <label>Observaciones generales (opcional)</label>
+      <textarea id="observaciones" placeholder="Observaciones de la jornada..."></textarea>
+    </div>
+  </div>
+
+</div>
+
+<!-- Submit bar -->
+<div class="submit-bar">
+  <div class="submit-count" id="countTxt">Sin registros</div>
+  <button class="btn-submit" id="btnSubmit" onclick="guardarRegistro()">Guardar jornada</button>
+</div>
+
+<!-- Modal agregar persona -->
+<div class="overlay" id="modalOverlay" onclick="cerrarModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-title">Agregar persona</div>
+
+    <div class="field">
+      <label>Nombre *</label>
+      <input type="text" id="mNombre" placeholder="Ej: Alexis Rodríguez" autocapitalize="words">
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>Categoría *</label>
+        <select id="mCategoria">
+          <option value="N2">N2</option>
+          <option value="N1">N1</option>
+          <option value="Pp">Pp (Personal propio)</option>
+          <option value="Contratista">Contratista</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Formato de pago *</label>
+        <select id="mFormato">
+          <option value="Jornada">Jornada</option>
+          <option value="Trato">Trato</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>Unidad de control</label>
+        <select id="mUnidad">
+          <option value="Día">Día</option>
+          <option value="Hilera">Hilera</option>
+          <option value="ha">ha</option>
+          <option value="Planta">Planta</option>
+          <option value="Kg">Kg</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Valor unitario ($)</label>
+        <input type="number" step="100" min="0" id="mValor" placeholder="25000" inputmode="numeric">
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>Producción</label>
+        <input type="number" step="0.01" min="0" id="mProduccion" value="1" inputmode="decimal">
+      </div>
+      <div class="field">
+        <label>Total día ($)</label>
+        <input type="number" id="mTotal" placeholder="calculado" inputmode="numeric" style="color:var(--accent)">
+      </div>
+    </div>
+    <div class="field">
+      <label>Proveedor (si es contratista)</label>
+      <input type="text" id="mProveedor" placeholder="Empresa o contratista...">
+    </div>
+    <div class="field">
+      <label>Observación (opcional)</label>
+      <input type="text" id="mObs" placeholder="">
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn-ok" id="btnOk" onclick="agregarPersona()">Agregar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const GAS_URL   = 'https://script.google.com/macros/s/AKfycbydi5imjeA5bXY5TlA7MBVGkG6-Aq4XhYC0soXGPUMl41lEvdL8rc-xhjeRv9m0_aJg/exec';
+const GAS_TOKEN = 'LQ2026-Santina';
+
+const state = { workers: [] };
+
+function esc(s) {
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function toast(msg, tipo) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast visible ' + (tipo||'');
+  clearTimeout(t._to);
+  t._to = setTimeout(() => t.classList.remove('visible'), 3200);
+}
+function fmtCLP(n) {
+  return '$ ' + Math.round(Number(n)||0).toLocaleString('es-CL');
+}
+function fmtNum(n) {
+  const x = Number(n)||0;
+  return Number.isInteger(x) ? x.toString() : x.toFixed(2);
+}
+
+// Auto-calcular total día en el modal
+function calcTotal() {
+  const v = parseFloat(document.getElementById('mValor').value) || 0;
+  const p = parseFloat(document.getElementById('mProduccion').value) || 0;
+  document.getElementById('mTotal').value = v && p ? Math.round(v * p) : '';
+}
+
+function abrirModal() {
+  ['mNombre','mProveedor','mObs'].forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('mCategoria').value = 'N2';
+  document.getElementById('mFormato').value   = 'Jornada';
+  document.getElementById('mUnidad').value    = 'Día';
+  document.getElementById('mValor').value     = '25000';
+  document.getElementById('mProduccion').value = '1';
+  calcTotal();
+  document.getElementById('modalOverlay').classList.add('visible');
+  setTimeout(() => document.getElementById('mNombre').focus(), 100);
+}
+
+function cerrarModal(e) {
+  if (e && e.target !== e.currentTarget) return;
+  document.getElementById('modalOverlay').classList.remove('visible');
+}
+
+function agregarPersona() {
+  const nombre     = document.getElementById('mNombre').value.trim();
+  const categoria  = document.getElementById('mCategoria').value;
+  const formato    = document.getElementById('mFormato').value;
+  const unidad     = document.getElementById('mUnidad').value;
+  const valor      = parseFloat(document.getElementById('mValor').value) || 0;
+  const produccion = parseFloat(document.getElementById('mProduccion').value) || 1;
+  const total      = parseFloat(document.getElementById('mTotal').value) || Math.round(valor * produccion);
+  const proveedor  = document.getElementById('mProveedor').value.trim();
+  const obs        = document.getElementById('mObs').value.trim();
+
+  if (!nombre) { toast('Ingresa el nombre', 'error'); return; }
+  if (!valor || valor <= 0) { toast('Ingresa el valor unitario', 'error'); return; }
+
+  state.workers.push({ nombre, categoria, formato, unidad, valor_unitario: valor, produccion, total_dia: total, proveedor, observacion: obs });
+  renderWorkers();
+  cerrarModal();
+}
+
+function renderWorkers() {
+  const cont = document.getElementById('workersList');
+  if (!state.workers.length) {
+    cont.innerHTML = '<div style="padding:8px; color:var(--text3); font-size:12px; text-align:center">Sin personas agregadas</div>';
+    document.getElementById('totalVal').textContent = '$ 0';
+    document.getElementById('countTxt').textContent = 'Sin registros';
+    return;
+  }
+  cont.innerHTML = state.workers.map((w, i) => `
+    <div class="worker-item">
+      <div class="worker-info">
+        <div class="worker-name">${esc(w.nombre)} <span style="font-size:10px;color:var(--text3);font-weight:400">${esc(w.categoria)} · ${esc(w.formato)}</span></div>
+        <div class="worker-meta">${esc(w.unidad)} · ${fmtNum(w.produccion)} × ${fmtCLP(w.valor_unitario)} = <strong style="color:var(--accent)">${fmtCLP(w.total_dia)}</strong>${w.observacion ? ' · ' + esc(w.observacion) : ''}</div>
+      </div>
+      <button class="worker-remove" onclick="quitarPersona(${i})">×</button>
+    </div>`).join('');
+
+  const totalGral = state.workers.reduce((s, w) => s + (w.total_dia||0), 0);
+  document.getElementById('totalVal').textContent = fmtCLP(totalGral);
+  const n = state.workers.length;
+  document.getElementById('countTxt').textContent = n + ' persona' + (n===1?'':'s');
+}
+
+function quitarPersona(i) {
+  state.workers.splice(i, 1);
+  renderWorkers();
+}
+
+async function guardarRegistro() {
+  const fecha          = document.getElementById('fecha').value;
+  const labor_principal = document.getElementById('labor_principal').value;
+  const sublabor       = document.getElementById('sublabor').value.trim();
+  const observaciones  = document.getElementById('observaciones').value.trim();
+
+  if (!fecha)           { toast('Falta la fecha', 'error'); return; }
+  if (!labor_principal) { toast('Selecciona la labor principal', 'error'); return; }
+  if (!state.workers.length) { toast('Agrega al menos una persona', 'error'); return; }
+
+  const btn = document.getElementById('btnSubmit');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+
+  try {
+    await fetch(GAS_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        token: GAS_TOKEN,
+        action: 'add_mano_obra',
+        fecha, labor_principal, sublabor, observaciones,
+        workers: state.workers,
+        usuario: (window.LQ_AUTH_USER || 'equipo')
+      })
+    });
+    toast('✅ Jornada registrada — ' + state.workers.length + ' persona(s)', 'ok');
+    setTimeout(() => {
+      state.workers = [];
+      renderWorkers();
+      document.getElementById('sublabor').value = '';
+      document.getElementById('observaciones').value = '';
+    }, 600);
+  } catch(err) {
+    toast('Error: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Guardar jornada';
+  }
+}
+
+// Init
+document.getElementById('fecha').value = new Date().toISOString().slice(0, 10);
+document.getElementById('mValor').addEventListener('input', calcTotal);
+document.getElementById('mProduccion').addEventListener('input', calcTotal);
+renderWorkers();
+</script>
+
+</body>
+</html>
