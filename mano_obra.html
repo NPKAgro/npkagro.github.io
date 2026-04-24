@@ -34,7 +34,7 @@
       background: var(--bg);
       color: var(--text);
       min-height: 100dvh;
-      padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 100px);
+      padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 140px);
       -webkit-tap-highlight-color: transparent;
     }
     .header {
@@ -140,6 +140,18 @@
     }
     .btn-add-worker:active { border-color: var(--accent); color: var(--accent); }
 
+    /* Modo toggle individual/grupo */
+    .mode-toggle {
+      display: flex; border-radius: 8px; overflow: hidden;
+      border: 1px solid var(--border); margin-bottom: 14px;
+    }
+    .mode-btn {
+      flex: 1; padding: 9px 0; font-size: 13px; font-weight: 600;
+      background: var(--bg3); color: var(--text3); border: none; cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    .mode-btn.active { background: var(--accent); color: #fff; }
+
     /* Fixed submit bar */
     .submit-bar {
       position: fixed;
@@ -229,12 +241,9 @@
         <label>Labor principal</label>
         <select id="labor_principal">
           <option value="">— seleccionar —</option>
-          <option value="Tractorista / Regador / MO">Tractorista / Regador / MO</option>
-          <option value="Poda / Amarra / etc.">Poda / Amarra / etc.</option>
-          <option value="Orden / Retiro ramas / Incisiones">Orden / Retiro ramas / Incisiones</option>
-          <option value="Aplicación / Rastra">Aplicación / Rastra</option>
-          <option value="Cosecha">Cosecha</option>
-          <option value="Otra labor">Otra labor</option>
+          <option value="Tractorista">Tractorista</option>
+          <option value="Regador">Regador</option>
+          <option value="Mano de Obra">Mano de Obra</option>
         </select>
       </div>
     </div>
@@ -278,12 +287,25 @@
 <!-- Modal agregar persona -->
 <div class="overlay" id="modalOverlay" onclick="cerrarModal(event)">
   <div class="modal" onclick="event.stopPropagation()">
-    <div class="modal-title">Agregar persona</div>
+    <div class="modal-title">Agregar trabajador(es)</div>
 
-    <div class="field">
+    <!-- Toggle individual / grupo -->
+    <div class="mode-toggle">
+      <button class="mode-btn active" id="btnModeInd" onclick="setModo('individual')">👤 Individual</button>
+      <button class="mode-btn"        id="btnModeGrp" onclick="setModo('grupo')">👥 Grupo (sin nombre)</button>
+    </div>
+
+    <!-- Campo nombre (solo en modo individual) -->
+    <div class="field" id="campoNombre">
       <label>Nombre *</label>
       <input type="text" id="mNombre" placeholder="Ej: Alexis Rodríguez" autocapitalize="words">
     </div>
+    <!-- Campo cantidad (solo en modo grupo) -->
+    <div class="field" id="campoCantidad" style="display:none">
+      <label>Cantidad de personas *</label>
+      <input type="number" id="mCantidad" min="1" step="1" placeholder="Ej: 12" inputmode="numeric">
+    </div>
+
     <div class="row">
       <div class="field">
         <label>Categoría *</label>
@@ -350,7 +372,7 @@
 const GAS_URL   = 'https://script.google.com/macros/s/AKfycbydi5imjeA5bXY5TlA7MBVGkG6-Aq4XhYC0soXGPUMl41lEvdL8rc-xhjeRv9m0_aJg/exec';
 const GAS_TOKEN = 'LQ2026-Santina';
 
-const state = { workers: [] };
+const state = { workers: [], modoModal: 'individual' };
 
 function esc(s) {
   return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -370,6 +392,15 @@ function fmtNum(n) {
   return Number.isInteger(x) ? x.toString() : x.toFixed(2);
 }
 
+function setModo(modo) {
+  state.modoModal = modo;
+  document.getElementById('btnModeInd').classList.toggle('active', modo === 'individual');
+  document.getElementById('btnModeGrp').classList.toggle('active', modo === 'grupo');
+  document.getElementById('campoNombre').style.display   = modo === 'individual' ? '' : 'none';
+  document.getElementById('campoCantidad').style.display = modo === 'grupo'      ? '' : 'none';
+  document.getElementById('btnOk').textContent = modo === 'grupo' ? 'Agregar grupo' : 'Agregar';
+}
+
 // Auto-calcular total día en el modal
 function calcTotal() {
   const v = parseFloat(document.getElementById('mValor').value) || 0;
@@ -379,12 +410,14 @@ function calcTotal() {
 
 function abrirModal() {
   ['mNombre','mProveedor','mObs'].forEach(id => { document.getElementById(id).value = ''; });
-  document.getElementById('mCategoria').value = 'N2';
-  document.getElementById('mFormato').value   = 'Jornada';
-  document.getElementById('mUnidad').value    = 'Día';
-  document.getElementById('mValor').value     = '25000';
+  document.getElementById('mCantidad').value   = '';
+  document.getElementById('mCategoria').value  = 'N2';
+  document.getElementById('mFormato').value    = 'Jornada';
+  document.getElementById('mUnidad').value     = 'Día';
+  document.getElementById('mValor').value      = '25000';
   document.getElementById('mProduccion').value = '1';
   calcTotal();
+  setModo('individual');
   document.getElementById('modalOverlay').classList.add('visible');
   setTimeout(() => document.getElementById('mNombre').focus(), 100);
 }
@@ -395,6 +428,8 @@ function cerrarModal(e) {
 }
 
 function agregarPersona() {
+  const esGrupo    = state.modoModal === 'grupo';
+  const cantidad   = parseInt(document.getElementById('mCantidad').value) || 0;
   const nombre     = document.getElementById('mNombre').value.trim();
   const categoria  = document.getElementById('mCategoria').value;
   const formato    = document.getElementById('mFormato').value;
@@ -405,10 +440,20 @@ function agregarPersona() {
   const proveedor  = document.getElementById('mProveedor').value.trim();
   const obs        = document.getElementById('mObs').value.trim();
 
-  if (!nombre) { toast('Ingresa el nombre', 'error'); return; }
+  if (esGrupo) {
+    if (!cantidad || cantidad < 1) { toast('Ingresa la cantidad de personas', 'error'); return; }
+  } else {
+    if (!nombre) { toast('Ingresa el nombre', 'error'); return; }
+  }
   if (!valor || valor <= 0) { toast('Ingresa el valor unitario', 'error'); return; }
 
-  state.workers.push({ nombre, categoria, formato, unidad, valor_unitario: valor, produccion, total_dia: total, proveedor, observacion: obs });
+  const nombreFinal = esGrupo ? `Grupo: ${cantidad} persona${cantidad===1?'':'s'}` : nombre;
+  state.workers.push({
+    nombre: nombreFinal, categoria, formato, unidad,
+    valor_unitario: valor, produccion, total_dia: total,
+    proveedor, observacion: obs,
+    es_grupo: esGrupo, cantidad_grupo: esGrupo ? cantidad : 1
+  });
   renderWorkers();
   cerrarModal();
 }

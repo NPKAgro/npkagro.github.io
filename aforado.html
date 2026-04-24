@@ -283,6 +283,90 @@
     }
     .toast.visible { display: block; }
     .toast.ok { background: var(--green); }
+
+    /* ── PROTOCOLO NOTE ── */
+    .protocolo-box {
+      background: rgba(20,184,166,0.06);
+      border: 1px solid rgba(20,184,166,0.2);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px; margin-bottom: 14px;
+      font-size: 12px; color: var(--text2); line-height: 1.7;
+    }
+    .protocolo-box b { color: #5eead4; }
+
+    /* ── GRILLA 16 PUNTOS ── */
+    .grid-16-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .grid-16 {
+      display: grid;
+      grid-template-columns: 46px repeat(4, 1fr);
+      gap: 3px; min-width: 280px;
+    }
+    .g16-col-head {
+      font-size: 9px; font-weight: 700; color: var(--text3);
+      text-align: center; padding: 3px 1px;
+      text-transform: uppercase; letter-spacing: 0.3px;
+    }
+    .g16-row-lbl {
+      font-size: 9px; font-weight: 700; color: var(--text3);
+      display: flex; align-items: center; justify-content: flex-end;
+      padding-right: 5px; text-transform: uppercase; letter-spacing: 0.2px;
+      line-height: 1.2;
+    }
+    .med16 {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 5px; padding: 9px 2px;
+      font-size: 15px; font-weight: 600; color: var(--text);
+      text-align: center; outline: none; width: 100%;
+      -moz-appearance: textfield;
+    }
+    .med16:focus { border-color: var(--teal); }
+    .med16.filled { border-color: rgba(20,184,166,0.5); background: rgba(20,184,166,0.07); }
+    .med16::-webkit-outer-spin-button,
+    .med16::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+    /* ── MAPA DE CALOR ── */
+    .heatmap-section { margin-top: 16px; }
+    .heatmap-ttl {
+      font-size: 11px; font-weight: 700; color: var(--text2);
+      text-transform: uppercase; letter-spacing: 0.4px;
+      margin-bottom: 8px;
+    }
+    .heatmap-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .heatmap-grid {
+      display: grid;
+      grid-template-columns: 46px repeat(4, 1fr);
+      gap: 3px; min-width: 280px;
+    }
+    .hm-head {
+      font-size: 9px; font-weight: 700; color: var(--text3);
+      text-align: center; padding: 2px;
+    }
+    .hm-row-lbl {
+      font-size: 9px; font-weight: 700; color: var(--text3);
+      display: flex; align-items: center; justify-content: flex-end;
+      padding-right: 5px;
+    }
+    .hm-cell {
+      aspect-ratio: 1; border-radius: 5px;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      transition: background 0.35s, color 0.35s;
+      border: 1px solid transparent;
+    }
+    .hm-cell.empty {
+      background: var(--bg3); color: var(--text3);
+      border-color: var(--border); font-size: 18px;
+    }
+    .hm-val { font-size: 11px; font-weight: 700; line-height: 1.1; }
+    .hm-sub { font-size: 8px; opacity: 0.8; margin-top: 1px; }
+    .hm-legend {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 10px; color: var(--text3); margin-top: 8px;
+    }
+    .hm-legend-bar {
+      flex: 1; height: 7px; border-radius: 4px;
+      background: linear-gradient(to right, #ef4444, #f59e0b, #10b981);
+    }
   </style>
 </head>
 <body>
@@ -409,40 +493,59 @@
     </div>
   </div>
 
-  <!-- ── MEDICIONES (3 puntos) ── -->
+  <!-- ── MEDICIONES 16 PUNTOS (4 hileras × 4 goteros) ── -->
   <div class="card" id="cardMediciones">
-    <div class="card-header"><span class="card-label">🧪 Mediciones (3 puntos del lateral)</span></div>
+    <div class="card-header"><span class="card-label">🧪 Mediciones — 16 puntos (4×4)</span></div>
     <div class="card-body">
-      <div style="font-size:11px;color:var(--text3);margin-bottom:8px;line-height:1.5">
-        Con vaso precipitado, recolectá agua de <b>un mismo tipo de gotero</b> durante unos segundos en 3 puntos del lateral: <b>inicio</b> (cerca de la válvula), <b>medio</b> y <b>final</b>.
-      </div>
-      <div class="med-head">
-        <span>Punto</span>
-        <span>Vol (ml)</span>
-        <span>Tiempo (s)</span>
-        <span>Caudal</span>
+
+      <!-- Protocolo -->
+      <div class="protocolo-box">
+        <b>Protocolo:</b> Esperar <b>15–20 min</b> de estabilización del sistema después de abrir el riego.
+        Usar jeringa de <b>20–30 mL</b>. Medir exactamente <b>60 segundos</b> por punto.
+        Ingresar el volumen recolectado en <b>mL</b>.
       </div>
 
-      <div class="med-row">
-        <div class="med-label">📍 Inicio</div>
-        <input type="number" class="med-input" id="vol1" placeholder="—" inputmode="decimal" step="1" min="0" oninput="calcularResultados()">
-        <input type="number" class="med-input" id="tm1" placeholder="—" inputmode="decimal" step="1" min="0" oninput="calcularResultados()">
-        <div class="med-caudal" id="q1">— L/h</div>
+      <!-- Grilla de entrada: filas = hileras, cols = goteros -->
+      <div class="grid-16-wrap">
+        <div class="grid-16">
+          <!-- Header row -->
+          <div class="g16-col-head" style="text-align:left;padding-left:2px">Hilera ↓</div>
+          <div class="g16-col-head">G 1º</div>
+          <div class="g16-col-head">G 1/3</div>
+          <div class="g16-col-head">G 2/3</div>
+          <div class="g16-col-head">G últ</div>
+          <!-- Hilera 1ª -->
+          <div class="g16-row-lbl">H 1ª</div>
+          <input class="med16" type="number" id="m_0_0" min="0" step="1" inputmode="decimal" placeholder="—" oninput="onMed(this)">
+          <input class="med16" type="number" id="m_0_1" min="0" step="1" inputmode="decimal" placeholder="—" oninput="onMed(this)">
+          <input class="med16" type="number" id="m_0_2" min="0" step="1" inputmode="decimal" placeholder="—" oninput="onMed(this)">
+          <input class="med16" type="number" id="m_0_3" min="0" step="1" inputmode="decimal" placeholder="—" oninput="onMed(this)">
+          <!-- Hilera 1/3 -->
+          <div class="g16-row-lbl">H 1/3</div>
+          <input class="med16" type="number" id="m_1_0" min="0" step="1" inputmode="decimal" placeholder="—" oninput="onMed(this)">
+          <input class="med16" type="number" id="m_1_1" min="0" step="1" inputmode="decimal" placeholder="—" oninput="onMed(this)">
+          <input class="med16" type="number" id="m_1_2" min="0" step="1" inputmode="decimal" placeholder="—" oninput="onMed(this)">
+          <input class="med16" type="number" id="m_1_3" min="0" step="1" inputmode="decimal" placeholder="—" oninput="onMed(this)">
+          <!-- Hilera 2/3 -->
+          <div class="g16-row-lbl">H 2/3</div>
+          <input class="med16" type="number" id="m_2_0" min="0" step="1" inputmode="decimal" placeholder="—" oninput="onMed(this)">
+          <input class="med16" type="number" id="m_2_1" min="0" step="1" inputmode="decimal" placeholder="—" oninput="onMed(this)">
+          <input class="med16" type="number" id="m_2_2" min="0" step="1" inputmode="decimal" placeholder="—" oninput="onMed(this)">
+          <input class="med16" type="number" id="m_2_3" min="0" step="1" inputmode="decimal" placeholder="—" oninput="onMed(this)">
+          <!-- Hilera última -->
+          <div class="g16-row-lbl">H últ</div>
+          <input class="med16" type="number" id="m_3_0" min="0" step="1" inputmode="decimal" placeholder="—" oninput="onMed(this)">
+          <input class="med16" type="number" id="m_3_1" min="0" step="1" inputmode="decimal" placeholder="—" oninput="onMed(this)">
+          <input class="med16" type="number" id="m_3_2" min="0" step="1" inputmode="decimal" placeholder="—" oninput="onMed(this)">
+          <input class="med16" type="number" id="m_3_3" min="0" step="1" inputmode="decimal" placeholder="—" oninput="onMed(this)">
+        </div>
       </div>
 
-      <div class="med-row">
-        <div class="med-label">🔸 Medio</div>
-        <input type="number" class="med-input" id="vol2" placeholder="—" inputmode="decimal" step="1" min="0" oninput="calcularResultados()">
-        <input type="number" class="med-input" id="tm2" placeholder="—" inputmode="decimal" step="1" min="0" oninput="calcularResultados()">
-        <div class="med-caudal" id="q2">— L/h</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:8px;text-align:center">
+        Caudal = Vol(mL) × 0.06 · L/h &nbsp;|&nbsp; Tiempo fijo: 60 s
       </div>
 
-      <div class="med-row">
-        <div class="med-label">🏁 Final</div>
-        <input type="number" class="med-input" id="vol3" placeholder="—" inputmode="decimal" step="1" min="0" oninput="calcularResultados()">
-        <input type="number" class="med-input" id="tm3" placeholder="—" inputmode="decimal" step="1" min="0" oninput="calcularResultados()">
-        <div class="med-caudal" id="q3">— L/h</div>
-      </div>
+      <button onclick="limpiarMediciones()" style="margin-top:10px;width:100%;padding:8px;background:transparent;border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text3);font-size:12px;cursor:pointer">🗑 Limpiar todas las mediciones</button>
     </div>
   </div>
 
@@ -454,7 +557,7 @@
         <div class="res-box">
           <div class="res-label">Caudal promedio</div>
           <div class="res-value" id="resAvg">—</div>
-          <div class="res-sub">L/h</div>
+          <div class="res-sub">L/h · <span id="resMedCount">0</span> puntos</div>
         </div>
         <div class="res-box">
           <div class="res-label">Desviación vs nominal</div>
@@ -462,7 +565,7 @@
           <div class="res-sub" id="resDesvSub">—</div>
         </div>
         <div class="res-box">
-          <div class="res-label">CU (Christiansen)</div>
+          <div class="res-label">CU (25% más bajos)</div>
           <div class="res-value" id="resCU">—</div>
           <div class="res-sub">%</div>
         </div>
@@ -472,8 +575,23 @@
           <div class="res-sub">L/h</div>
         </div>
       </div>
-      <div style="text-align:center">
+      <div style="text-align:center;margin-bottom:4px">
         <div class="clasif-chip clasif-none" id="clasifChip">🔍 Ingresá las mediciones</div>
+      </div>
+
+      <!-- Mapa de calor -->
+      <div class="heatmap-section" id="heatmapSection">
+        <div class="heatmap-ttl">🌡 Mapa de calor — caudal por punto (L/h)</div>
+        <div class="heatmap-wrap">
+          <div class="heatmap-grid" id="heatmapGrid">
+            <!-- renderizado por JS -->
+          </div>
+        </div>
+        <div class="hm-legend">
+          <span>Bajo</span>
+          <div class="hm-legend-bar"></div>
+          <span>Alto</span>
+        </div>
       </div>
     </div>
   </div>
@@ -552,12 +670,22 @@ const STATE_KEY = 'aforado_state_v2';
 const OPERADOR_KEY = 'lq_operador_actual';
 const OPERADORES_LIST_KEY = 'lq_operadores_lista';
 
+// mediciones: array plano de 16 entradas (r*4+c), vol en mL, tiempo fijo 60s
 let appState = {
   operador: '', sector: null, cuartel: null, valvula: null, lado: null,
   tipoGotero: '', caudalNominal: '', presionMedida: '',
-  vol1: '', tm1: '', vol2: '', tm2: '', vol3: '', tm3: '',
+  mediciones: Array(16).fill(''),
   notas: '', fotos: [], gps: null
 };
+
+// Índice plano de la grilla 4×4
+function medIdx(r, c) { return r * 4 + c; }
+// Caudal desde volumen mL con tiempo fijo 60s
+function caudalDeMl(volMl) {
+  const v = parseFloat(volMl);
+  if (!v || v <= 0) return null;
+  return v * 3.6 / 60; // L/h = vol(mL)/60s × 3600s/h / 1000mL/L = vol×0.06
+}
 let gpsData = null;
 let mapaLQ = null, mapaUsuarioMarker = null, mapaUsuarioCircle = null;
 let mapaCuartelLayers = {}, mapaWatchId = null;
@@ -690,57 +818,83 @@ function actualizarResumenLateral() {
 }
 
 // ══════════════════════════════════════════════════════
-//  CÁLCULOS
+//  CÁLCULOS — 16 PUNTOS
 // ══════════════════════════════════════════════════════
-function caudalLhDeMedicion(volMl, tiempoSeg) {
-  const v = parseFloat(volMl), t = parseFloat(tiempoSeg);
-  if (!v || !t || v <= 0 || t <= 0) return null;
-  // (ml/seg) × (3600 seg/h) / (1000 ml/L) = L/h
-  return (v * 3.6) / t;
+function onMed(el) {
+  el.classList.toggle('filled', !!el.value);
+  calcularResultados();
+  guardarEstado();
 }
-function calcularResultados() {
-  const q1 = caudalLhDeMedicion(document.getElementById('vol1').value, document.getElementById('tm1').value);
-  const q2 = caudalLhDeMedicion(document.getElementById('vol2').value, document.getElementById('tm2').value);
-  const q3 = caudalLhDeMedicion(document.getElementById('vol3').value, document.getElementById('tm3').value);
-  document.getElementById('q1').textContent = q1 != null ? q1.toFixed(2) + ' L/h' : '— L/h';
-  document.getElementById('q2').textContent = q2 != null ? q2.toFixed(2) + ' L/h' : '— L/h';
-  document.getElementById('q3').textContent = q3 != null ? q3.toFixed(2) + ' L/h' : '— L/h';
-  const qs = [q1, q2, q3].filter(x => x != null);
 
-  const resAvg = document.getElementById('resAvg');
-  const resCU = document.getElementById('resCU');
-  const resMM = document.getElementById('resMinMax');
-  const resDv = document.getElementById('resDesv');
+function limpiarMediciones() {
+  for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) {
+    const el = document.getElementById(`m_${r}_${c}`);
+    if (el) { el.value = ''; el.classList.remove('filled'); }
+  }
+  appState.mediciones = Array(16).fill('');
+  calcularResultados();
+  guardarEstado();
+}
+
+function leerMediciones16() {
+  // Devuelve array de {r,c,q} solo donde hay valor
+  const res = [];
+  for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) {
+    const el = document.getElementById(`m_${r}_${c}`);
+    const q = caudalDeMl(el ? el.value : '');
+    res.push({ r, c, q });
+  }
+  return res;
+}
+
+function calcularResultados() {
+  const pts = leerMediciones16();
+  const qs  = pts.map(p => p.q).filter(q => q != null);
+
+  const resAvg   = document.getElementById('resAvg');
+  const resCU    = document.getElementById('resCU');
+  const resMM    = document.getElementById('resMinMax');
+  const resDv    = document.getElementById('resDesv');
   const resDvSub = document.getElementById('resDesvSub');
-  const chip = document.getElementById('clasifChip');
+  const chip     = document.getElementById('clasifChip');
+  const cnt      = document.getElementById('resMedCount');
+  if (cnt) cnt.textContent = qs.length;
+
+  renderHeatMap(pts);
 
   if (qs.length === 0) {
     resAvg.textContent = '—'; resCU.textContent = '—'; resMM.textContent = '—';
-    resDv.textContent = '—'; resDvSub.textContent = '—';
+    resDv.textContent = '—'; resDvSub.textContent = '—'; resDv.style.color = 'var(--text)';
     chip.className = 'clasif-chip clasif-none'; chip.textContent = '🔍 Ingresá las mediciones';
+    appState._cu = null; appState._avg = null; appState._min = null; appState._max = null; appState._desv = null;
     return;
   }
-  const avg = qs.reduce((a,b) => a+b, 0) / qs.length;
+
+  const avg = qs.reduce((a, b) => a + b, 0) / qs.length;
   const mn  = Math.min(...qs), mx = Math.max(...qs);
   resAvg.textContent = avg.toFixed(2);
-  resMM.textContent = qs.length >= 2 ? mn.toFixed(2) + ' · ' + mx.toFixed(2) : '—';
+  resMM.textContent  = qs.length >= 2 ? mn.toFixed(2) + ' · ' + mx.toFixed(2) : mn.toFixed(2);
+  appState._avg = avg; appState._min = mn; appState._max = mx;
 
-  // CU Christiansen: 100 × (1 - Σ|xi - x̄| / (n × x̄))
-  if (qs.length >= 2) {
-    const sumDesv = qs.reduce((a, x) => a + Math.abs(x - avg), 0);
-    const cu = 100 * (1 - sumDesv / (qs.length * avg));
+  // CU estándar aforo: avg(25% más bajos) / avg(todos) × 100
+  if (qs.length >= 4) {
+    const sorted = [...qs].sort((a, b) => a - b);
+    const nBajos = Math.max(1, Math.floor(qs.length * 0.25));
+    const avgBajos = sorted.slice(0, nBajos).reduce((a, b) => a + b, 0) / nBajos;
+    const cu = (avgBajos / avg) * 100;
     resCU.textContent = cu.toFixed(1);
-    // Clasificación
     let cls, txt;
-    if (cu >= 90) { cls = 'exc'; txt = '🟢 Excelente'; }
+    if (cu >= 90)      { cls = 'exc'; txt = '🟢 Excelente'; }
     else if (cu >= 80) { cls = 'bue'; txt = '🔵 Bueno'; }
     else if (cu >= 70) { cls = 'reg'; txt = '🟡 Regular'; }
-    else { cls = 'def'; txt = '🔴 Deficiente'; }
+    else               { cls = 'def'; txt = '🔴 Deficiente'; }
     chip.className = 'clasif-chip clasif-' + cls;
     chip.textContent = txt + ' · CU ' + cu.toFixed(1) + '%';
     appState._cu = cu; appState._clasif = txt;
   } else {
-    resCU.textContent = '—'; chip.className = 'clasif-chip clasif-none'; chip.textContent = '🔍 Ingresá al menos 2 mediciones';
+    resCU.textContent = '—';
+    chip.className = 'clasif-chip clasif-none';
+    chip.textContent = `🔍 ${qs.length < 4 ? 'Ingresá al menos 4 mediciones' : ''}`;
     appState._cu = null; appState._clasif = null;
   }
 
@@ -748,18 +902,69 @@ function calcularResultados() {
   const qNom = parseFloat(document.getElementById('caudalNominal').value);
   if (qNom && qNom > 0) {
     const dv = ((avg - qNom) / qNom) * 100;
-    const s = dv >= 0 ? '+' : '';
-    resDv.textContent = s + dv.toFixed(1) + '%';
+    resDv.textContent = (dv >= 0 ? '+' : '') + dv.toFixed(1) + '%';
     resDvSub.textContent = 'vs ' + qNom.toFixed(1) + ' L/h nominal';
     resDv.style.color = Math.abs(dv) > 10 ? 'var(--amber)' : 'var(--green)';
     appState._desv = dv;
   } else {
     resDv.textContent = '—'; resDvSub.textContent = 'Ingresá caudal nominal';
-    resDv.style.color = 'var(--text)';
-    appState._desv = null;
+    resDv.style.color = 'var(--text)'; appState._desv = null;
   }
-  appState._avg = avg; appState._min = mn; appState._max = mx;
-  appState._q1 = q1; appState._q2 = q2; appState._q3 = q3;
+}
+
+// Interpolación de color rojo → ámbar → verde según ratio 0-1
+function heatColor(ratio) {
+  // 0.0 → rojo, 0.5 → ámbar, 1.0 → verde
+  if (ratio <= 0.5) {
+    const t = ratio * 2;
+    const r = Math.round(239 + (245 - 239) * t);
+    const g = Math.round(68 + (158 - 68) * t);
+    const b = Math.round(68 + (11 - 68) * t);
+    return `rgb(${r},${g},${b})`;
+  } else {
+    const t = (ratio - 0.5) * 2;
+    const r = Math.round(245 + (16 - 245) * t);
+    const g = Math.round(158 + (185 - 158) * t);
+    const b = Math.round(11 + (129 - 11) * t);
+    return `rgb(${r},${g},${b})`;
+  }
+}
+
+const ROW_LABELS = ['H 1ª', 'H 1/3', 'H 2/3', 'H últ'];
+const COL_LABELS = ['G 1º', 'G 1/3', 'G 2/3', 'G últ'];
+
+function renderHeatMap(pts) {
+  const grid = document.getElementById('heatmapGrid');
+  if (!grid) return;
+  const qs = pts.map(p => p.q).filter(q => q != null);
+  const mn = qs.length ? Math.min(...qs) : 0;
+  const mx = qs.length ? Math.max(...qs) : 0;
+  const range = mx - mn;
+
+  let html = '';
+  // Header
+  html += '<div class="hm-head" style="text-align:left"></div>';
+  COL_LABELS.forEach(lbl => { html += `<div class="hm-head">${lbl}</div>`; });
+
+  for (let r = 0; r < 4; r++) {
+    html += `<div class="hm-row-lbl">${ROW_LABELS[r]}</div>`;
+    for (let c = 0; c < 4; c++) {
+      const q = pts[r * 4 + c].q;
+      if (q == null) {
+        html += '<div class="hm-cell empty">·</div>';
+      } else {
+        const ratio = range > 0 ? (q - mn) / range : 0.5;
+        const bg    = heatColor(ratio);
+        // Texto negro si color es claro (ratio > 0.7), blanco si oscuro
+        const textColor = ratio > 0.65 ? '#000' : '#fff';
+        html += `<div class="hm-cell" style="background:${bg};color:${textColor}">
+          <div class="hm-val">${q.toFixed(1)}</div>
+          <div class="hm-sub">L/h</div>
+        </div>`;
+      }
+    }
+  }
+  grid.innerHTML = html;
 }
 
 // ══════════════════════════════════════════════════════
@@ -918,21 +1123,38 @@ function eliminarFoto(i) { appState.fotos.splice(i, 1); guardarEstado(); renderF
 //  PERSISTENCIA
 // ══════════════════════════════════════════════════════
 function guardarEstado() {
-  const vals = ['tipoGotero','caudalNominal','presionMedida','vol1','tm1','vol2','tm2','vol3','tm3','notas'];
-  vals.forEach(id => { const el = document.getElementById(id); if (el) appState[id] = el.value; });
+  ['tipoGotero','caudalNominal','presionMedida','notas'].forEach(id => {
+    const el = document.getElementById(id); if (el) appState[id] = el.value;
+  });
+  // Guardar las 16 mediciones
+  const meds = [];
+  for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) {
+    const el = document.getElementById(`m_${r}_${c}`);
+    meds.push(el ? el.value : '');
+  }
+  appState.mediciones = meds;
   sessionStorage.setItem(STATE_KEY, JSON.stringify(appState));
 }
 function restaurarEstado() {
   const saved = sessionStorage.getItem(STATE_KEY); if (!saved) return;
   try {
     const s = JSON.parse(saved);
-    if (s.sector)    selSector(s.sector);
-    if (s.cuartel)   selCuartel(s.cuartel);
-    if (s.valvula)   selValvula(s.valvula);
-    if (s.lado)      selLado(s.lado);
-    ['tipoGotero','caudalNominal','presionMedida','vol1','tm1','vol2','tm2','vol3','tm3','notas'].forEach(id => {
+    if (s.sector)  selSector(s.sector);
+    if (s.cuartel) selCuartel(s.cuartel);
+    if (s.valvula) selValvula(s.valvula);
+    if (s.lado)    selLado(s.lado);
+    ['tipoGotero','caudalNominal','presionMedida','notas'].forEach(id => {
       const el = document.getElementById(id); if (el && s[id]) el.value = s[id];
     });
+    // Restaurar mediciones 16 puntos
+    if (Array.isArray(s.mediciones)) {
+      s.mediciones.forEach((val, i) => {
+        const r = Math.floor(i / 4), c = i % 4;
+        const el = document.getElementById(`m_${r}_${c}`);
+        if (el && val) { el.value = val; el.classList.add('filled'); }
+      });
+      appState.mediciones = s.mediciones;
+    }
     if (s.fotos?.length) appState.fotos = s.fotos;
     if (s.operador) appState.operador = s.operador;
     if (s.gps) { gpsData = s.gps; if (mapaLQ) actualizarPinGPS(s.gps); }
@@ -953,7 +1175,7 @@ async function handleSubmit() {
   guardarEstado();
   const { sector, cuartel, valvula, lado, operador, _avg } = appState;
   if (!sector || !cuartel || !valvula || !lado) { toast('Completá Sector, Cuartel, Válvula y Lado'); return; }
-  if (_avg == null) { toast('Ingresá al menos una medición válida'); return; }
+  if (_avg == null) { toast('Ingresá al menos 4 mediciones válidas'); return; }
   if (!operador) { toast('Ingresá tu nombre como operador'); return; }
 
   const btn = document.getElementById('btnSubmit');
@@ -961,6 +1183,16 @@ async function handleSubmit() {
   document.getElementById('overlayLoading').classList.add('visible');
 
   const now = new Date();
+  // Construir objeto de mediciones 4×4
+  const meds16 = {};
+  for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) {
+    const el = document.getElementById(`m_${r}_${c}`);
+    const vol = el ? (el.value || '') : '';
+    const q   = caudalDeMl(vol);
+    meds16[`h${r+1}_g${c+1}_ml`] = vol;
+    meds16[`h${r+1}_g${c+1}_lh`] = q != null ? q.toFixed(3) : '';
+  }
+
   const payload = {
     token:     CONFIG.ACCESS_TOKEN,
     action:    'aforado',
@@ -970,19 +1202,11 @@ async function handleSubmit() {
     tipo_gotero:       appState.tipoGotero || '',
     caudal_nominal:    appState.caudalNominal || '',
     presion_medida:    appState.presionMedida || '',
-    vol_1_ml:          appState.vol1 || '',
-    tm_1_seg:          appState.tm1 || '',
-    caudal_1_lh:       appState._q1 != null ? appState._q1.toFixed(3) : '',
-    vol_2_ml:          appState.vol2 || '',
-    tm_2_seg:          appState.tm2 || '',
-    caudal_2_lh:       appState._q2 != null ? appState._q2.toFixed(3) : '',
-    vol_3_ml:          appState.vol3 || '',
-    tm_3_seg:          appState.tm3 || '',
-    caudal_3_lh:       appState._q3 != null ? appState._q3.toFixed(3) : '',
-    caudal_avg_lh:     appState._avg != null ? appState._avg.toFixed(3) : '',
-    caudal_min_lh:     appState._min != null ? appState._min.toFixed(3) : '',
-    caudal_max_lh:     appState._max != null ? appState._max.toFixed(3) : '',
-    cu_pct:            appState._cu != null ? appState._cu.toFixed(2) : '',
+    ...meds16,
+    caudal_avg_lh:     appState._avg  != null ? appState._avg.toFixed(3)  : '',
+    caudal_min_lh:     appState._min  != null ? appState._min.toFixed(3)  : '',
+    caudal_max_lh:     appState._max  != null ? appState._max.toFixed(3)  : '',
+    cu_pct:            appState._cu   != null ? appState._cu.toFixed(2)   : '',
     desviacion_pct:    appState._desv != null ? appState._desv.toFixed(2) : '',
     clasificacion:     appState._clasif || '',
     operador,
@@ -1022,11 +1246,12 @@ function mostrarExito(p) {
 function resetForm() {
   document.getElementById('overlaySuccess').classList.remove('visible');
   const op = appState.operador;
-  appState = { operador: op, sector: null, cuartel: null, valvula: null, lado: null, tipoGotero: '', caudalNominal: '', presionMedida: '', vol1: '', tm1: '', vol2: '', tm2: '', vol3: '', tm3: '', notas: '', fotos: [], gps: gpsData };
+  appState = { operador: op, sector: null, cuartel: null, valvula: null, lado: null, tipoGotero: '', caudalNominal: '', presionMedida: '', mediciones: Array(16).fill(''), notas: '', fotos: [], gps: gpsData };
   sessionStorage.removeItem(STATE_KEY);
   document.querySelectorAll('.sel-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('lateralResumen').style.display = 'none';
-  ['tipoGotero','caudalNominal','presionMedida','vol1','tm1','vol2','tm2','vol3','tm3','notas'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; });
+  ['tipoGotero','caudalNominal','presionMedida','notas'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; });
+  limpiarMediciones();
   renderFotos();
   calcularResultados();
   const btn = document.getElementById('btnSubmit');
