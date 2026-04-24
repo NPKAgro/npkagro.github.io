@@ -907,7 +907,7 @@ async function detectarConIA(){
           unidad: it.match.unidad || it.unidad || 'L',
           categoria: it.match.categoria || '',
           cantidad: Number(it.cantidad) || 0,
-          precio_unitario: Number(it.match.precio_ref_clp) || 0,
+          precio_unitario: 0,  // IA no extrae precios de la factura; completá manual si lo necesitás
           ia_detectado: true,
           ia_nombre_original: it.producto || '',
           ia_match_score: it.match.score || 0
@@ -924,6 +924,9 @@ async function detectarConIA(){
       }
     });
 
+    // Auto-rellenar datos de cabecera de la factura
+    const headerExtras = _autoFillFacturaHeader(data);
+
     renderItems();
     renderIAPendientes();
 
@@ -931,7 +934,8 @@ async function detectarConIA(){
     status.className = 'ia-status ok';
     status.innerHTML = '✅ <strong>' + items.length + ' producto' + (items.length===1?'':'s') + ' detectado' + (items.length===1?'':'s') + '</strong>' +
       ' · ' + matched + ' match automático' +
-      (unmatched ? ' · <strong style="color:#fbbf24">' + unmatched + ' sin match</strong> (revisá abajo)' : '');
+      (unmatched ? ' · <strong style="color:#fbbf24">' + unmatched + ' sin match</strong> (revisá abajo)' : '') +
+      (headerExtras.length ? '<br><span style="color:var(--text3); font-size:11px">+ ' + headerExtras.join(' · ') + '</span>' : '');
     btn.disabled = false;
     btn.innerHTML = '<span class="ia-icon">✨</span><span class="ia-label">Detectar de nuevo</span><span class="ia-hint">Gemini</span>';
   } catch(err) {
@@ -940,6 +944,53 @@ async function detectarConIA(){
     btn.disabled = false;
     btn.innerHTML = '<span class="ia-icon">✨</span><span class="ia-label">Reintentar</span><span class="ia-hint">Gemini</span>';
   }
+}
+
+function _autoFillFacturaHeader(data){
+  const rellenados = [];
+
+  // Proveedor: match contra el <select> existente (MYC, Copeval, Coagra, Otro)
+  if (data.proveedor) {
+    const sel = document.getElementById('proveedor');
+    const pUp = data.proveedor.toUpperCase().trim();
+    let matched = false;
+    for (let i = 0; i < sel.options.length; i++) {
+      const opt = sel.options[i];
+      const v = opt.value.toUpperCase();
+      const t = opt.text.toUpperCase();
+      if (v === pUp || t === pUp || (v && pUp.indexOf(v) >= 0) || (t && pUp.indexOf(t) >= 0)) {
+        sel.value = opt.value;
+        matched = true;
+        break;
+      }
+    }
+    if (!matched) {
+      sel.value = 'Otro';
+      // Guardar el nombre real detectado en notas para referencia
+      const notasEl = document.getElementById('notas');
+      if (notasEl) {
+        const linea = 'Proveedor detectado: ' + data.proveedor;
+        if (notasEl.value.indexOf(linea) < 0) {
+          notasEl.value = notasEl.value ? notasEl.value + '\n' + linea : linea;
+        }
+      }
+    }
+    rellenados.push('Proveedor: ' + data.proveedor);
+  }
+
+  // Nº de factura / guía
+  if (data.factura_numero) {
+    document.getElementById('factura_n').value = data.factura_numero;
+    rellenados.push('Nº: ' + data.factura_numero);
+  }
+
+  // Fecha (solo si viene en YYYY-MM-DD válido)
+  if (data.fecha && /^\d{4}-\d{2}-\d{2}$/.test(data.fecha)) {
+    document.getElementById('fecha').value = data.fecha;
+    rellenados.push('Fecha: ' + data.fecha);
+  }
+
+  return rellenados;
 }
 
 function renderIAPendientes(){
