@@ -549,7 +549,7 @@
 
       <!-- Selector hilera de inicio -->
       <div class="hilera-inicio-row">
-        <label>Hilera inicio</label>
+        <label>Hilera de partida</label>
         <input type="number" id="hileraInicio" min="1" max="59" step="1" inputmode="numeric"
           placeholder="—" oninput="onHileraInicioChange()">
         <div class="hr-hint" id="hileraInicioHint">Seleccioná sector + válvula + lado primero</div>
@@ -862,23 +862,60 @@ function selLado(l) {
   actualizarResumenLateral();
   guardarEstado();
 }
-// ── Límites de laterales según sector y lado ──────────────────────────
-// Fin del lateral: hilera más alejada de la válvula en esa dirección
-const LATERAL_FIN = {
-  19: { N: 1  },          // S1: válvula en H19, lateral solo va al Norte (H1)
-  29: { N: 20, S: 38 },   // S2: desde H29 puede ir a H20 (Norte) o H38 (Sur)
-  49: { N: 39, S: 59 }    // S3: desde H49 puede ir a H39 (Norte) o H59 (Sur)
+// ── Rango completo de cada lateral ────────────────────────────────────
+// min y max definen los extremos del lateral (incluyendo la válvula)
+const LATERAL_RANGE = {
+  19: { N: { min: 1,  max: 19 } },          // S1: único lateral H1–H19
+  29: { N: { min: 20, max: 29 }, S: { min: 29, max: 38 } },  // S2 Norte y Sur
+  49: { N: { min: 39, max: 49 }, S: { min: 49, max: 59 } }   // S3 Norte y Sur
 };
 
-function hileras4puntos(hInicio, hFin) {
-  // Devuelve 4 hileras equidistantes entre hInicio y hFin (inclusive, redondeadas)
-  const d = hFin - hInicio;
-  return [
-    hInicio,
-    Math.round(hInicio + d / 3),
-    Math.round(hInicio + 2 * d / 3),
-    hFin
-  ];
+function hileras4puntos(hRef, hMin, hMax) {
+  // Distribuye 4 hileras en AMBAS direcciones desde hRef:
+  // · 2 puntos en el rango inferior [hMin, hRef]
+  // · 2 puntos en el rango superior [hRef, hMax]
+  hRef = Math.min(Math.max(hRef, hMin), hMax); // clamp
+  const pt = (a, b, t) => Math.round(a + (b - a) * t);
+
+  // Si hRef está muy cerca de un extremo, distribuir de forma degradada
+  const dLow  = hRef - hMin;
+  const dHigh = hMax - hRef;
+
+  let pts;
+  if (dLow < 2 && dHigh < 2) {
+    // Rango trivial — devolver 4 puntos equidistantes del total
+    pts = [
+      pt(hMin, hMax, 1/5),
+      pt(hMin, hMax, 2/5),
+      pt(hMin, hMax, 3/5),
+      pt(hMin, hMax, 4/5)
+    ];
+  } else if (dLow < 2) {
+    // Casi en el mínimo — distribuir los 4 hacia el máximo
+    pts = [
+      pt(hRef, hMax, 1/5),
+      pt(hRef, hMax, 2/5),
+      pt(hRef, hMax, 3/5),
+      pt(hRef, hMax, 4/5)
+    ];
+  } else if (dHigh < 2) {
+    // Casi en el máximo — distribuir los 4 hacia el mínimo
+    pts = [
+      pt(hMin, hRef, 1/5),
+      pt(hMin, hRef, 2/5),
+      pt(hMin, hRef, 3/5),
+      pt(hMin, hRef, 4/5)
+    ];
+  } else {
+    // Caso normal: 2 en cada lado
+    pts = [
+      pt(hMin, hRef, 1/3),
+      pt(hMin, hRef, 2/3),
+      pt(hRef, hMax, 1/3),
+      pt(hRef, hMax, 2/3)
+    ];
+  }
+  return pts.sort((a, b) => a - b);
 }
 
 function actualizarResumenLateral() {
@@ -888,10 +925,13 @@ function actualizarResumenLateral() {
     const ladoTxt = lado === 'N' ? 'Norte' : 'Sur';
     el.style.display = 'block';
     el.innerHTML = `✓ Aforando: <b>${cuartel} · H${valvula} · Lateral ${ladoTxt}</b> · Sector ${sector}`;
-    // Auto-rellenar hilera inicio con la válvula si aún no se editó
+    // Auto-rellenar hilera inicio con el punto medio del lateral si aún no se editó
     const hInput = document.getElementById('hileraInicio');
     if (hInput && !hInput.dataset.userEdited) {
-      hInput.value = valvula;
+      const range = LATERAL_RANGE[valvula]?.[lado];
+      if (range) {
+        hInput.value = Math.round((range.min + range.max) / 2);
+      }
     }
     actualizarHilerasMedicion();
   } else {
@@ -909,20 +949,22 @@ function onHileraInicioChange() {
 
 function actualizarHilerasMedicion() {
   const { valvula, lado } = appState;
-  const hInput  = document.getElementById('hileraInicio');
-  const dir     = lado === 'N' ? 'N' : 'S';
-  const hFin    = LATERAL_FIN[valvula]?.[dir];
-  const hInicio = parseInt(hInput?.value) || valvula;
-  const hint    = document.getElementById('hileraInicioHint');
+  const hInput = document.getElementById('hileraInicio');
+  const range  = LATERAL_RANGE[valvula]?.[lado];
+  const hint   = document.getElementById('hileraInicioHint');
 
-  if (!valvula || !lado || hFin === undefined) {
+  if (!valvula || !lado || !range) {
     if (hint) hint.textContent = 'Seleccioná sector + válvula + lado primero';
     document.getElementById('hileraRangeBox').style.display = 'none';
     [0,1,2,3].forEach(i => { const l = document.getElementById(`rowLbl_${i}`); if (l) l.textContent = 'H —'; });
     return;
   }
 
-  const hs = hileras4puntos(hInicio, hFin);
+  // Actualizar min/max del input según el lateral seleccionado
+  if (hInput) { hInput.min = range.min; hInput.max = range.max; }
+
+  const hRef = parseInt(hInput?.value) || Math.round((range.min + range.max) / 2);
+  const hs   = hileras4puntos(hRef, range.min, range.max);
   appState._hilerasMedicion = hs;
 
   // Actualizar labels de las filas con números reales de hilera
@@ -931,14 +973,21 @@ function actualizarHilerasMedicion() {
     if (lbl) lbl.textContent = `H ${h}`;
   });
 
-  // Mostrar chips resumen
+  // Mostrar chips resumen — con flecha central para indicar distribución
   const chips = document.getElementById('hileraRangeChips');
-  if (chips) chips.innerHTML = hs.map(h => `<span class="hr-chip">H ${h}</span>`).join('');
+  if (chips) {
+    const [h1, h2, h3, h4] = hs;
+    chips.innerHTML =
+      `<span class="hr-chip">H ${h1}</span>` +
+      `<span class="hr-chip">H ${h2}</span>` +
+      `<span style="color:var(--text3);font-size:11px;align-self:center">↔</span>` +
+      `<span class="hr-chip">H ${h3}</span>` +
+      `<span class="hr-chip">H ${h4}</span>`;
+  }
   document.getElementById('hileraRangeBox').style.display = 'flex';
 
   if (hint) {
-    const ladoTxt = lado === 'N' ? 'Norte →' : 'Sur →';
-    hint.textContent = `Desde H${hInicio} ${ladoTxt} H${hFin} · Editá si necesitás otro rango`;
+    hint.textContent = `H${range.min} ← H${hRef} → H${range.max} · Editá para cambiar el punto de inicio`;
   }
   guardarEstado();
 }
