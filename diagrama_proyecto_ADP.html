@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diagrama Proyecto ADP — Agrícola del Pedregal</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0f1117;
+    color: #f0f2f5;
+    padding: 32px 24px 60px;
+    min-height: 100vh;
+  }
+  .header { text-align: center; margin-bottom: 48px; }
+  .header h1 { font-size: 28px; font-weight: 700; color: #fff; margin-bottom: 8px; }
+  .header .sub { font-size: 14px; color: #8b93a5; }
+  .header .badge { display: inline-block; margin-top: 12px; background: #1e2534; border: 1px solid #2a3347; border-radius: 20px; padding: 4px 16px; font-size: 12px; color: #8b93a5; }
+  .main-grid { display: grid; grid-template-columns: 1fr 60px 1fr; gap: 0; max-width: 1100px; margin: 0 auto 48px; align-items: start; }
+  .product { background: #161b24; border: 1px solid #2a3347; border-radius: 16px; overflow: hidden; }
+  .product-header { padding: 18px 20px 14px; border-bottom: 1px solid #2a3347; }
+  .product-header .icon { font-size: 28px; margin-bottom: 6px; }
+  .product-header h2 { font-size: 17px; font-weight: 700; color: #fff; }
+  .product-header .desc { font-size: 12px; color: #8b93a5; margin-top: 4px; }
+  .product-header .url { font-size: 11px; color: #3b82f6; margin-top: 8px; word-break: break-all; text-decoration: none; display: block; }
+  .stack-row { display: flex; flex-wrap: wrap; gap: 6px; padding: 14px 20px; border-bottom: 1px solid #1e2534; }
+  .tag { font-size: 11px; padding: 3px 9px; border-radius: 10px; font-weight: 500; }
+  .tag-blue { background: #1e3a5f; color: #60a5fa; }
+  .tag-green { background: #14352a; color: #34d399; }
+  .tag-purple { background: #2d1f4a; color: #a78bfa; }
+  .tag-amber { background: #3a2910; color: #fbbf24; }
+  .tag-teal { background: #0f2e30; color: #2dd4bf; }
+  .modules { padding: 16px 20px; }
+  .modules-title { font-size: 11px; font-weight: 600; color: #8b93a5; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+  .module-group { margin-bottom: 14px; }
+  .module-group-label { font-size: 10px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; padding-left: 2px; }
+  .module-item { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 8px; margin-bottom: 4px; font-size: 13px; border: 1px solid transparent; }
+  .module-item.done { background: #0d2818; border-color: #14532d; color: #86efac; }
+  .module-item.done .dot { background: #22c55e; }
+  .module-item.pending { background: #1e2534; border-color: #2a3347; color: #8b93a5; }
+  .module-item.pending .dot { background: #374151; }
+  .module-item.wip { background: #1c1a0f; border-color: #3a2910; color: #fbbf24; }
+  .module-item.wip .dot { background: #f59e0b; }
+  .module-item.error { background: #1f0d0d; border-color: #7f1d1d; color: #fca5a5; }
+  .module-item.error .dot { background: #ef4444; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .connector { display: flex; flex-direction: column; align-items: center; justify-content: center; padding-top: 80px; gap: 6px; }
+  .connector-line { width: 2px; height: 40px; background: linear-gradient(to bottom, #3b82f6, #14b8a6); }
+  .connector-circle { width: 32px; height: 32px; border-radius: 50%; border: 2px solid #3b82f6; display: flex; align-items: center; justify-content: center; font-size: 14px; background: #161b24; }
+  .connector-label { font-size: 9px; color: #6b7280; text-align: center; max-width: 56px; line-height: 1.4; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 4px; }
+  .section-title { font-size: 13px; font-weight: 600; color: #8b93a5; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+  .section-title::after { content: ''; flex: 1; height: 1px; background: #1e2534; }
+  .integration-section { max-width: 1100px; margin: 0 auto 48px; }
+  .integration-card { background: #161b24; border: 1px solid #2a3347; border-radius: 12px; padding: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .int-col h4 { font-size: 12px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; }
+  .int-item { display: flex; align-items: flex-start; gap: 8px; font-size: 12px; color: #8b93a5; margin-bottom: 8px; line-height: 1.5; }
+  .int-item .icon-sm { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+  .code-pill { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 10px; background: #0f1117; border: 1px solid #2a3347; border-radius: 4px; padding: 1px 6px; color: #3b82f6; white-space: nowrap; }
+  .changes-grid { max-width: 1100px; margin: 0 auto 48px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .changes-card { background: #161b24; border: 1px solid #2a3347; border-radius: 12px; padding: 18px 20px; }
+  .changes-card h3 { font-size: 13px; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .change-item { display: flex; align-items: flex-start; gap: 8px; font-size: 12px; margin-bottom: 8px; line-height: 1.5; }
+  .change-item.done-c { color: #86efac; }
+  .change-item.done-c .ci { color: #22c55e; }
+  .change-item.pending-c { color: #8b93a5; }
+  .change-item.pending-c .ci { color: #6b7280; }
+  .change-item.error-c { color: #fca5a5; }
+  .change-item.error-c .ci { color: #ef4444; }
+  .ci { font-size: 13px; flex-shrink: 0; }
+  .pending-section { max-width: 1100px; margin: 0 auto 48px; }
+  .pending-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .pending-card { background: #161b24; border: 1px solid #2a3347; border-radius: 12px; padding: 18px 20px; }
+  .pending-card h3 { font-size: 12px; font-weight: 700; color: #8b93a5; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+  .pending-item { display: flex; align-items: flex-start; gap: 8px; font-size: 12px; color: #94a3b8; margin-bottom: 8px; line-height: 1.5; }
+  .pending-item .pi { font-size: 12px; flex-shrink: 0; margin-top: 1px; }
+  .footer { max-width: 1100px; margin: 0 auto; text-align: center; font-size: 11px; color: #374151; padding-top: 24px; border-top: 1px solid #1e2534; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div style="font-size:36px;margin-bottom:12px;">🍒</div>
+  <h1>Sistema Digital ADP — Agrícola del Pedregal</h1>
+  <div class="sub">La Quinta · Cerezas Santina · Temporada 2025-26</div>
+  <div class="badge">Estado al 22 Abril 2026</div>
+</div>
+
+<div class="section-title" style="max-width:1100px;margin:0 auto 16px;">Arquitectura del Sistema</div>
+
+<div class="main-grid">
+  <div class="product">
+    <div class="product-header" style="background:linear-gradient(135deg,#1e2a4a 0%,#161b24 100%);">
+      <div class="icon">🖥️</div>
+      <h2>Dashboard ADP</h2>
+      <div class="desc">Panel ejecutivo desktop / web</div>
+      <span class="url">Dashboard-ADP-v2.html · 625 KB · 9,447 líneas</span>
+    </div>
+    <div class="stack-row">
+      <span class="tag tag-blue">HTML/CSS/JS puro</span>
+      <span class="tag tag-green">Supabase PostgreSQL</span>
+      <span class="tag tag-purple">Chart.js 4.4.1</span>
+      <span class="tag tag-teal">Leaflet 1.9.4</span>
+      <span class="tag tag-amber">Supabase Auth</span>
+    </div>
+    <div class="modules">
+      <div class="modules-title">Módulos</div>
+      <div class="module-group">
+        <div class="module-group-label">Campo</div>
+        <div class="module-item done"><div class="dot"></div>Resumen General</div>
+        <div class="module-item done"><div class="dot"></div>Riego &amp; Fertirriego</div>
+        <div class="module-item done"><div class="dot"></div>Labores Agrícolas</div>
+        <div class="module-item done"><div class="dot"></div>Estados Fenológicos</div>
+        <div class="module-item done"><div class="dot"></div>Fitosanitario</div>
+        <div class="module-item done"><div class="dot"></div>Cosecha</div>
+        <div class="module-item done"><div class="dot"></div>Clima</div>
+        <div class="module-item done"><div class="dot"></div>Cuarteles</div>
+        <div class="module-item done"><div class="dot"></div>Mapa Interactivo (Leaflet)</div>
+        <div class="module-item done"><div class="dot"></div>Inventarios</div>
+        <div class="module-item wip"><div class="dot"></div>App de Campo ← integración PWA</div>
+      </div>
+      <div class="module-group">
+        <div class="module-group-label">Análisis</div>
+        <div class="module-item done"><div class="dot"></div>Resumen General</div>
+        <div class="module-item done"><div class="dot"></div>Costos Variables</div>
+        <div class="module-item done"><div class="dot"></div>Inversión / Análisis Costo/Kg</div>
+        <div class="module-item done"><div class="dot"></div>Mano de Obra · Insumos</div>
+      </div>
+      <div class="module-group">
+        <div class="module-group-label">Finanzas</div>
+        <div class="module-item done"><div class="dot"></div>Flujo de Caja</div>
+        <div class="module-item done"><div class="dot"></div>Cuentas por Pagar</div>
+        <div class="module-item done"><div class="dot"></div>Real vs Proyectado</div>
+      </div>
+      <div class="module-group">
+        <div class="module-group-label">Sistema</div>
+        <div class="module-item done"><div class="dot"></div>Configuración (cuarteles, usuarios, URLs)</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="connector">
+    <div class="connector-line"></div>
+    <div class="connector-circle">🔗</div>
+    <div class="connector-label">Opción A<br>Nav cruzada</div>
+    <div class="connector-line" style="background:linear-gradient(to bottom,#14b8a6,#3b82f6);"></div>
+  </div>
+
+  <div class="product">
+    <div class="product-header" style="background:linear-gradient(135deg,#0f2e30 0%,#161b24 100%);">
+      <div class="icon">📱</div>
+      <h2>App de Campo (PWA)</h2>
+      <div class="desc">App móvil de registro en terreno · iPhone / Android</div>
+      <a href="https://jpdelped-adp.github.io/fenologia-laquinta/" class="url" target="_blank">jpdelped-adp.github.io/fenologia-laquinta/</a>
+    </div>
+    <div class="stack-row">
+      <span class="tag tag-blue">HTML/CSS/JS vanilla</span>
+      <span class="tag tag-green">Google Apps Script</span>
+      <span class="tag tag-teal">Google Sheets DB</span>
+      <span class="tag tag-purple">Service Worker (PWA)</span>
+      <span class="tag tag-amber">GitHub Pages</span>
+    </div>
+    <div class="modules">
+      <div class="modules-title">Módulos</div>
+      <div class="module-group">
+        <div class="module-item done"><div class="dot"></div>index.html — Menú principal</div>
+        <div class="module-item done"><div class="dot"></div>campo.html — Registro fenológico</div>
+        <div class="module-item done"><div class="dot"></div>cuaderno.html — Cuaderno de campo</div>
+        <div class="module-item done"><div class="dot"></div>aforado.html — Calibración riego</div>
+        <div class="module-item error"><div class="dot"></div>revision.html — Historial (spinner ∞ 🐛)</div>
+        <div class="module-item error"><div class="dot"></div>Cámara / Fotos (no funciona en iOS 🐛)</div>
+        <div class="module-item pending"><div class="dot"></div>Módulo Cosecha / Conteo fruta</div>
+        <div class="module-item pending"><div class="dot"></div>Mapa satelital del campo</div>
+      </div>
+      <div class="module-group">
+        <div class="module-group-label">Auth &amp; Backend</div>
+        <div class="module-item done"><div class="dot"></div>auth.js · Token LQ2026-Santina</div>
+        <div class="module-item done"><div class="dot"></div>backend_gas.gs (enruta: campo/cuaderno/aforado)</div>
+        <div class="module-item done"><div class="dot"></div>sw.js · manifest.json (instalación PWA)</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="integration-section">
+  <div class="section-title">Integración entre productos (Opción A — Activa)</div>
+  <div class="integration-card">
+    <div class="int-col">
+      <h4>Dashboard → PWA</h4>
+      <div class="int-item"><span class="icon-sm">📋</span><span>Página "App de Campo" con 4 tarjetas (Fenología, Cuaderno, Aforado, Revisión)</span></div>
+      <div class="int-item"><span class="icon-sm">⚙️</span><span>Panel en Configuración para guardar URLs de cada módulo PWA</span></div>
+      <div class="int-item"><span class="icon-sm">💾</span>localStorage: <span class="code-pill">adp_app_campo_urls</span></div>
+    </div>
+    <div class="int-col">
+      <h4>PWA → Dashboard</h4>
+      <div class="int-item"><span class="icon-sm">🎛️</span><span>Sección "Gestión" en index.html con tarjeta Dashboard ADP</span></div>
+      <div class="int-item"><span class="icon-sm">🔗</span><span>Al primer toque pide URL del dashboard, abre en nueva pestaña</span></div>
+      <div class="int-item"><span class="icon-sm">💾</span>localStorage: <span class="code-pill">adp_dashboard_url</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="section-title" style="max-width:1100px;margin:0 auto 16px;">Cambios aplicados — Sesión 22 Abril 2026</div>
+
+<div class="changes-grid">
+  <div class="changes-card">
+    <h3><span>🖥️</span> Dashboard ADP — Completados ✅</h3>
+    <div class="change-item done-c"><span class="ci">✅</span><span>Barra fenológica rediseñada (íconos, fase activa, Kc strip, % avance)</span></div>
+    <div class="change-item done-c"><span class="ci">✅</span><span>Botón "Todas" en filtro de temporada (Resumen Campo)</span></div>
+    <div class="change-item done-c"><span class="ci">✅</span><span>Bug análisis de costos Costo/Kg resuelto (IIFE que siempre renderiza gráficos)</span></div>
+    <div class="change-item done-c"><span class="ci">✅</span><span>KPIs costos variables simplificados (6 categorías clave + "Otros")</span></div>
+    <div class="change-item done-c"><span class="ci">✅</span><span>Gráfico Cuarteles: % de aumento 2025-26 vs 2024-25 sobre barras</span></div>
+    <div class="change-item done-c"><span class="ci">✅</span><span>App de Campo: alineación de tarjetas y botones (flexbox)</span></div>
+  </div>
+  <div class="changes-card">
+    <h3><span>📋</span> Dashboard ADP — Pendientes</h3>
+    <div class="change-item pending-c"><span class="ci">⬜</span><span>Estandarizar temporada default 2025-26 en todas las secciones</span></div>
+    <div class="change-item pending-c"><span class="ci">⬜</span><span>Riego &amp; Fertirriego: gráficos por temporada y por cuartel</span></div>
+    <div class="change-item pending-c"><span class="ci">⬜</span><span>Clima: representar datos por temporada</span></div>
+    <div class="change-item pending-c"><span class="ci">⬜</span><span>KPI Kc: actualizar dinámicamente según temporada seleccionada</span></div>
+    <div class="change-item pending-c"><span class="ci">⬜</span><span>Gráfico cosecha 2025-26: mostrar los 3 cuarteles por separado</span></div>
+    <div class="change-item pending-c"><span class="ci">⬜</span><span>Completar secciones de Batudahue</span></div>
+  </div>
+  <div class="changes-card">
+    <h3><span>📱</span> PWA App de Campo — Bugs urgentes 🐛</h3>
+    <div class="change-item error-c"><span class="ci">🔴</span><span>Cámara / toma de fotos no funciona en iPhone (campo.html y cuaderno.html)</span></div>
+    <div class="change-item error-c"><span class="ci">🔴</span><span>revision.html: spinner infinito, no carga datos del Google Sheet</span></div>
+    <div class="change-item pending-c"><span class="ci">⬜</span><span>Módulo de cosecha / conteo de fruta (nuevo módulo)</span></div>
+    <div class="change-item pending-c"><span class="ci">⬜</span><span>Mapa satelital del campo (nuevo módulo)</span></div>
+  </div>
+  <div class="changes-card">
+    <h3><span>🚀</span> Pendientes — Comercial / Producto</h3>
+    <div class="change-item pending-c"><span class="ci">⬜</span><span>Subir Dashboard a hosting (Netlify Drop recomendado) → pegar URL en PWA</span></div>
+    <div class="change-item pending-c"><span class="ci">⬜</span><span>Actualizar URLs cuaderno y aforado en Dashboard > Config > App de Campo</span></div>
+    <div class="change-item pending-c"><span class="ci">⬜</span><span>Actualizar WhatsApp en landing de venta (56912345678 → real)</span></div>
+    <div class="change-item pending-c"><span class="ci">⬜</span><span>Definir precio y reemplazar [PRECIO] en Dashboard_ADP_Venta.html</span></div>
+    <div class="change-item pending-c"><span class="ci">⬜</span><span>Definir stack para venta a terceros (¿Supabase compartido o por cliente?)</span></div>
+  </div>
+</div>
+
+<div class="pending-section">
+  <div class="section-title">Stack Técnico Consolidado</div>
+  <div class="pending-grid">
+    <div class="pending-card">
+      <h3>🖥️ Dashboard ADP</h3>
+      <div class="pending-item"><span class="pi">📁</span><div>Single-file HTML · 625 KB<br><span style="color:#6b7280;font-size:11px;">Dashboard-ADP-v2.html</span></div></div>
+      <div class="pending-item"><span class="pi">🗄️</span><div>Supabase PostgreSQL<br><span style="color:#3b82f6;font-size:11px;">eunuqwzrbqqpykyywjbu.supabase.co</span></div></div>
+      <div class="pending-item"><span class="pi">📊</span><div>Chart.js 4.4.1 + datalabels<br>Leaflet 1.9.4 (mapas)</div></div>
+      <div class="pending-item"><span class="pi">🔐</span><div>Supabase Auth (email/contraseña)<br>RLS requerido en todas las tablas</div></div>
+      <div class="pending-item"><span class="pi">🌐</span><div>Hosting: pendiente<br><span style="color:#f59e0b;font-size:11px;">Recomendado: Netlify Drop</span></div></div>
+    </div>
+    <div class="pending-card">
+      <h3>📱 App de Campo (PWA)</h3>
+      <div class="pending-item"><span class="pi">🌿</span><div>GitHub Pages<br><span style="color:#3b82f6;font-size:11px;">jpdelped-adp.github.io/fenologia-laquinta/</span></div></div>
+      <div class="pending-item"><span class="pi">⚡</span><div>Google Apps Script (backend)<br>Google Sheets (base de datos)</div></div>
+      <div class="pending-item"><span class="pi">📷</span><div>Google Drive (fotos)<br><span style="color:#6b7280;font-size:11px;">Carpeta ID: 1_ECZ1mn...</span></div></div>
+      <div class="pending-item"><span class="pi">🔑</span><div>Token: <span style="font-family:monospace;color:#fbbf24;font-size:11px;">LQ2026-Santina</span></div></div>
+      <div class="pending-item"><span class="pi">🏗️</span><div>C2, C3, C4 · 59 hileras · 16 plantas · 5 claros</div></div>
+    </div>
+    <div class="pending-card">
+      <h3>📋 Campos Activos</h3>
+      <div class="pending-item"><span class="pi">✅</span><div><strong style="color:#f0f2f5;">La Quinta</strong><br>Cerezas Santina · Temporada 2025-26<br>C2, C3, C4 activos</div></div>
+      <div class="pending-item" style="margin-top:10px;"><span class="pi">🔧</span><div><strong style="color:#8b93a5;">Batudahue</strong><br>En desarrollo · Secciones parciales</div></div>
+      <div style="margin-top:16px;padding-top:14px;border-top:1px solid #1e2534;">
+        <div class="modules-title" style="margin-bottom:8px;">Objetivo comercial</div>
+        <div style="font-size:12px;color:#8b93a5;line-height:1.6;">Escalar el sistema para venta a otros campos agrícolas chilenos como producto SaaS.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">Generado el 22 Abril 2026 · Agrícola del Pedregal · JP Delgado · jpdelped@gmail.com</div>
+
+</body>
+</html>

@@ -99,6 +99,36 @@
     .tank-status.BAJO { background: rgba(245,158,11,0.15); color: #fbbf24; }
     .tank-status.AGOTADO { background: rgba(239,68,68,0.15); color: #fca5a5; }
 
+    /* Fuel type switcher */
+    .type-switch {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 6px;
+    }
+    .type-btn {
+      background: transparent;
+      border: none;
+      padding: 12px 8px;
+      border-radius: 8px;
+      color: var(--text2);
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .type-btn .ico { font-size: 18px; }
+    .type-btn.active { background: var(--bg3); color: var(--text); }
+    .type-btn.active.diesel { color: var(--accent); }
+    .type-btn.active.bencina { color: #fbbf24; }
+
     /* Action buttons */
     .actions {
       display: grid;
@@ -251,11 +281,20 @@
   <a class="header-back" href="app.html">←</a>
   <div class="header-brand">
     <div class="header-empresa">La <span>Quinta</span></div>
-    <div class="header-predio">Combustible · Diésel</div>
+    <div class="header-predio" id="headerSub">Combustible · Diésel</div>
   </div>
 </div>
 
 <div class="content">
+
+  <div class="type-switch">
+    <button class="type-btn diesel active" id="tabDiesel" onclick="setTipo('diesel')">
+      <span class="ico">⛽</span><span>Diésel</span>
+    </button>
+    <button class="type-btn bencina" id="tabBencina" onclick="setTipo('bencina')">
+      <span class="ico">🔥</span><span>Bencina</span>
+    </button>
+  </div>
 
   <div class="tank-card" id="tankCard">
     <div class="tank-title">⛽ Stock actual</div>
@@ -296,7 +335,7 @@
 <!-- Modal CARGA -->
 <div class="overlay" id="ovCarga" onclick="cerrarOv(event, 'ovCarga')">
   <div class="modal" onclick="event.stopPropagation()">
-    <div class="modal-title">⬆️ Nueva carga de petróleo</div>
+    <div class="modal-title" id="modalCargaTitle">⬆️ Nueva carga de petróleo</div>
 
     <div class="photo-slot" id="photoSlot" onclick="document.getElementById('photoInput').click()">
       📸 Sacá foto de la boleta (opcional)
@@ -366,14 +405,7 @@
     </div>
     <div class="field">
       <label>Máquina</label>
-      <select id="uEquipo">
-        <option value="">— seleccionar —</option>
-        <option>Tractor John Deere 5076</option>
-        <option>Tractor Cerrillos</option>
-        <option>Tractor Cerrillos 2</option>
-        <option>Camioneta Administrador</option>
-        <option>Otros</option>
-      </select>
+      <select id="uEquipo"></select>
     </div>
     <div class="row">
       <div class="field">
@@ -436,7 +468,67 @@
 const GAS_URL   = 'https://script.google.com/macros/s/AKfycbydi5imjeA5bXY5TlA7MBVGkG6-Aq4XhYC0soXGPUMl41lEvdL8rc-xhjeRv9m0_aJg/exec';
 const GAS_TOKEN = 'LQ2026-Santina';
 
-const state = { stock: null, mov: [], fotoB64: null, fotoName: null, gps: null };
+// Configuración por tipo de combustible
+const COMBUSTIBLES = {
+  diesel: {
+    label: 'Diésel',
+    headerSub: 'Combustible · Diésel',
+    getAction:  'get_petroleo',
+    listAction: 'list_petroleo_mov',
+    cargaAction: 'add_carga_petroleo',
+    usoAction:   'add_uso_petroleo',
+    configAction: 'config_petroleo',
+    maquinas: [
+      'Tractor John Deere 5076',
+      'Tractor Cerrillos',
+      'Tractor Cerrillos 2',
+      'Camioneta Administrador',
+      'Otros'
+    ]
+  },
+  bencina: {
+    label: 'Bencina',
+    headerSub: 'Combustible · Bencina 93',
+    getAction:  'get_bencina',
+    listAction: 'list_bencina_mov',
+    cargaAction: 'add_carga_bencina',
+    usoAction:   'add_uso_bencina',
+    configAction: 'config_bencina',
+    maquinas: [
+      'Motobomba',
+      'Generador',
+      'Moto ATV',
+      'Otros'
+    ]
+  }
+};
+
+const state = { tipo: 'diesel', stock: null, mov: [], fotoB64: null, fotoName: null, gps: null };
+
+function cfg() { return COMBUSTIBLES[state.tipo]; }
+
+function setTipo(t) {
+  if (!COMBUSTIBLES[t] || state.tipo === t) {
+    // Si ya está activo, igual recargar (por si cambiaron datos)
+    if (state.tipo !== t) state.tipo = t;
+  }
+  state.tipo = t;
+  document.getElementById('tabDiesel').classList.toggle('active', t === 'diesel');
+  document.getElementById('tabBencina').classList.toggle('active', t === 'bencina');
+  document.getElementById('headerSub').textContent = cfg().headerSub;
+  // Limpiar vista mientras carga
+  state.stock = null; state.mov = [];
+  document.getElementById('tankVal').textContent = '—';
+  document.getElementById('tankMeta').textContent = 'Cargando...';
+  document.getElementById('movList').innerHTML = '<div class="loader">⏳ Cargando...</div>';
+  cargarDatos();
+}
+
+function poblarSelectMaquinas() {
+  const sel = document.getElementById('uEquipo');
+  const opts = cfg().maquinas.map(m => `<option>${esc(m)}</option>`).join('');
+  sel.innerHTML = '<option value="">— seleccionar —</option>' + opts;
+}
 
 function esc(s){ return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function fmtNum(n){ const x = Number(n)||0; return Number.isInteger(x) ? x.toString() : x.toFixed(1); }
@@ -457,10 +549,14 @@ function toast(msg, tipo){
 
 async function cargarDatos(){
   try {
+    const tipoAlCargar = state.tipo;
+    const c = cfg();
     const [stRes, mvRes] = await Promise.all([
-      fetch(`${GAS_URL}?action=get_petroleo&_=${Date.now()}`),
-      fetch(`${GAS_URL}?action=list_petroleo_mov&limit=30&_=${Date.now()}`)
+      fetch(`${GAS_URL}?action=${c.getAction}&_=${Date.now()}`),
+      fetch(`${GAS_URL}?action=${c.listAction}&limit=30&_=${Date.now()}`)
     ]);
+    // Si el usuario cambió de tab mientras cargaba, descartamos la respuesta
+    if (state.tipo !== tipoAlCargar) return;
     state.stock = await stRes.json();
     state.mov   = (await mvRes.json()).movimientos || [];
     render();
@@ -515,6 +611,7 @@ function abrirOv(id){ document.getElementById(id).classList.add('visible'); }
 function cerrarOv(e, id){ if (e && e.target !== e.currentTarget) return; document.getElementById(id).classList.remove('visible'); }
 
 function abrirModalCarga(){
+  document.getElementById('modalCargaTitle').textContent = '⬆️ Nueva carga de ' + cfg().label.toLowerCase();
   document.getElementById('cLitros').value  = '';
   document.getElementById('cPrecio').value  = '';
   document.getElementById('cBoleta').value  = '';
@@ -527,6 +624,7 @@ function abrirModalCarga(){
   abrirOv('ovCarga');
 }
 function abrirModalUso(){
+  poblarSelectMaquinas();
   document.getElementById('uLitros').value = '';
   document.getElementById('uFecha').value  = new Date().toISOString().slice(0,10);
   document.getElementById('uHorom').value  = '';
@@ -573,7 +671,7 @@ async function guardarCarga(){
   btn.disabled = true; btn.textContent = 'Guardando...';
 
   const payload = {
-    token: GAS_TOKEN, action: 'add_carga_petroleo',
+    token: GAS_TOKEN, action: cfg().cargaAction,
     litros, precio_por_litro: precio || 0, fecha, proveedor,
     boleta_n: boleta, notas, usuario: (window.LQ_AUTH_USER || 'admin')
   };
@@ -616,7 +714,7 @@ async function guardarUso(){
   btn.disabled = true; btn.textContent = 'Guardando...';
 
   const payload = {
-    token: GAS_TOKEN, action: 'add_uso_petroleo',
+    token: GAS_TOKEN, action: cfg().usoAction,
     litros, fecha, equipo, cuartel, operacion, horometro: horom,
     notas, usuario: (window.LQ_AUTH_USER || 'equipo')
   };
@@ -645,7 +743,7 @@ async function guardarConfig(){
   const btn    = document.getElementById('btnGConfig');
   btn.disabled = true;
 
-  const payload = { token: GAS_TOKEN, action: 'config_petroleo' };
+  const payload = { token: GAS_TOKEN, action: cfg().configAction };
   if (!isNaN(cap))    payload.capacidad_total_l = cap;
   if (!isNaN(min))    payload.stock_minimo_l   = min;
   if (!isNaN(actual)) payload.stock_actual_l   = actual;
