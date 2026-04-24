@@ -427,7 +427,7 @@
 
 <div class="submit-bar">
   <div class="total-info">
-    <div id="itemCountTxt" style="color:var(--text3); font-size:13px">Sin productos</div>
+    <div id="itemCountTxt" style="color:var(--text3); font-size:13px">0 productos</div>
   </div>
   <button class="btn-submit" id="btnSubmit" onclick="enviarCompra()">Guardar compra</button>
 </div>
@@ -764,7 +764,7 @@ function renderItems(){
   const cont = document.getElementById('itemsList');
   if (!state.items.length) {
     cont.innerHTML = '<div style="padding:10px; color:var(--text3); font-size:12px; text-align:center">Sin productos agregados</div>';
-    document.getElementById('itemCountTxt').textContent = 'Sin productos';
+    document.getElementById('itemCountTxt').textContent = '0 productos';
     return;
   }
   cont.innerHTML = state.items.map((it, i) => {

@@ -284,6 +284,48 @@
     .toast.visible { display: block; }
     .toast.ok { background: var(--green); }
 
+    /* ── SELECTOR HILERAS ── */
+    .hilera-range-box {
+      background: rgba(59,130,246,0.07);
+      border: 1px solid rgba(59,130,246,0.25);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px; margin-bottom: 12px;
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    }
+    .hilera-range-box .hr-lbl {
+      font-size: 11px; font-weight: 700; color: var(--text3);
+      text-transform: uppercase; letter-spacing: 0.3px;
+      white-space: nowrap;
+    }
+    .hilera-range-box .hr-chips {
+      display: flex; gap: 5px; flex-wrap: wrap; flex: 1;
+    }
+    .hr-chip {
+      background: rgba(59,130,246,0.18); border: 1px solid rgba(59,130,246,0.35);
+      color: #93c5fd; border-radius: 99px;
+      padding: 3px 10px; font-size: 12px; font-weight: 700;
+    }
+    .hilera-inicio-row {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 12px;
+    }
+    .hilera-inicio-row label {
+      font-size: 11px; color: var(--text3); font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.3px; white-space: nowrap;
+    }
+    .hilera-inicio-row input {
+      width: 72px; background: var(--bg3); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 7px 10px;
+      font-size: 14px; font-weight: 700; color: var(--text);
+      text-align: center; outline: none; -moz-appearance: textfield;
+    }
+    .hilera-inicio-row input:focus { border-color: var(--accent); }
+    .hilera-inicio-row input::-webkit-outer-spin-button,
+    .hilera-inicio-row input::-webkit-inner-spin-button { -webkit-appearance: none; }
+    .hilera-inicio-row .hr-hint {
+      font-size: 11px; color: var(--text3); line-height: 1.4;
+    }
+
     /* ── PROTOCOLO NOTE ── */
     .protocolo-box {
       background: rgba(20,184,166,0.06);
@@ -505,6 +547,20 @@
         Ingresar el volumen recolectado en <b>mL</b>.
       </div>
 
+      <!-- Selector hilera de inicio -->
+      <div class="hilera-inicio-row">
+        <label>Hilera inicio</label>
+        <input type="number" id="hileraInicio" min="1" max="59" step="1" inputmode="numeric"
+          placeholder="—" oninput="onHileraInicioChange()">
+        <div class="hr-hint" id="hileraInicioHint">Seleccioná sector + válvula + lado primero</div>
+      </div>
+
+      <!-- Chips con hileras calculadas -->
+      <div class="hilera-range-box" id="hileraRangeBox" style="display:none">
+        <span class="hr-lbl">Medir en:</span>
+        <div class="hr-chips" id="hileraRangeChips"></div>
+      </div>
+
       <!-- Grilla de entrada: filas = hileras, cols = goteros -->
       <div class="grid-16-wrap">
         <div class="grid-16">
@@ -515,25 +571,25 @@
           <div class="g16-col-head">G 2/3</div>
           <div class="g16-col-head">G últ</div>
           <!-- Hilera 1ª -->
-          <div class="g16-row-lbl">H 1ª</div>
+          <div class="g16-row-lbl" id="rowLbl_0">H —</div>
           <input class="med16" type="number" id="m_0_0" min="0" step="1" inputmode="decimal" placeholder="—" oninput="onMed(this)">
           <input class="med16" type="number" id="m_0_1" min="0" step="1" inputmode="decimal" placeholder="—" oninput="onMed(this)">
           <input class="med16" type="number" id="m_0_2" min="0" step="1" inputmode="decimal" placeholder="—" oninput="onMed(this)">
           <input class="med16" type="number" id="m_0_3" min="0" step="1" inputmode="decimal" placeholder="—" oninput="onMed(this)">
           <!-- Hilera 1/3 -->
-          <div class="g16-row-lbl">H 1/3</div>
+          <div class="g16-row-lbl" id="rowLbl_1">H —</div>
           <input class="med16" type="number" id="m_1_0" min="0" step="1" inputmode="decimal" placeholder="—" oninput="onMed(this)">
           <input class="med16" type="number" id="m_1_1" min="0" step="1" inputmode="decimal" placeholder="—" oninput="onMed(this)">
           <input class="med16" type="number" id="m_1_2" min="0" step="1" inputmode="decimal" placeholder="—" oninput="onMed(this)">
           <input class="med16" type="number" id="m_1_3" min="0" step="1" inputmode="decimal" placeholder="—" oninput="onMed(this)">
           <!-- Hilera 2/3 -->
-          <div class="g16-row-lbl">H 2/3</div>
+          <div class="g16-row-lbl" id="rowLbl_2">H —</div>
           <input class="med16" type="number" id="m_2_0" min="0" step="1" inputmode="decimal" placeholder="—" oninput="onMed(this)">
           <input class="med16" type="number" id="m_2_1" min="0" step="1" inputmode="decimal" placeholder="—" oninput="onMed(this)">
           <input class="med16" type="number" id="m_2_2" min="0" step="1" inputmode="decimal" placeholder="—" oninput="onMed(this)">
           <input class="med16" type="number" id="m_2_3" min="0" step="1" inputmode="decimal" placeholder="—" oninput="onMed(this)">
           <!-- Hilera última -->
-          <div class="g16-row-lbl">H últ</div>
+          <div class="g16-row-lbl" id="rowLbl_3">H —</div>
           <input class="med16" type="number" id="m_3_0" min="0" step="1" inputmode="decimal" placeholder="—" oninput="onMed(this)">
           <input class="med16" type="number" id="m_3_1" min="0" step="1" inputmode="decimal" placeholder="—" oninput="onMed(this)">
           <input class="med16" type="number" id="m_3_2" min="0" step="1" inputmode="decimal" placeholder="—" oninput="onMed(this)">
@@ -689,6 +745,7 @@ function caudalDeMl(volMl) {
 let gpsData = null;
 let mapaLQ = null, mapaUsuarioMarker = null, mapaUsuarioCircle = null;
 let mapaCuartelLayers = {}, mapaWatchId = null;
+let heatLayers = [];   // capas del mapa de calor sobre el mapa Leaflet
 
 // ══════════════════════════════════════════════════════
 //  INIT
@@ -805,6 +862,25 @@ function selLado(l) {
   actualizarResumenLateral();
   guardarEstado();
 }
+// ── Límites de laterales según sector y lado ──────────────────────────
+// Fin del lateral: hilera más alejada de la válvula en esa dirección
+const LATERAL_FIN = {
+  19: { N: 1  },          // S1: válvula en H19, lateral solo va al Norte (H1)
+  29: { N: 20, S: 38 },   // S2: desde H29 puede ir a H20 (Norte) o H38 (Sur)
+  49: { N: 39, S: 59 }    // S3: desde H49 puede ir a H39 (Norte) o H59 (Sur)
+};
+
+function hileras4puntos(hInicio, hFin) {
+  // Devuelve 4 hileras equidistantes entre hInicio y hFin (inclusive, redondeadas)
+  const d = hFin - hInicio;
+  return [
+    hInicio,
+    Math.round(hInicio + d / 3),
+    Math.round(hInicio + 2 * d / 3),
+    hFin
+  ];
+}
+
 function actualizarResumenLateral() {
   const el = document.getElementById('lateralResumen');
   const { sector, cuartel, valvula, lado } = appState;
@@ -812,9 +888,59 @@ function actualizarResumenLateral() {
     const ladoTxt = lado === 'N' ? 'Norte' : 'Sur';
     el.style.display = 'block';
     el.innerHTML = `✓ Aforando: <b>${cuartel} · H${valvula} · Lateral ${ladoTxt}</b> · Sector ${sector}`;
+    // Auto-rellenar hilera inicio con la válvula si aún no se editó
+    const hInput = document.getElementById('hileraInicio');
+    if (hInput && !hInput.dataset.userEdited) {
+      hInput.value = valvula;
+    }
+    actualizarHilerasMedicion();
   } else {
     el.style.display = 'none';
+    const hint = document.getElementById('hileraInicioHint');
+    if (hint) hint.textContent = 'Seleccioná sector + válvula + lado primero';
   }
+}
+
+function onHileraInicioChange() {
+  const hInput = document.getElementById('hileraInicio');
+  hInput.dataset.userEdited = '1';
+  actualizarHilerasMedicion();
+}
+
+function actualizarHilerasMedicion() {
+  const { valvula, lado } = appState;
+  const hInput  = document.getElementById('hileraInicio');
+  const dir     = lado === 'N' ? 'N' : 'S';
+  const hFin    = LATERAL_FIN[valvula]?.[dir];
+  const hInicio = parseInt(hInput?.value) || valvula;
+  const hint    = document.getElementById('hileraInicioHint');
+
+  if (!valvula || !lado || hFin === undefined) {
+    if (hint) hint.textContent = 'Seleccioná sector + válvula + lado primero';
+    document.getElementById('hileraRangeBox').style.display = 'none';
+    [0,1,2,3].forEach(i => { const l = document.getElementById(`rowLbl_${i}`); if (l) l.textContent = 'H —'; });
+    return;
+  }
+
+  const hs = hileras4puntos(hInicio, hFin);
+  appState._hilerasMedicion = hs;
+
+  // Actualizar labels de las filas con números reales de hilera
+  hs.forEach((h, i) => {
+    const lbl = document.getElementById(`rowLbl_${i}`);
+    if (lbl) lbl.textContent = `H ${h}`;
+  });
+
+  // Mostrar chips resumen
+  const chips = document.getElementById('hileraRangeChips');
+  if (chips) chips.innerHTML = hs.map(h => `<span class="hr-chip">H ${h}</span>`).join('');
+  document.getElementById('hileraRangeBox').style.display = 'flex';
+
+  if (hint) {
+    const ladoTxt = lado === 'N' ? 'Norte →' : 'Sur →';
+    hint.textContent = `Desde H${hInicio} ${ladoTxt} H${hFin} · Editá si necesitás otro rango`;
+  }
+  guardarEstado();
 }
 
 // ══════════════════════════════════════════════════════
@@ -861,6 +987,7 @@ function calcularResultados() {
   if (cnt) cnt.textContent = qs.length;
 
   renderHeatMap(pts);
+  renderHeatMapMapa(pts);
 
   if (qs.length === 0) {
     resAvg.textContent = '—'; resCU.textContent = '—'; resMM.textContent = '—';
@@ -968,6 +1095,115 @@ function renderHeatMap(pts) {
 }
 
 // ══════════════════════════════════════════════════════
+//  MAPA DE CALOR — sobre el mapa Leaflet
+// ══════════════════════════════════════════════════════
+function renderHeatMapMapa(pts) {
+  if (!mapaLQ || !window.LQ_MAPA) return;
+
+  // Limpiar capas anteriores
+  heatLayers.forEach(l => { try { mapaLQ.removeLayer(l); } catch(_) {} });
+  heatLayers = [];
+
+  const hs = appState._hilerasMedicion;
+  if (!hs || !appState.cuartel) return;
+
+  const cuartelNum = parseInt(appState.cuartel.replace('C', ''));
+
+  // Calcular promedio por hilera (fila del grid) y rango global
+  const hileraData = [0,1,2,3].map(r => {
+    const allQs = [0,1,2,3].map(c => pts[r*4+c].q);
+    const valid  = allQs.filter(q => q != null);
+    return { h: hs[r], avg: valid.length ? valid.reduce((a,b)=>a+b,0)/valid.length : null, qs: allQs };
+  });
+
+  const avgs  = hileraData.map(d=>d.avg).filter(a=>a!=null);
+  const allQs = pts.map(p=>p.q).filter(q=>q!=null);
+  if (!avgs.length) return;
+
+  const mn = Math.min(...allQs), mx = Math.max(...allQs), range = mx - mn;
+
+  // Posiciones relativas de los 4 goteros a lo largo de la hilera (A→B)
+  const GOTERO_T = [0.05, 0.35, 0.65, 0.95];
+
+  hileraData.forEach(hd => {
+    if (hd.h == null) return;
+    const entry = window.LQ_MAPA.HILERAS_DATA.find(h => h[0]===cuartelNum && h[1]===hd.h);
+    if (!entry) return;
+
+    const [, , latA, lngA, latB, lngB] = entry;
+
+    if (hd.avg == null) {
+      // Hilera sin mediciones → línea gris delgada
+      const l = L.polyline([[latA,lngA],[latB,lngB]],
+        {color:'#555e70', weight:4, opacity:0.6, interactive:false}).addTo(mapaLQ);
+      heatLayers.push(l);
+      return;
+    }
+
+    // Línea gruesa coloreada por promedio de esa hilera
+    const avgRatio = range>0 ? (hd.avg - mn)/range : 0.5;
+    const lineColor = heatColor(avgRatio);
+
+    const popupHtml =
+      `<div style="font-size:12px;font-family:-apple-system,sans-serif;line-height:1.6">
+        <b style="font-size:13px">H ${hd.h}</b> &nbsp;·&nbsp; Promedio: <b>${hd.avg.toFixed(2)} L/h</b><br>
+        <span style="color:#6b7280">
+          G1: ${hd.qs[0]!=null?hd.qs[0].toFixed(2):'—'}
+          &nbsp;G2: ${hd.qs[1]!=null?hd.qs[1].toFixed(2):'—'}
+          &nbsp;G3: ${hd.qs[2]!=null?hd.qs[2].toFixed(2):'—'}
+          &nbsp;G4: ${hd.qs[3]!=null?hd.qs[3].toFixed(2):'—'} L/h
+        </span>
+      </div>`;
+
+    const line = L.polyline([[latA,lngA],[latB,lngB]],
+      {color:lineColor, weight:9, opacity:0.85}).addTo(mapaLQ);
+    line.bindPopup(popupHtml, {maxWidth:260});
+    heatLayers.push(line);
+
+    // Contorno blanco detrás para legibilidad
+    const outline = L.polyline([[latA,lngA],[latB,lngB]],
+      {color:'#fff', weight:11, opacity:0.25, interactive:false}).addTo(mapaLQ);
+    heatLayers.push(outline);
+    outline.bringToBack();
+
+    // Markers individuales por gotero
+    GOTERO_T.forEach((t, c) => {
+      const q = hd.qs[c];
+      const lat = latA + (latB-latA)*t;
+      const lng = lngA + (lngB-lngA)*t;
+      const qRatio = (q!=null && range>0) ? (q-mn)/range : (q!=null ? 0.5 : null);
+      const fc = qRatio!=null ? heatColor(qRatio) : '#555e70';
+      const m = L.circleMarker([lat,lng], {
+        radius:7, color:'#fff', weight:2, fillColor:fc, fillOpacity:1
+      }).addTo(mapaLQ);
+      if (q!=null) m.bindPopup(
+        `<b>H${hd.h} · G${c+1}</b><br>${q.toFixed(2)} L/h`,
+        {maxWidth:140});
+      heatLayers.push(m);
+    });
+  });
+
+  // Auto-mostrar y hacer zoom al área medida
+  if (heatLayers.length) {
+    const mapaBody = document.getElementById('mapaBody');
+    const btn      = document.getElementById('mapToggleBtn');
+    if (mapaBody && mapaBody.classList.contains('hidden')) {
+      mapaBody.classList.remove('hidden');
+      if (btn) btn.textContent = 'Ocultar';
+      setTimeout(() => mapaLQ.invalidateSize(), 60);
+    }
+    setTimeout(() => {
+      try {
+        const bounds = L.latLngBounds(
+          heatLayers.filter(l => l instanceof L.Polyline).map(l => l.getLatLngs()).flat()
+        );
+        if (bounds.isValid()) mapaLQ.fitBounds(bounds, {padding:[40,40], animate:true, maxZoom:19});
+      } catch(_) {}
+    }, 100);
+  }
+}
+
+// ══════════════════════════════════════════════════════
 //  GPS
 // ══════════════════════════════════════════════════════
 function pedirGPS() {
@@ -1063,7 +1299,14 @@ function toggleMapa() {
   const btn  = document.getElementById('mapToggleBtn');
   const oculto = body.classList.toggle('hidden');
   btn.textContent = oculto ? 'Mostrar' : 'Ocultar';
-  if (!oculto && mapaLQ) setTimeout(() => mapaLQ.invalidateSize(), 50);
+  if (!oculto && mapaLQ) {
+    setTimeout(() => {
+      mapaLQ.invalidateSize();
+      // Re-renderizar heat map si hay mediciones
+      const pts = leerMediciones16();
+      if (pts.some(p => p.q != null)) renderHeatMapMapa(pts);
+    }, 60);
+  }
 }
 
 // ══════════════════════════════════════════════════════
@@ -1126,6 +1369,8 @@ function guardarEstado() {
   ['tipoGotero','caudalNominal','presionMedida','notas'].forEach(id => {
     const el = document.getElementById(id); if (el) appState[id] = el.value;
   });
+  const hi = document.getElementById('hileraInicio');
+  if (hi) appState.hileraInicio = hi.value;
   // Guardar las 16 mediciones
   const meds = [];
   for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) {
@@ -1146,6 +1391,9 @@ function restaurarEstado() {
     ['tipoGotero','caudalNominal','presionMedida','notas'].forEach(id => {
       const el = document.getElementById(id); if (el && s[id]) el.value = s[id];
     });
+    if (s.hileraInicio) {
+      const hi = document.getElementById('hileraInicio'); if (hi) { hi.value = s.hileraInicio; hi.dataset.userEdited = '1'; }
+    }
     // Restaurar mediciones 16 puntos
     if (Array.isArray(s.mediciones)) {
       s.mediciones.forEach((val, i) => {
@@ -1202,6 +1450,8 @@ async function handleSubmit() {
     tipo_gotero:       appState.tipoGotero || '',
     caudal_nominal:    appState.caudalNominal || '',
     presion_medida:    appState.presionMedida || '',
+    hilera_inicio:  appState.hileraInicio || '',
+    hileras_medidas: appState._hilerasMedicion ? appState._hilerasMedicion.join(',') : '',
     ...meds16,
     caudal_avg_lh:     appState._avg  != null ? appState._avg.toFixed(3)  : '',
     caudal_min_lh:     appState._min  != null ? appState._min.toFixed(3)  : '',
@@ -1246,7 +1496,10 @@ function mostrarExito(p) {
 function resetForm() {
   document.getElementById('overlaySuccess').classList.remove('visible');
   const op = appState.operador;
-  appState = { operador: op, sector: null, cuartel: null, valvula: null, lado: null, tipoGotero: '', caudalNominal: '', presionMedida: '', mediciones: Array(16).fill(''), notas: '', fotos: [], gps: gpsData };
+  appState = { operador: op, sector: null, cuartel: null, valvula: null, lado: null, tipoGotero: '', caudalNominal: '', presionMedida: '', mediciones: Array(16).fill(''), hileraInicio: '', _hilerasMedicion: null, notas: '', fotos: [], gps: gpsData };
+  const hi = document.getElementById('hileraInicio'); if (hi) { hi.value = ''; delete hi.dataset.userEdited; }
+  document.getElementById('hileraRangeBox').style.display = 'none';
+  [0,1,2,3].forEach(i => { const l = document.getElementById(`rowLbl_${i}`); if (l) l.textContent = 'H —'; });
   sessionStorage.removeItem(STATE_KEY);
   document.querySelectorAll('.sel-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('lateralResumen').style.display = 'none';
