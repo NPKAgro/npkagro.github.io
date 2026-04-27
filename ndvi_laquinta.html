@@ -1,0 +1,1983 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NDVI — La Quinta | ADP</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: #0d1b2a;
+    color: #c9d6df;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: #132232;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    border-bottom: 1px solid #1e3347;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+  }
+  .header-title { display: flex; align-items: center; gap: 10px; }
+  .header-title h1 { font-size: 16px; font-weight: 700; color: #4caf50; }
+  .header-sub { font-size: 11px; color: #6b8499; margin-top: 1px; }
+  .header-controls { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+  select {
+    background: #1a2e42;
+    border: 1px solid #1e3347;
+    color: #c9d6df;
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    min-width: 180px;
+  }
+  select:focus { outline: none; border-color: #4caf50; }
+
+  .btn {
+    background: #4caf50;
+    color: #fff;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn:hover { background: #43a047; }
+  .btn:disabled { background: #2d4a3e; color: #6b8499; cursor: not-allowed; }
+
+  .btn-outline {
+    background: transparent;
+    border: 1px solid #1e3347;
+    color: #c9d6df;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-outline:hover { border-color: #4caf50; color: #4caf50; }
+
+  /* ── MAIN LAYOUT ── */
+  .main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* ── MAP PANEL ── */
+  .map-panel {
+    flex: 1.6;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid #1e3347;
+  }
+  #map { flex: 1; }
+
+  /* Map loading overlay */
+  .map-loading {
+    position: absolute;
+    inset: 0;
+    background: rgba(13, 27, 42, 0.75);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 800;
+    gap: 12px;
+    pointer-events: none;
+  }
+  .map-loading.hidden { display: none; }
+
+  /* ── RIGHT PANEL ── */
+  .right-panel {
+    width: 320px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    background: #0d1b2a;
+    overflow-y: auto;
+  }
+
+  .panel-section {
+    padding: 14px 16px;
+    border-bottom: 1px solid #1e3347;
+  }
+  .section-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: #4b6478;
+    margin-bottom: 10px;
+    font-weight: 600;
+  }
+
+  /* ── CUARTEL CARDS ── */
+  .cuartel-card {
+    background: #132232;
+    border-radius: 8px;
+    padding: 11px 13px;
+    margin-bottom: 7px;
+    border-left: 3px solid #4caf50;
+    transition: border-color 0.2s;
+  }
+  .cuartel-card:last-child { margin-bottom: 0; }
+  .card-top { display: flex; justify-content: space-between; align-items: center; }
+  .card-name { font-size: 12px; font-weight: 600; color: #b0c4d4; }
+  .card-ha { font-size: 10px; color: #4b6478; }
+  .card-ndvi { font-size: 26px; font-weight: 700; margin: 3px 0 6px; line-height: 1; }
+  .card-ndvi span { font-size: 11px; font-weight: 400; color: #6b8499; vertical-align: super; margin-left: 3px; }
+  .ndvi-bar-bg { height: 4px; background: #1e3347; border-radius: 2px; overflow: hidden; }
+  .ndvi-bar-fill { height: 100%; border-radius: 2px; transition: width 0.6s ease; }
+  .card-meta { font-size: 10px; color: #4b6478; margin-top: 5px; }
+
+  /* ── CHART ── */
+  .chart-section { padding: 14px 16px; flex: 1; display: flex; flex-direction: column; }
+  .chart-chips { display: flex; gap: 6px; margin-bottom: 10px; }
+  .chip {
+    background: #132232;
+    border: 1px solid #1e3347;
+    color: #6b8499;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .chip.active { background: #1e3d28; border-color: #4caf50; color: #4caf50; }
+  .chip:hover:not(.active) { border-color: #2d4a5c; color: #c9d6df; }
+  .chart-wrap { position: relative; flex: 1; min-height: 180px; }
+  #chartNDVI { width: 100% !important; height: 100% !important; }
+  .chart-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(13, 27, 42, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+  }
+  .chart-overlay.hidden { display: none; }
+
+  /* ── SPINNER ── */
+  .spinner {
+    width: 28px; height: 28px;
+    border: 3px solid #1e3347;
+    border-top-color: #4caf50;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  .spinner.lg { width: 40px; height: 40px; border-width: 4px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── STATUS BAR ── */
+  .status-bar {
+    background: #0a1520;
+    padding: 5px 16px;
+    font-size: 10px;
+    color: #4b6478;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    flex-shrink: 0;
+    border-top: 1px solid #1e3347;
+  }
+  .status-dot { width: 5px; height: 5px; border-radius: 50%; background: #4caf50; flex-shrink: 0; }
+  .status-dot.error { background: #e53935; }
+  .status-dot.loading { background: #fb8c00; animation: pulse 1s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  /* ── MODAL (Configuración) ── */
+  .modal-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.65);
+    z-index: 2000;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-backdrop.show { display: flex; }
+  .modal-box {
+    background: #132232;
+    border-radius: 12px;
+    padding: 26px 28px;
+    width: 420px;
+    max-width: 95vw;
+    border: 1px solid #1e3347;
+  }
+  .modal-box h2 { font-size: 15px; font-weight: 700; color: #4caf50; margin-bottom: 6px; }
+  .modal-box p { font-size: 12px; color: #6b8499; margin-bottom: 18px; line-height: 1.5; }
+  .form-group { margin-bottom: 14px; }
+  .form-group label { display: block; font-size: 11px; color: #6b8499; margin-bottom: 5px; font-weight: 600; }
+  .form-group input {
+    width: 100%;
+    background: #0d1b2a;
+    border: 1px solid #1e3347;
+    color: #c9d6df;
+    padding: 8px 12px;
+    border-radius: 7px;
+    font-size: 13px;
+  }
+  .form-group input:focus { outline: none; border-color: #4caf50; }
+  .modal-hint {
+    background: #0d1b2a;
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-size: 11px;
+    color: #4b6478;
+    line-height: 1.6;
+    margin-bottom: 18px;
+  }
+  .modal-hint a { color: #4caf50; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
+
+  /* ── LEAFLET TOOLTIP CUARTELES ── */
+  .cuartel-tooltip {
+    background: rgba(13, 27, 42, 0.92) !important;
+    border: 1px solid #1e3347 !important;
+    color: #c9d6df !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    padding: 4px 9px !important;
+    border-radius: 5px !important;
+    box-shadow: none !important;
+  }
+  .cuartel-tooltip::before { display: none !important; }
+
+  /* ── NDVI LEGEND (leaflet control) ── */
+  .ndvi-legend {
+    background: rgba(19, 34, 50, 0.93);
+    border: 1px solid #1e3347;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+  }
+  .ndvi-legend .leg-title { font-size: 10px; color: #6b8499; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 5px; }
+  .ndvi-legend .leg-bar {
+    height: 10px;
+    border-radius: 3px;
+    width: 160px;
+    background: linear-gradient(to right, #8B1A1A, #cc3c32, #e67e22, #f1c40f, #7dc244, #27ae60, #145a32);
+    margin-bottom: 3px;
+  }
+  .ndvi-legend .leg-labels { display: flex; justify-content: space-between; width: 160px; font-size: 9px; color: #4b6478; }
+
+  /* Popup NDVI click */
+.leaflet-popup-content-wrapper {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+.leaflet-popup-content { margin: 0 !important; }
+.leaflet-popup-tip-container { display: none !important; }
+
+/* Botones de índice */
+  .idx-btn {
+    background: #132232; border: 1px solid #1e3347; color: #6b8499;
+    padding: 4px 10px; border-radius: 5px; font-size: 11px; font-weight: 600;
+    cursor: pointer; transition: all 0.15s; white-space: nowrap;
+  }
+  .idx-btn:hover:not(.active) { border-color: #2d4a5c; color: #c9d6df; }
+  .idx-btn.active { background: #1e3d28; border-color: #4caf50; color: #4caf50; }
+  .idx-btn.active.blue { background: #1a2e4a; border-color: #1e88e5; color: #1e88e5; }
+  .idx-btn.active.purple { background: #2a1a3a; border-color: #8e24aa; color: #8e24aa; }
+  .idx-btn.active.orange { background: #3a2a10; border-color: #fb8c00; color: #fb8c00; }
+  .idx-btn.active.teal { background: #1a3a3a; border-color: #00897b; color: #00897b; }
+  .idx-group { display: flex; gap: 4px; align-items: center; }
+  .cls-btn {
+    background: #0d1b2a; border: 1px solid #1e3347; color: #4b6478;
+    padding: 3px 7px; border-radius: 4px; font-size: 10px; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .cls-btn.active { border-color: #00897b; color: #00897b; }
+  .idx-btn.active.lime  { background: #1e3a20; border-color: #7cb342; color: #7cb342; }
+  .idx-btn.active.amber { background: #3a2a10; border-color: #f9a825; color: #f9a825; }
+  .idx-btn.active.fire  { background: #3a1010; border-color: #e53935; color: #e53935; }
+  #clsSelector { display: none; align-items: center; gap: 3px; }
+
+  /* ── FENOLOGÍA ── */
+  .pheno-row {
+    display: flex; gap: 7px; align-items: flex-start;
+    margin-bottom: 5px; padding: 7px 9px;
+    background: #0d1b2a; border-radius: 6px;
+    border-left: 2px solid #1e3347;
+  }
+  .pheno-cuartel { font-size: 10px; font-weight: 700; color: #b0c4d4; min-width: 24px; padding-top: 1px; }
+  .pheno-state-big { font-size: 11px; color: #c9d6df; font-weight: 600; margin-bottom: 3px; }
+  .pheno-chips { display: flex; flex-wrap: wrap; gap: 3px; }
+  .pheno-chip { background: #132232; border-radius: 3px; padding: 2px 6px; font-size: 9px; color: #4b6478; }
+  .pheno-chip b { color: #6b8499; }
+
+/* Opacity slider */
+  .opacity-control {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: #6b8499;
+  }
+  input[type=range] {
+    width: 80px;
+    accent-color: #4caf50;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════
+     MODAL: Configuración CDSE
+══════════════════════════════════════════════ -->
+<div class="modal-backdrop show" id="modalConfig">
+  <div class="modal-box">
+    <h2>🛰️ Conectar Copernicus CDSE</h2>
+    <p>Ingresa tus credenciales OAuth de Copernicus Data Space. Se guardan localmente en tu navegador.</p>
+    <div class="modal-hint">
+      <strong style="color:#c9d6df;">Cómo obtenerlas:</strong><br>
+      1. Ve a <a href="https://dataspace.copernicus.eu" target="_blank">dataspace.copernicus.eu</a> → Login<br>
+      2. Menú usuario → <strong style="color:#c9d6df;">User Settings</strong><br>
+      3. Sección <strong style="color:#c9d6df;">OAuth Clients</strong> → <strong style="color:#c9d6df;">"Create client"</strong><br>
+      4. Dale un nombre (ej: <em>adp-ndvi</em>) → copia Client ID y Secret
+    </div>
+    <div class="form-group">
+      <label>Client ID</label>
+      <input type="text" id="inputClientId" placeholder="sh-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" autocomplete="off" />
+    </div>
+    <div class="form-group">
+      <label>Client Secret</label>
+      <input type="password" id="inputClientSecret" placeholder="tu-client-secret" autocomplete="off" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn-outline" onclick="skipConfig()">Ver demo (sin datos)</button>
+      <button class="btn" onclick="saveConfig()">Guardar y conectar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     HEADER
+══════════════════════════════════════════════ -->
+<div class="header">
+  <div class="header-title">
+    <span style="font-size:22px;">🛰️</span>
+    <div>
+      <h1>NDVI — La Quinta</h1>
+      <div class="header-sub">Sentinel-2 L2A · Cerezos Santina · 3 cuarteles · 10.93 ha · Copernicus CDSE</div>
+    </div>
+  </div>
+  <div class="header-controls">
+    <!-- Selector de índice -->
+    <div class="idx-group">
+      <button class="idx-btn active"      id="btn-ndvi" onclick="setIndex('ndvi',this)">NDVI</button>
+      <button class="idx-btn"             id="btn-ndwi" onclick="setIndex('ndwi',this)">NDWI</button>
+      <button class="idx-btn"             id="btn-ndre" onclick="setIndex('ndre',this)">NDRE</button>
+      <button class="idx-btn"             id="btn-evi"  onclick="setIndex('evi',this)">EVI</button>
+      <button class="idx-btn"             id="btn-cire" onclick="setIndex('cire',this)">CI_RE</button>
+      <button class="idx-btn"             id="btn-psri" onclick="setIndex('psri',this)">PSRI</button>
+      <button class="idx-btn"             id="btn-kc"   onclick="setIndex('kc',this)">Kc</button>
+      <button class="idx-btn"             id="btn-iso"  onclick="setIndex('iso',this)">ISO</button>
+    </div>
+    <!-- Selector de clases (solo ISO) -->
+    <div id="clsSelector" style="display:none;align-items:center;gap:3px;">
+      <span style="font-size:10px;color:#4b6478;">Clases:</span>
+      <button class="cls-btn"        onclick="setIsoClasses(3,this)">3</button>
+      <button class="cls-btn active"  onclick="setIsoClasses(6,this)">6</button>
+      <button class="cls-btn"        onclick="setIsoClasses(10,this)">10</button>
+      <button class="cls-btn"        onclick="setIsoClasses(15,this)">15</button>
+      <button class="cls-btn"        onclick="setIsoClasses(20,this)">20</button>
+    </div>
+    <div class="opacity-control">
+      <span>Opacidad</span>
+      <input type="range" id="opacitySlider" min="20" max="100" value="85" oninput="setNDVIOpacity(this.value)">
+    </div>
+    <select id="selectScene" onchange="onSceneChange()">
+      <option value="">— Selecciona imagen —</option>
+    </select>
+    <button class="btn" id="btnLoad" onclick="loadNDVI()" style="display:none" disabled>Ver NDVI</button>
+    <button class="btn-outline" onclick="showConfig()" title="Configurar credenciales">⚙️</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     MAIN
+══════════════════════════════════════════════ -->
+<div class="main">
+
+  <!-- MAP -->
+  <div class="map-panel">
+    <div id="map"></div>
+    <div class="map-loading hidden" id="mapLoading">
+      <div class="spinner lg"></div>
+      <div style="font-size:12px;color:#6b8499;" id="mapLoadingText">Cargando imagen NDVI...</div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="right-panel">
+
+    <!-- Cuartel cards -->
+    <div class="panel-section">
+      <div class="section-label" id="indexSectionLabel">NDVI por cuartel</div>
+      <div id="cuartelCards">
+        <!-- JS generado -->
+      </div>
+    </div>
+
+    <!-- Fenología estimada -->
+    <div class="panel-section" id="phenoSection" style="display:none;">
+      <div class="section-label">FENOLOGÍA ESTIMADA</div>
+      <div id="phenoContent"></div>
+    </div>
+
+    <!-- Time series -->
+    <div class="chart-section">
+      <div class="section-label" id="chartSectionLabel">Serie temporal NDVI</div>
+      <div class="chart-chips">
+        <span class="chip active" onclick="setChartPeriod('6m',this)">6 meses</span>
+        <span class="chip" onclick="setChartPeriod('1y',this)">1 año</span>
+        <span class="chip" onclick="setChartPeriod('2y',this)">2 años</span>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="chartNDVI"></canvas>
+        <div class="chart-overlay" id="chartOverlay">
+          <div class="spinner"></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /right-panel -->
+</div><!-- /main -->
+
+<!-- STATUS -->
+<div class="status-bar">
+  <div class="status-dot" id="statusDot"></div>
+  <span id="statusText">Inicializando...</span>
+  <button id="btnReconnect" onclick="reconnect()" style="display:none;margin-left:10px;background:#e53935;border:none;color:#fff;padding:2px 10px;border-radius:4px;font-size:10px;cursor:pointer;">🔄 Reconectar</button>
+</div>
+
+<script>
+'use strict';
+
+// ══════════════════════════════════════════════════════════════
+// DATOS CUARTELES (extraídos del KMZ)
+// ══════════════════════════════════════════════════════════════
+const CUARTELES = [
+  {
+    id: 'C2', nombre: 'C2 - SANTINA/COLT', ha: 3.677,
+    color: '#43a047',
+    coords: [
+      [-71.83790826364597, -35.71725017101220],
+      [-71.83832703723644, -35.71861356762841],
+      [-71.83709536269433, -35.71887834100395],
+      [-71.83579865767145, -35.71915707866409],
+      [-71.83537994836840, -35.71779366640047],
+      [-71.83665609559088, -35.71751934912969]
+    ]
+  },
+  {
+    id: 'C3', nombre: 'C3 - SANTINA/COLT', ha: 3.644,
+    color: '#1e88e5',
+    coords: [
+      [-71.83835116272870, -35.71869223165067],
+      [-71.83877211927300, -35.72005516001343],
+      [-71.83755999126502, -35.72031573318111],
+      [-71.83624339571371, -35.72059828020625],
+      [-71.83582283138756, -35.71923573309082],
+      [-71.83712070568890, -35.71895674403947]
+    ]
+  },
+  {
+    id: 'C4', nombre: 'C4 - SANTINA/COLT', ha: 3.614,
+    color: '#8e24aa',
+    coords: [
+      [-71.83879632141426, -35.72013380768252],
+      [-71.83921532041771, -35.72149715866041],
+      [-71.83802463820788, -35.72175312249528],
+      [-71.83675093641563, -35.72202691839670],
+      [-71.83631121534603, -35.72066802057996],
+      [-71.83758533526166, -35.72039413606046]
+    ]
+  }
+];
+
+// Bounding box [minLon, minLat, maxLon, maxLat]
+const BBOX = [-71.83922, -35.72203, -71.83538, -35.71725];
+const CENTER_LATLNG = [-35.71964, -71.83730]; // Leaflet usa [lat, lon]
+
+// ══════════════════════════════════════════════════════════════
+// ENDPOINTS CDSE
+// ══════════════════════════════════════════════════════════════
+const URL_TOKEN   = 'https://identity.dataspace.copernicus.eu/auth/realms/CDSE/protocol/openid-connect/token';
+const URL_CATALOG = 'https://sh.dataspace.copernicus.eu/api/v1/catalog/1.0.0/search'; // CORS OK
+const URL_PROCESS = 'https://sh.dataspace.copernicus.eu/api/v1/process';
+const URL_STATS   = 'https://sh.dataspace.copernicus.eu/api/v1/statistics';
+
+// ══════════════════════════════════════════════════════════════
+// ESTADO GLOBAL
+// ══════════════════════════════════════════════════════════════
+let map            = null;
+let ndviLayer      = null;
+let ndviChart      = null;
+let accessToken    = null;
+let tokenExpiry    = 0;
+let availableScenes = [];
+let selectedScene  = null;
+let chartPeriod    = '6m';
+let currentStats   = {}; // {C2: 0.72, C3: 0.68, C4: 0.75}
+
+// ══════════════════════════════════════════════════════════════
+// CONFIGURACIÓN / CREDENCIALES
+// ══════════════════════════════════════════════════════════════
+function getCreds() {
+  return {
+    clientId:     localStorage.getItem('cdse_client_id')     || '',
+    clientSecret: localStorage.getItem('cdse_client_secret') || ''
+  };
+}
+
+function saveConfig() {
+  const cid = document.getElementById('inputClientId').value.trim();
+  const sec = document.getElementById('inputClientSecret').value.trim();
+  if (!cid || !sec) { alert('Ingresa ambos campos.'); return; }
+  localStorage.setItem('cdse_client_id', cid);
+  localStorage.setItem('cdse_client_secret', sec);
+  accessToken = null; // forzar re-auth
+  document.getElementById('modalConfig').classList.remove('show');
+  init();
+}
+
+function skipConfig() {
+  document.getElementById('modalConfig').classList.remove('show');
+  setStatus('Sin credenciales — configura tu cuenta CDSE para ver datos reales', 'error');
+}
+
+function showConfig() {
+  const c = getCreds();
+  document.getElementById('inputClientId').value = c.clientId;
+  document.getElementById('inputClientSecret').value = c.clientSecret;
+  document.getElementById('modalConfig').classList.add('show');
+}
+
+// ══════════════════════════════════════════════════════════════
+// TOKEN OAUTH2 — con reintento automático
+// ══════════════════════════════════════════════════════════════
+async function fetchNewToken() {
+  const c = getCreds();
+  if (!c.clientId || !c.clientSecret) throw new Error('Sin credenciales. Configura tu cuenta CDSE.');
+  const r = await fetch(URL_TOKEN, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: `grant_type=client_credentials&client_id=${encodeURIComponent(c.clientId)}&client_secret=${encodeURIComponent(c.clientSecret)}`
+  });
+  if (!r.ok) {
+    const txt = await r.text();
+    throw new Error(`Auth CDSE ${r.status}: ${txt.slice(0,120)}`);
+  }
+  const d = await r.json();
+  accessToken = d.access_token;
+  // Guardar token en sessionStorage para sobrevivir entre llamadas
+  sessionStorage.setItem('cdse_token', accessToken);
+  sessionStorage.setItem('cdse_token_expiry', String(Date.now() + (d.expires_in - 120) * 1000));
+  tokenExpiry = Date.now() + (d.expires_in - 120) * 1000;
+  return accessToken;
+}
+
+async function getToken() {
+  // Recuperar de sessionStorage si existe (sobrevive a re-renders)
+  if (!accessToken) {
+    const saved = sessionStorage.getItem('cdse_token');
+    const exp   = parseInt(sessionStorage.getItem('cdse_token_expiry') || '0');
+    if (saved && Date.now() < exp) {
+      accessToken  = saved;
+      tokenExpiry  = exp;
+    }
+  }
+  if (accessToken && Date.now() < tokenExpiry) return accessToken;
+  // Token expirado → renovar
+  try {
+    return await fetchNewToken();
+  } catch (err) {
+    if (err.message.includes('Failed to fetch')) {
+      throw new Error('Conexión perdida con Copernicus. Haz clic en 🔄 para reconectar.');
+    }
+    throw err;
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// BUSCAR ESCENAS DISPONIBLES (STAC)
+// ══════════════════════════════════════════════════════════════
+async function searchScenes(daysBack = 400) {
+  const token = await getToken();
+  const dateFrom = isoDate(Date.now() - daysBack * 86400000);
+  const dateTo   = isoDate(Date.now());
+
+  // Usar SH Catalog API (mismo dominio que Stats/Process → CORS OK)
+  const payload = {
+    bbox:        BBOX,
+    datetime:    `${dateFrom}T00:00:00Z/${dateTo}T23:59:59Z`,
+    collections: ['sentinel-2-l2a'],
+    limit:       100,
+    filter:      'eo:cloud_cover < 40',
+    'filter-lang': 'cql2-text'
+  };
+
+  const r = await fetch(URL_CATALOG, {
+    method:  'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type':  'application/json'
+    },
+    body: JSON.stringify(payload)
+  });
+  if (!r.ok) {
+    const t = await r.text();
+    throw new Error(`Catalog API ${r.status}: ${t.slice(0,150)}`);
+  }
+  const data = await r.json();
+
+  return (data.features || [])
+    .map(f => ({
+      id:         f.id,
+      date:       (f.properties.datetime || f.properties.end_datetime || '').slice(0, 10),
+      cloudCover: Math.round(f.properties['eo:cloud_cover'] ?? f.properties.cloudCoverage ?? 99),
+      platform:   f.properties.platform || 'S2'
+    }))
+    .filter(s => s.date && s.cloudCover <= 40)
+    .sort((a, b) => b.date.localeCompare(a.date));
+}
+
+// ══════════════════════════════════════════════════════════════
+// ESTADO DE ÍNDICE ACTIVO
+// ══════════════════════════════════════════════════════════════
+let currentIndex = 'ndvi';
+let isoClasses   = 6;
+
+const INDEX_META = {
+  ndvi: { label: 'NDVI',  unit: '', min: 0,    max: 1,   color: '#4caf50', activeClass: '' },
+  ndwi: { label: 'NDWI',  unit: '', min: -0.5, max: 0.5, color: '#1e88e5', activeClass: 'blue' },
+  ndre: { label: 'NDRE',  unit: '', min: 0,    max: 0.5, color: '#8e24aa', activeClass: 'purple' },
+  evi:  { label: 'EVI',   unit: '', min: 0,    max: 0.8, color: '#7cb342', activeClass: 'lime' },
+  cire: { label: 'CI_RE', unit: '', min: 0,    max: 3.0, color: '#f9a825', activeClass: 'amber' },
+  psri: { label: 'PSRI',  unit: '', min: -0.2, max: 0.3, color: '#e53935', activeClass: 'fire' },
+  kc:   { label: 'Kc',    unit: '', min: 0.2,  max: 1.3, color: '#fb8c00', activeClass: 'orange' },
+  iso:  { label: 'Clase', unit: '', min: 1,    max: 10,  color: '#00897b', activeClass: 'teal' }
+};
+
+const INDEX_LABELS = {
+  ndvi: 'NDVI — Vigor vegetativo',
+  ndwi: 'NDWI — Agua vegetación',
+  ndre: 'NDRE — Nitrógeno',
+  evi:  'EVI — Vigor mejorado',
+  cire: 'CI_RE — Clorofila',
+  psri: 'PSRI — Senescencia / Estrés',
+  kc:   'Kc — Coef. cultivo',
+  iso:  'ISO — Clasificación'
+};
+
+function setIndex(idx, el) {
+  currentIndex = idx;
+  document.querySelectorAll('.idx-btn').forEach(b => b.classList.remove('active','blue','purple','orange','teal','lime','amber','fire'));
+  const meta = INDEX_META[idx];
+  el.classList.add('active');
+  if (meta.activeClass) el.classList.add(meta.activeClass);
+  document.getElementById('clsSelector').style.display = idx === 'iso' ? 'flex' : 'none';
+  // Actualizar etiquetas dinámicas
+  const lbl = INDEX_LABELS[idx] || idx.toUpperCase();
+  document.getElementById('indexSectionLabel').textContent = lbl.replace(' —', ' ·') + ' · por cuartel';
+  document.getElementById('chartSectionLabel').textContent = 'Serie temporal — ' + (lbl.split(' — ')[0] || idx.toUpperCase());
+  updateLegendContent();
+  if (ndviLayer || selectedScene) loadNDVI();
+}
+
+function setIsoClasses(n, el) {
+  isoClasses = n;
+  document.querySelectorAll('.cls-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  updateLegendContent();
+  if (ndviLayer || selectedScene) loadNDVI();
+}
+
+// ══════════════════════════════════════════════════════════════
+// EVALSCRIPTS
+// ══════════════════════════════════════════════════════════════
+const EVALSCRIPT_VISUAL = `//VERSION=3
+function setup() {
+  return {
+    input: [{ bands: ["B04","B08","SCL","dataMask"] }],
+    output: { bands: 4, sampleType: "UINT8" }
+  };
+}
+function colorFromNDVI(v) {
+  v = Math.max(0, Math.min(1, v));
+  const ramp = [
+    [0.00, [139, 26, 26]],
+    [0.15, [204, 60, 50]],
+    [0.25, [230, 126, 34]],
+    [0.35, [241, 196, 15]],
+    [0.45, [125, 194, 68]],
+    [0.60, [39, 174, 96]],
+    [0.80, [30, 130, 76]],
+    [1.00, [20,  90, 50]]
+  ];
+  for (let i = 0; i < ramp.length - 1; i++) {
+    if (v >= ramp[i][0] && v <= ramp[i+1][0]) {
+      const t = (v - ramp[i][0]) / (ramp[i+1][0] - ramp[i][0]);
+      return ramp[i][1].map((c,j) => Math.round(c + t*(ramp[i+1][1][j]-c)));
+    }
+  }
+  return [20, 90, 50];
+}
+function evaluatePixel(s) {
+  if (!s.dataMask) return [0,0,0,0];
+  if ([3,8,9,10].includes(s.SCL)) return [160,160,160,120]; // nubes/sombras gris
+  const ndvi = (s.B08 - s.B04) / (s.B08 + s.B04 + 1e-6);
+  const c = colorFromNDVI(ndvi);
+  return [c[0], c[1], c[2], 210];
+}`;
+
+// ── NDWI (Vegetation Water Index: B08-B11 / B08+B11) ──
+const EVALSCRIPT_NDWI_COLOR = `//VERSION=3
+function setup() {
+  return { input: [{ bands: ["B08","B11","SCL","dataMask"] }], output: { bands: 4, sampleType: "UINT8" } };
+}
+function ndwiColor(v) {
+  v = Math.max(-0.5, Math.min(0.5, v));
+  const t = (v + 0.5); // 0..1
+  const ramp = [
+    [0.0,  [220, 50,  30]],   // rojo = muy seco
+    [0.25, [240, 140, 30]],   // naranja
+    [0.45, [255, 220, 50]],   // amarillo
+    [0.60, [100, 200, 230]],  // celeste
+    [0.80, [30,  130, 200]],  // azul
+    [1.0,  [10,  60,  180]]   // azul oscuro = muy húmedo
+  ];
+  for (let i = 0; i < ramp.length-1; i++) {
+    if (t >= ramp[i][0] && t <= ramp[i+1][0]) {
+      const r = (t-ramp[i][0])/(ramp[i+1][0]-ramp[i][0]);
+      return ramp[i][1].map((c,j) => Math.round(c + r*(ramp[i+1][1][j]-c)));
+    }
+  }
+  return [10,60,180];
+}
+function evaluatePixel(s) {
+  if (!s.dataMask || [3,8,9,10].includes(s.SCL)) return [0,0,0,0];
+  const ndwi = (s.B08 - s.B11) / (s.B08 + s.B11 + 1e-6);
+  const c = ndwiColor(ndwi);
+  return [c[0], c[1], c[2], 210];
+}`;
+
+// ── NDRE (Red Edge: B08-B05 / B08+B05) ──
+const EVALSCRIPT_NDRE_COLOR = `//VERSION=3
+function setup() {
+  return { input: [{ bands: ["B05","B08","SCL","dataMask"] }], output: { bands: 4, sampleType: "UINT8" } };
+}
+function ndreColor(v) {
+  v = Math.max(0, Math.min(0.5, v));
+  const t = v / 0.5;
+  const ramp = [
+    [0.0,  [200, 50,  50]],
+    [0.2,  [230, 130, 30]],
+    [0.4,  [240, 220, 60]],
+    [0.65, [130, 200, 60]],
+    [0.85, [40,  160, 40]],
+    [1.0,  [10,  90,  20]]
+  ];
+  for (let i = 0; i < ramp.length-1; i++) {
+    if (t >= ramp[i][0] && t <= ramp[i+1][0]) {
+      const r = (t-ramp[i][0])/(ramp[i+1][0]-ramp[i][0]);
+      return ramp[i][1].map((c,j) => Math.round(c + r*(ramp[i+1][1][j]-c)));
+    }
+  }
+  return [10,90,20];
+}
+function evaluatePixel(s) {
+  if (!s.dataMask || [3,8,9,10].includes(s.SCL)) return [0,0,0,0];
+  const ndre = (s.B08 - s.B05) / (s.B08 + s.B05 + 1e-6);
+  const c = ndreColor(ndre);
+  return [c[0], c[1], c[2], 210];
+}`;
+
+// ── Kc (desde NDVI, misma imagen coloreada por Kc) ──
+// Kc = 1.25 × NDVI + 0.1 (cerezos, aproximado)
+const EVALSCRIPT_KC_COLOR = `//VERSION=3
+function setup() {
+  return { input: [{ bands: ["B04","B08","SCL","dataMask"] }], output: { bands: 4, sampleType: "UINT8" } };
+}
+function kcColor(kc) {
+  kc = Math.max(0.1, Math.min(1.3, kc));
+  const t = (kc - 0.1) / 1.2;
+  const ramp = [
+    [0.0,  [180, 60,  20]],
+    [0.2,  [230, 130, 30]],
+    [0.4,  [240, 210, 50]],
+    [0.6,  [130, 200, 60]],
+    [0.8,  [40,  160, 40]],
+    [1.0,  [10,  90,  20]]
+  ];
+  for (let i = 0; i < ramp.length-1; i++) {
+    if (t >= ramp[i][0] && t <= ramp[i+1][0]) {
+      const r = (t-ramp[i][0])/(ramp[i+1][0]-ramp[i][0]);
+      return ramp[i][1].map((c,j) => Math.round(c + r*(ramp[i+1][1][j]-c)));
+    }
+  }
+  return [10,90,20];
+}
+function evaluatePixel(s) {
+  if (!s.dataMask || [3,8,9,10].includes(s.SCL)) return [0,0,0,0];
+  const ndvi = (s.B08 - s.B04) / (s.B08 + s.B04 + 1e-6);
+  const kc = 1.25 * Math.max(0, ndvi) + 0.1;
+  const c = kcColor(kc);
+  return [c[0], c[1], c[2], 210];
+}`;
+
+// ── EVI (Enhanced Vegetation Index: 2.5×(B08−B04)/(B08+6×B04−7.5×B02+1)) ──
+const EVALSCRIPT_EVI_COLOR = `//VERSION=3
+function setup() {
+  return { input: [{ bands: ["B02","B04","B08","SCL","dataMask"] }], output: { bands: 4, sampleType: "UINT8" } };
+}
+function eviColor(v) {
+  v = Math.max(0, Math.min(0.8, v));
+  const t = v / 0.8;
+  const ramp = [
+    [0.0,  [160, 40,  20]],
+    [0.15, [220, 100, 20]],
+    [0.30, [240, 200, 40]],
+    [0.50, [140, 200, 50]],
+    [0.70, [40,  160, 40]],
+    [1.0,  [10,  90,  15]]
+  ];
+  for (let i = 0; i < ramp.length-1; i++) {
+    if (t >= ramp[i][0] && t <= ramp[i+1][0]) {
+      const r = (t-ramp[i][0])/(ramp[i+1][0]-ramp[i][0]);
+      return ramp[i][1].map((c,j) => Math.round(c + r*(ramp[i+1][1][j]-c)));
+    }
+  }
+  return [10,90,15];
+}
+function evaluatePixel(s) {
+  if (!s.dataMask || [3,8,9,10].includes(s.SCL)) return [0,0,0,0];
+  const evi = 2.5 * (s.B08 - s.B04) / (s.B08 + 6*s.B04 - 7.5*s.B02 + 1 + 1e-6);
+  const c = eviColor(Math.max(0, Math.min(0.8, evi)));
+  return [c[0], c[1], c[2], 210];
+}`;
+
+// ── CI_RE (Chlorophyll Index Red Edge: B07/B05 − 1) ──
+const EVALSCRIPT_CIRE_COLOR = `//VERSION=3
+function setup() {
+  return { input: [{ bands: ["B05","B07","SCL","dataMask"] }], output: { bands: 4, sampleType: "UINT8" } };
+}
+function cireColor(v) {
+  v = Math.max(0, Math.min(3.0, v));
+  const t = v / 3.0;
+  const ramp = [
+    [0.0,  [180, 40,  20]],
+    [0.15, [220, 100, 20]],
+    [0.30, [240, 200, 40]],
+    [0.50, [200, 230, 50]],
+    [0.70, [60,  180, 40]],
+    [0.85, [20,  120, 30]],
+    [1.0,  [5,   70,  10]]
+  ];
+  for (let i = 0; i < ramp.length-1; i++) {
+    if (t >= ramp[i][0] && t <= ramp[i+1][0]) {
+      const r = (t-ramp[i][0])/(ramp[i+1][0]-ramp[i][0]);
+      return ramp[i][1].map((c,j) => Math.round(c + r*(ramp[i+1][1][j]-c)));
+    }
+  }
+  return [5,70,10];
+}
+function evaluatePixel(s) {
+  if (!s.dataMask || [3,8,9,10].includes(s.SCL)) return [0,0,0,0];
+  const cire = (s.B07 / (s.B05 + 1e-6)) - 1;
+  const c = cireColor(cire);
+  return [c[0], c[1], c[2], 210];
+}`;
+
+// ── PSRI (Plant Senescence Reflectance Index: (B04−B02)/B06) ──
+// Bajo (negativo) = sano/joven · Alto (positivo) = estrés/senescencia
+const EVALSCRIPT_PSRI_COLOR = `//VERSION=3
+function setup() {
+  return { input: [{ bands: ["B02","B04","B06","SCL","dataMask"] }], output: { bands: 4, sampleType: "UINT8" } };
+}
+function psriColor(v) {
+  v = Math.max(-0.2, Math.min(0.3, v));
+  const t = (v + 0.2) / 0.5;
+  const ramp = [
+    [0.0,  [10,  120, 30]],
+    [0.2,  [100, 190, 40]],
+    [0.4,  [240, 220, 50]],
+    [0.6,  [240, 130, 20]],
+    [0.8,  [220, 50,  20]],
+    [1.0,  [160, 10,  10]]
+  ];
+  for (let i = 0; i < ramp.length-1; i++) {
+    if (t >= ramp[i][0] && t <= ramp[i+1][0]) {
+      const r = (t-ramp[i][0])/(ramp[i+1][0]-ramp[i][0]);
+      return ramp[i][1].map((c,j) => Math.round(c + r*(ramp[i+1][1][j]-c)));
+    }
+  }
+  return [160,10,10];
+}
+function evaluatePixel(s) {
+  if (!s.dataMask || [3,8,9,10].includes(s.SCL)) return [0,0,0,0];
+  const psri = (s.B04 - s.B02) / (s.B06 + 1e-6);
+  const c = psriColor(psri);
+  return [c[0], c[1], c[2], 210];
+}`;
+
+// ── ISO Classification — paleta espectral dinámica para N clases ──
+function buildISOPalette(n) {
+  // Genera paleta espectral de N colores: gris→rojo→naranja→amarillo→verde claro→verde oscuro
+  const stops = [
+    [0,   [110,110,110]],
+    [0.05,[200,30, 30]],
+    [0.2, [230,80, 20]],
+    [0.35,[240,150,20]],
+    [0.5, [250,210,40]],
+    [0.65,[180,220,50]],
+    [0.75,[80, 180,40]],
+    [0.85,[30, 130,30]],
+    [1.0, [10, 70, 15]]
+  ];
+  const palette = [];
+  for (let i = 0; i < n; i++) {
+    const t = i / Math.max(1, n-1);
+    for (let s = 0; s < stops.length-1; s++) {
+      if (t >= stops[s][0] && t <= stops[s+1][0]) {
+        const r = (t - stops[s][0]) / (stops[s+1][0] - stops[s][0]);
+        palette.push(stops[s][1].map((c,j) => Math.round(c + r*(stops[s+1][1][j]-c))));
+        break;
+      }
+    }
+  }
+  return palette;
+}
+
+function buildISOEvalscript(nClasses) {
+  const palette    = buildISOPalette(nClasses);
+  const colorsStr  = JSON.stringify(palette);
+  return `//VERSION=3
+function setup() {
+  return { input: [{ bands: ["B04","B08","SCL","dataMask"] }], output: { bands: 4, sampleType: "UINT8" } };
+}
+const PALETTE = ${colorsStr};
+const N = ${nClasses};
+function evaluatePixel(s) {
+  if (!s.dataMask || [3,8,9,10].includes(s.SCL)) return [0,0,0,0];
+  const ndvi = (s.B08 - s.B04) / (s.B08 + s.B04 + 1e-6);
+  if (ndvi <= 0) return [120,120,120,160];
+  const idx = Math.min(N-1, Math.floor(Math.max(0, Math.min(0.9999, ndvi)) * N));
+  const c = PALETTE[idx];
+  return [c[0], c[1], c[2], 220];
+}`;
+}
+
+// ── Función que devuelve el evalscript correcto según índice activo ──
+function getActiveEvalscript() {
+  switch (currentIndex) {
+    case 'ndwi': return EVALSCRIPT_NDWI_COLOR;
+    case 'ndre': return EVALSCRIPT_NDRE_COLOR;
+    case 'evi':  return EVALSCRIPT_EVI_COLOR;
+    case 'cire': return EVALSCRIPT_CIRE_COLOR;
+    case 'psri': return EVALSCRIPT_PSRI_COLOR;
+    case 'kc':   return EVALSCRIPT_KC_COLOR;
+    case 'iso':  return buildISOEvalscript(isoClasses);
+    default:     return EVALSCRIPT_VISUAL; // ndvi
+  }
+}
+
+// ── Evalscript stats según índice ──
+function getActiveStatsEvalscript() {
+  if (currentIndex === 'ndwi') return EVALSCRIPT_STATS_NDWI;
+  if (currentIndex === 'ndre') return EVALSCRIPT_STATS_NDRE;
+  if (currentIndex === 'evi')  return EVALSCRIPT_STATS_EVI;
+  if (currentIndex === 'cire') return EVALSCRIPT_STATS_CIRE;
+  if (currentIndex === 'psri') return EVALSCRIPT_STATS_PSRI;
+  return EVALSCRIPT_STATS; // ndvi, kc, iso → usan NDVI como base
+}
+
+// ── Stats NDWI ──
+const EVALSCRIPT_STATS_NDWI = `//VERSION=3
+function setup() {
+  return {
+    input: [{ bands: ["B08","B11","SCL","dataMask"] }],
+    output: [
+      { id: "ndvi", bands: 1, sampleType: "FLOAT32" },
+      { id: "dataMask", bands: 1, sampleType: "UINT8" }
+    ]
+  };
+}
+function evaluatePixel(s) {
+  if ([3,8,9,10].includes(s.SCL) || !s.dataMask) return { ndvi: [NaN], dataMask: [0] };
+  return { ndvi: [(s.B08 - s.B11) / (s.B08 + s.B11 + 1e-6)], dataMask: [1] };
+}`;
+
+// ── Stats NDRE ──
+const EVALSCRIPT_STATS_NDRE = `//VERSION=3
+function setup() {
+  return {
+    input: [{ bands: ["B05","B08","SCL","dataMask"] }],
+    output: [
+      { id: "ndvi", bands: 1, sampleType: "FLOAT32" },
+      { id: "dataMask", bands: 1, sampleType: "UINT8" }
+    ]
+  };
+}
+function evaluatePixel(s) {
+  if ([3,8,9,10].includes(s.SCL) || !s.dataMask) return { ndvi: [NaN], dataMask: [0] };
+  return { ndvi: [(s.B08 - s.B05) / (s.B08 + s.B05 + 1e-6)], dataMask: [1] };
+}`;
+
+const EVALSCRIPT_STATS = `//VERSION=3
+function setup() {
+  return {
+    input: [{ bands: ["B04","B08","SCL","dataMask"] }],
+    output: [
+      { id: "ndvi", bands: 1, sampleType: "FLOAT32" },
+      { id: "dataMask", bands: 1, sampleType: "UINT8" }
+    ]
+  };
+}
+function evaluatePixel(s) {
+  const cloudy = [3,8,9,10].includes(s.SCL);
+  if (cloudy || !s.dataMask) return { ndvi: [NaN], dataMask: [0] };
+  const ndvi = (s.B08 - s.B04) / (s.B08 + s.B04 + 1e-6);
+  return { ndvi: [ndvi], dataMask: [1] };
+}`;
+
+// ── Stats EVI ──
+const EVALSCRIPT_STATS_EVI = `//VERSION=3
+function setup() {
+  return {
+    input: [{ bands: ["B02","B04","B08","SCL","dataMask"] }],
+    output: [
+      { id: "ndvi", bands: 1, sampleType: "FLOAT32" },
+      { id: "dataMask", bands: 1, sampleType: "UINT8" }
+    ]
+  };
+}
+function evaluatePixel(s) {
+  if ([3,8,9,10].includes(s.SCL) || !s.dataMask) return { ndvi: [NaN], dataMask: [0] };
+  const evi = 2.5 * (s.B08 - s.B04) / (s.B08 + 6*s.B04 - 7.5*s.B02 + 1 + 1e-6);
+  return { ndvi: [Math.max(0, Math.min(0.8, evi))], dataMask: [1] };
+}`;
+
+// ── Stats CI_RE ──
+const EVALSCRIPT_STATS_CIRE = `//VERSION=3
+function setup() {
+  return {
+    input: [{ bands: ["B05","B07","SCL","dataMask"] }],
+    output: [
+      { id: "ndvi", bands: 1, sampleType: "FLOAT32" },
+      { id: "dataMask", bands: 1, sampleType: "UINT8" }
+    ]
+  };
+}
+function evaluatePixel(s) {
+  if ([3,8,9,10].includes(s.SCL) || !s.dataMask) return { ndvi: [NaN], dataMask: [0] };
+  const cire = (s.B07 / (s.B05 + 1e-6)) - 1;
+  return { ndvi: [Math.max(0, Math.min(3.0, cire))], dataMask: [1] };
+}`;
+
+// ── Stats PSRI ──
+const EVALSCRIPT_STATS_PSRI = `//VERSION=3
+function setup() {
+  return {
+    input: [{ bands: ["B02","B04","B06","SCL","dataMask"] }],
+    output: [
+      { id: "ndvi", bands: 1, sampleType: "FLOAT32" },
+      { id: "dataMask", bands: 1, sampleType: "UINT8" }
+    ]
+  };
+}
+function evaluatePixel(s) {
+  if ([3,8,9,10].includes(s.SCL) || !s.dataMask) return { ndvi: [NaN], dataMask: [0] };
+  const psri = (s.B04 - s.B02) / (s.B06 + 1e-6);
+  return { ndvi: [Math.max(-0.2, Math.min(0.3, psri))], dataMask: [1] };
+}`;
+
+// ══════════════════════════════════════════════════════════════
+// PROCESS API → imagen NDVI coloreada
+// ══════════════════════════════════════════════════════════════
+async function fetchNDVIImage(dateFrom, dateTo) {
+  const token = await getToken();
+
+  // MultiPolígono con los 3 cuarteles → recorta la imagen a los deslindes exactos
+  const multiPolygon = {
+    type: "MultiPolygon",
+    coordinates: CUARTELES.map(c => [[...c.coords, c.coords[0]]])
+  };
+
+  const payload = {
+    input: {
+      bounds: {
+        geometry: multiPolygon,
+        properties: { crs: "http://www.opengis.net/def/crs/OGC/1.3/CRS84" }
+      },
+      data: [{
+        type: "sentinel-2-l2a",
+        dataFilter: {
+          timeRange: { from: `${dateFrom}T00:00:00Z`, to: `${dateTo}T23:59:59Z` },
+          maxCloudCoverage: 50,
+          mosaickingOrder: "leastCC"
+        }
+      }]
+    },
+    evalscript: getActiveEvalscript(),
+    output: {
+      width: 640, height: 640,
+      responses: [{ format: { type: "image/png" } }]
+    }
+  };
+  const r = await fetch(URL_PROCESS, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      'Accept': 'image/png'
+    },
+    body: JSON.stringify(payload)
+  });
+  if (!r.ok) {
+    const t = await r.text();
+    throw new Error(`Process API ${r.status}: ${t.slice(0, 200)}`);
+  }
+  return r.blob();
+}
+
+// ══════════════════════════════════════════════════════════════
+// STATISTICAL API → NDVI medio por polígono, serie temporal
+// ══════════════════════════════════════════════════════════════
+async function fetchNDVIStats(coords, dateFrom, dateTo, interval = 'P10D') {
+  const token = await getToken();
+  // Cerrar el polígono
+  const ring = [...coords, coords[0]];
+  const payload = {
+    input: {
+      bounds: {
+        geometry: { type: "Polygon", coordinates: [ring] },
+        properties: { crs: "http://www.opengis.net/def/crs/OGC/1.3/CRS84" }
+      },
+      data: [{
+        type: "sentinel-2-l2a",
+        dataFilter: { maxCloudCoverage: 50 }
+      }]
+    },
+    aggregation: {
+      timeRange: { from: `${dateFrom}T00:00:00Z`, to: `${dateTo}T23:59:59Z` },
+      aggregationInterval: { of: interval },
+      evalscript: getActiveStatsEvalscript(),
+      resx: 10, resy: 10
+    },
+    calculations: {
+      ndvi: {
+        statistics: {
+          default: { percentiles: { k: [25, 50, 75] } }
+        }
+      }
+    }
+  };
+  const r = await fetch(URL_STATS, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(payload)
+  });
+  if (!r.ok) {
+    const t = await r.text();
+    throw new Error(`Stats API ${r.status}: ${t.slice(0, 200)}`);
+  }
+  const data = await r.json();
+  return (data.data || []).filter(d => {
+    const mean = d.outputs?.ndvi?.bands?.B0?.stats?.mean;
+    return mean !== undefined && mean !== null && !isNaN(mean) && mean > -0.5;
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// MAPA LEAFLET
+// ══════════════════════════════════════════════════════════════
+function initMap() {
+  map = L.map('map', { center: CENTER_LATLNG, zoom: 15 });
+
+  const baseDark = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '© CartoDB © OSM', maxZoom: 20
+  });
+  const baseSat = L.tileLayer(
+    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    { attribution: '© Esri', maxZoom: 20 }
+  );
+  baseSat.addTo(map); // satélite por defecto
+  L.control.layers({ 'Satélite': baseSat, 'Mapa oscuro': baseDark }, {}).addTo(map);
+
+  // Polígonos de cuarteles
+  CUARTELES.forEach(c => {
+    const latlngs = c.coords.map(([lon, lat]) => [lat, lon]);
+    L.polygon(latlngs, {
+      color: c.color, weight: 2.5,
+      fillColor: c.color, fillOpacity: 0.08
+    })
+    .bindTooltip(c.id, { permanent: true, direction: 'center', className: 'cuartel-tooltip' })
+    .addTo(map);
+  });
+
+  // Click en el mapa → valor NDVI en ese punto
+  map.on('click', onMapClick);
+
+  // Leyenda NDVI
+  const legend = L.control({ position: 'bottomleft' });
+  legend.onAdd = () => {
+    const d = L.DomUtil.create('div', 'ndvi-legend');
+    d.id = 'mapLegend';
+    updateLegendContent(d);
+    return d;
+  };
+  legend.addTo(map);
+}
+
+// ── Configuración visual por índice ──
+const LEGEND_CONFIG = {
+  ndvi: {
+    title: 'NDVI — Vigor vegetativo',
+    gradient: 'linear-gradient(to right, #8B1A1A, #cc3c32, #e67e22, #f1c40f, #7dc244, #27ae60, #145a32)',
+    labels: ['0.0','0.25','0.50','0.75','1.0']
+  },
+  ndwi: {
+    title: 'NDWI — Agua vegetación',
+    gradient: 'linear-gradient(to right, #dc3220, #f08c1e, #ffe032, #64c8e6, #1e88e5, #0a3cb4)',
+    labels: ['-0.5','-0.25','0','0.25','0.5']
+  },
+  ndre: {
+    title: 'NDRE — Nitrógeno',
+    gradient: 'linear-gradient(to right, #c83232, #e6821e, #f0d23c, #82c83c, #289628, #0a5a0a)',
+    labels: ['0.0','0.12','0.25','0.37','0.5']
+  },
+  evi: {
+    title: 'EVI — Vigor mejorado',
+    gradient: 'linear-gradient(to right, #a01814, #dc6414, #f0c828, #8cc832, #28a028, #0a5a0a)',
+    labels: ['0.0','0.2','0.4','0.6','0.8']
+  },
+  cire: {
+    title: 'CI_RE — Clorofila foliar',
+    gradient: 'linear-gradient(to right, #b42814, #dc6414, #f0c828, #c8e632, #3cb428, #053c05)',
+    labels: ['0.0','0.75','1.5','2.25','3.0']
+  },
+  psri: {
+    title: 'PSRI — Senescencia / Estrés',
+    gradient: 'linear-gradient(to right, #0a7828, #64be28, #f0dc32, #f08214, #dc3214, #a00a0a)',
+    labels: ['-0.2','-0.1','0.0','0.1','0.3']
+  },
+  kc: {
+    title: 'Kc — Coef. cultivo',
+    gradient: 'linear-gradient(to right, #b43c14, #e67e22, #ffd700, #82c83c, #289628, #0a5a0a)',
+    labels: ['0.1','0.4','0.7','1.0','1.3']
+  }
+};
+
+function isoLegendHTML(nClasses) {
+  const palette = buildISOPalette(nClasses);
+  const swatches = palette.map((rgb, i) => {
+    const from = (i / nClasses).toFixed(2);
+    const to   = ((i+1) / nClasses).toFixed(2);
+    const hex  = '#' + rgb.map(v => v.toString(16).padStart(2,'0')).join('');
+    return `<div style="display:flex;align-items:center;gap:5px;margin-bottom:2px;">
+      <div style="width:14px;height:9px;background:${hex};border-radius:2px;flex-shrink:0"></div>
+      <span style="font-size:9px;color:#6b8499;">C${i+1} · NDVI ${from}–${to}</span>
+    </div>`;
+  }).join('');
+  return `<div class="leg-title" style="margin-bottom:6px;">ISO · ${nClasses} clases</div>${swatches}`;
+}
+
+function updateLegendContent(el) {
+  el = el || document.getElementById('mapLegend');
+  if (!el) return;
+  if (currentIndex === 'iso') {
+    el.innerHTML = isoLegendHTML(isoClasses);
+    el.style.width = '160px';
+  } else {
+    const cfg = LEGEND_CONFIG[currentIndex] || LEGEND_CONFIG.ndvi;
+    el.innerHTML = `
+      <div class="leg-title">${cfg.title}</div>
+      <div style="height:10px;border-radius:3px;background:${cfg.gradient};width:160px;margin-bottom:3px;"></div>
+      <div style="display:flex;justify-content:space-between;width:160px;font-size:9px;color:#4b6478;">
+        ${cfg.labels.map(l => `<span>${l}</span>`).join('')}
+      </div>`;
+    el.style.width = 'auto';
+  }
+}
+
+function updateNDVILayer(blob) {
+  const url = URL.createObjectURL(blob);
+  if (ndviLayer) map.removeLayer(ndviLayer);
+  const bounds = L.latLngBounds(
+    [BBOX[1], BBOX[0]],  // SW
+    [BBOX[3], BBOX[2]]   // NE
+  );
+  ndviLayer = L.imageOverlay(url, bounds, { opacity: opacityValue() }).addTo(map);
+  // Asegurar que los polígonos queden encima
+  map.eachLayer(l => { if (l instanceof L.Polygon) l.bringToFront(); });
+}
+
+function setNDVIOpacity(val) {
+  if (ndviLayer) ndviLayer.setOpacity(val / 100);
+}
+
+function opacityValue() {
+  return document.getElementById('opacitySlider').value / 100;
+}
+
+// ══════════════════════════════════════════════════════════════
+// CLICK EN MAPA → NDVI EN PUNTO
+// ══════════════════════════════════════════════════════════════
+let clickPopup = null;
+
+async function onMapClick(e) {
+  if (!selectedScene || !accessToken) return;
+  const { lat, lng } = e.latlng;
+
+  // Polígono 30×30m alrededor del punto clicado
+  const dLat = 0.00027;
+  const dLon = 0.00027 / Math.cos(lat * Math.PI / 180);
+  const poly = [
+    [lng - dLon, lat - dLat],
+    [lng + dLon, lat - dLat],
+    [lng + dLon, lat + dLat],
+    [lng - dLon, lat + dLat],
+    [lng - dLon, lat - dLat]
+  ];
+
+  const cuartelNombre = detectarCuartel(lat, lng);
+
+  if (clickPopup) clickPopup.remove();
+  clickPopup = L.popup({ closeButton: true, maxWidth: 200 })
+    .setLatLng(e.latlng)
+    .setContent(popupHTML(`<span style="color:#6b8499">Consultando NDVI...</span>`, cuartelNombre, selectedScene.date))
+    .openOn(map);
+
+  try {
+    const dateFrom = selectedScene.date;
+    const dateTo   = addDays(selectedScene.date, 1);
+    const results  = await fetchNDVIStats(poly, dateFrom, dateTo, 'P1D');
+
+    if (results.length > 0) {
+      const mean = results[0].outputs?.ndvi?.bands?.B0?.stats?.mean;
+      if (mean !== undefined && mean > -0.5) {
+        const col   = ndviColor(mean);
+        const label = mean > 0.6 ? 'Vigoroso' : mean > 0.4 ? 'Normal' : mean > 0.2 ? 'Bajo' : 'Suelo/sombra';
+        const pct   = Math.max(0, Math.min(100, mean * 100)).toFixed(0);
+        const body  = `<div style="font-size:24px;font-weight:700;color:${col};line-height:1">${mean.toFixed(3)}</div>
+          <div style="font-size:10px;color:${col};margin:2px 0 6px">${label}</div>
+          <div style="height:3px;background:#1e3347;border-radius:2px">
+            <div style="height:100%;width:${pct}%;background:${col};border-radius:2px"></div>
+          </div>`;
+        clickPopup.setContent(popupHTML(body, cuartelNombre, selectedScene.date));
+        return;
+      }
+    }
+    clickPopup.setContent(popupHTML('<span style="color:#6b8499">Sin datos para esta fecha</span>', cuartelNombre, selectedScene.date));
+  } catch (err) {
+    clickPopup.setContent(popupHTML(`<span style="color:#e53935">${err.message.slice(0,50)}</span>`, cuartelNombre, selectedScene.date));
+  }
+}
+
+function popupHTML(body, cuartel, fecha) {
+  return `<div style="font-family:'Segoe UI',sans-serif;font-size:12px;color:#c9d6df;background:#132232;padding:10px 13px;border-radius:8px;min-width:150px;border:1px solid #1e3347">
+    <div style="color:#4b6478;font-size:10px;margin-bottom:6px;font-weight:600">${cuartel} · ${fecha}</div>
+    ${body}
+  </div>`;
+}
+
+function detectarCuartel(lat, lng) {
+  for (const c of CUARTELES) {
+    const lons = c.coords.map(p => p[0]);
+    const lats = c.coords.map(p => p[1]);
+    if (lng >= Math.min(...lons) && lng <= Math.max(...lons) &&
+        lat >= Math.min(...lats) && lat <= Math.max(...lats)) {
+      return c.id;
+    }
+  }
+  return 'Fuera de cuarteles';
+}
+
+// ══════════════════════════════════════════════════════════════
+// DETECCIÓN DE FENOLOGÍA AUTOMÁTICA (desde serie temporal NDVI)
+// ══════════════════════════════════════════════════════════════
+let lastSeriesData = {}; // {C2:[{date,mean},...], C3:..., C4:...}
+
+function detectPhenology(series) {
+  // Filtra y ordena puntos válidos
+  const pts = series
+    .filter(p => p.mean !== null && !isNaN(p.mean) && p.mean > -0.5)
+    .sort((a, b) => a.date.localeCompare(b.date));
+  if (pts.length < 5) return { state: null, events: [] };
+
+  // Suavizado 3 puntos (media móvil)
+  const sm = pts.map((p, i) => ({
+    date: p.date,
+    mean: (i > 0 && i < pts.length - 1)
+      ? (pts[i-1].mean + p.mean + pts[i+1].mean) / 3
+      : p.mean
+  }));
+
+  const events = [];
+  const month = d => new Date(d + 'T12:00:00Z').getUTCMonth() + 1;
+
+  // ── Latencia: mínimo en invierno (may–ago Chile) ──
+  const winter = sm.filter(p => { const m = month(p.date); return m >= 5 && m <= 8; });
+  if (winter.length) {
+    const dorm = winter.reduce((a, b) => a.mean < b.mean ? a : b);
+    if (dorm.mean < 0.32)
+      events.push({ tipo: 'Latencia', emoji: '❄️', date: dorm.date, val: dorm.mean.toFixed(3) });
+  }
+
+  // ── Brotación: primera subida sostenida (>0.04) en ago–nov ──
+  const maxPt = sm.reduce((a, b) => a.mean > b.mean ? a : b);
+  const maxIdx = sm.findIndex(p => p.date === maxPt.date);
+  for (let i = 1; i <= maxIdx; i++) {
+    const m = month(sm[i].date);
+    if (m >= 7 && m <= 11) {
+      const delta = sm[i].mean - sm[i-1].mean;
+      if (delta > 0.03 && sm[i].mean > 0.18) {
+        events.push({ tipo: 'Brotación', emoji: '🌱', date: sm[i].date, val: sm[i].mean.toFixed(3) });
+        break;
+      }
+    }
+  }
+
+  // ── Floración: plateau breve antes del pico (derivada ~0 en sep–oct) ──
+  for (let i = 2; i <= maxIdx - 1; i++) {
+    const m = month(sm[i].date);
+    if (m >= 8 && m <= 11) {
+      const d1 = sm[i].mean - sm[i-1].mean;
+      const d2 = sm[i+1].mean - sm[i].mean;
+      if (Math.abs(d1) < 0.015 && d2 > 0.02 && sm[i].mean > 0.25) {
+        events.push({ tipo: 'Floración est.', emoji: '🌸', date: sm[i].date, val: sm[i].mean.toFixed(3) });
+        break;
+      }
+    }
+  }
+
+  // ── Máximo vegetativo ──
+  if (maxPt.mean > 0.38)
+    events.push({ tipo: 'Máx. vegetativo', emoji: '🍃', date: maxPt.date, val: maxPt.mean.toFixed(3) });
+
+  // ── Cosecha: primera caída brusca (>0.06) post-pico en oct–feb ──
+  for (let i = maxIdx + 1; i < sm.length; i++) {
+    const m = month(sm[i].date);
+    const drop = sm[i-1].mean - sm[i].mean;
+    if (drop > 0.055 && (m >= 10 || m <= 2)) {
+      events.push({ tipo: 'Cosecha est.', emoji: '🍒', date: sm[i].date, val: sm[i].mean.toFixed(3) });
+      break;
+    }
+  }
+
+  // ── Senescencia: caída sostenida post-cosecha ──
+  const cosechaIdx = events.findIndex(e => e.tipo === 'Cosecha est.');
+  if (cosechaIdx >= 0) {
+    const cosechaDate = events[cosechaIdx].date;
+    const postCosecha = sm.filter(p => p.date > cosechaDate);
+    if (postCosecha.length >= 2) {
+      const last3 = postCosecha.slice(-Math.min(3, postCosecha.length));
+      const totalDrop = last3[0].mean - last3[last3.length - 1].mean;
+      if (totalDrop > 0.08)
+        events.push({ tipo: 'Senescencia', emoji: '🍂', date: last3[0].date, val: last3[0].mean.toFixed(3) });
+    }
+  }
+
+  // ── Estado actual ──
+  const last = sm[sm.length - 1];
+  const prev = sm.length > 1 ? sm[sm.length - 2] : last;
+  const trend = last.mean - prev.mean;
+  const nowM = new Date().getUTCMonth() + 1;
+  let state = '—';
+
+  if (last.mean < 0.18) {
+    state = '❄️ Latencia';
+  } else if (trend > 0.025 && (nowM >= 7 && nowM <= 10)) {
+    state = '🌱 Brotación / Desarrollo';
+  } else if (last.mean >= 0.55 && Math.abs(trend) < 0.025) {
+    state = '🍃 Máx. vegetativo';
+  } else if (trend > 0.01 && last.mean < 0.7) {
+    state = '🌿 Crecimiento activo';
+  } else if (trend < -0.04 && (nowM >= 10 || nowM <= 2)) {
+    state = '🍒 Maduración / Cosecha';
+  } else if (trend < -0.02) {
+    state = '🍂 Senescencia';
+  } else {
+    state = '🌿 Desarrollo vegetativo';
+  }
+
+  return { state, events };
+}
+
+function renderPhenology(seriesData) {
+  const section = document.getElementById('phenoSection');
+  const content = document.getElementById('phenoContent');
+  if (!seriesData || !Object.keys(seriesData).length) { section.style.display = 'none'; return; }
+
+  const rows = CUARTELES.map(c => {
+    const series = seriesData[c.id] || [];
+    if (!series.length) return '';
+    const { state, events } = detectPhenology(series);
+    const chips = events.map(e =>
+      `<div class="pheno-chip">${e.emoji} <b>${e.tipo}</b> · ${e.date}</div>`
+    ).join('');
+    return `<div class="pheno-row" style="border-left-color:${c.color}">
+      <div class="pheno-cuartel">${c.id}</div>
+      <div style="flex:1">
+        <div class="pheno-state-big">${state || '—'}</div>
+        <div class="pheno-chips">${chips}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  content.innerHTML = rows || '<div style="font-size:11px;color:#4b6478;">Sin datos de serie temporal</div>';
+  section.style.display = 'block';
+}
+
+// ══════════════════════════════════════════════════════════════
+// CARDS POR CUARTEL
+// ══════════════════════════════════════════════════════════════
+function ndviColor(v) {
+  if (v === undefined || v === null) return '#4b6478';
+  if (v < 0.15) return '#e53935';
+  if (v < 0.30) return '#fb8c00';
+  if (v < 0.45) return '#fdd835';
+  if (v < 0.60) return '#7cb342';
+  return '#43a047';
+}
+
+function displayValue(rawVal) {
+  if (rawVal === undefined || rawVal === null) return { display: '—', pct: 0, label: '–', color: '#4b6478' };
+  let val = rawVal;
+  let label = '';
+  let pct = 0;
+  let col = '#4b6478';
+  const meta = INDEX_META[currentIndex];
+
+  if (currentIndex === 'kc') {
+    val = Math.max(0, rawVal) * 1.25 + 0.1;
+    pct = Math.max(0, Math.min(100, (val - 0.1) / 1.2 * 100));
+    label = val > 1.0 ? '🟢 Kc alto' : val > 0.6 ? '🟡 Kc normal' : '🔴 Kc bajo';
+    col = val > 1.0 ? '#43a047' : val > 0.6 ? '#fdd835' : '#e53935';
+    return { display: val.toFixed(2), pct, label, color: col };
+  }
+  if (currentIndex === 'iso') {
+    const cls = Math.min(isoClasses, Math.max(1, Math.floor(Math.max(0, rawVal) * isoClasses) + 1));
+    pct = (cls / isoClasses) * 100;
+    label = `Clase ${cls} de ${isoClasses}`;
+    col = meta.color;
+    return { display: `C${cls}`, pct, label, color: col };
+  }
+  if (currentIndex === 'evi') {
+    pct = Math.max(0, Math.min(100, val / 0.8 * 100));
+    label = val > 0.5 ? '🟢 Vigor alto' : val > 0.3 ? '🟡 Vigor normal' : '🔴 Vigor bajo';
+    col = val > 0.5 ? '#7cb342' : val > 0.3 ? '#c6d730' : '#e53935';
+    return { display: val.toFixed(3), pct, label, color: col };
+  }
+  if (currentIndex === 'cire') {
+    pct = Math.max(0, Math.min(100, val / 3.0 * 100));
+    label = val > 1.5 ? '🟢 Clorofila alta' : val > 0.8 ? '🟡 Clorofila normal' : '🔴 N/Clorofila baja';
+    col = val > 1.5 ? '#f9a825' : val > 0.8 ? '#ffe082' : '#e53935';
+    return { display: val.toFixed(2), pct, label, color: col };
+  }
+  if (currentIndex === 'psri') {
+    // PSRI: bajo=sano, alto=estrés → barra invertida
+    pct = Math.max(0, Math.min(100, (val + 0.2) / 0.5 * 100));
+    label = val < 0.0 ? '🟢 Sin estrés' : val < 0.1 ? '🟡 Estrés leve' : '🔴 Estrés / Senescencia';
+    col = val < 0.0 ? '#4caf50' : val < 0.1 ? '#fdd835' : '#e53935';
+    return { display: val.toFixed(3), pct, label, color: col };
+  }
+  // NDVI, NDWI, NDRE
+  const range = meta.max - meta.min;
+  pct = Math.max(0, Math.min(100, (val - meta.min) / range * 100));
+  if (currentIndex === 'ndvi') {
+    label = val > 0.6 ? '🟢 Vigoroso' : val > 0.4 ? '🟡 Normal' : '🔴 Bajo';
+    col = ndviColor(val);
+  } else if (currentIndex === 'ndwi') {
+    label = val > 0.2 ? '💧 Alta humedad' : val > 0 ? '💧 Normal' : '⚠️ Estrés hídrico';
+    col = val > 0.2 ? '#1e88e5' : val > 0 ? '#64b5f6' : '#e53935';
+  } else if (currentIndex === 'ndre') {
+    label = val > 0.3 ? '🟢 N alto' : val > 0.15 ? '🟡 N normal' : '🔴 N bajo';
+    col = val > 0.3 ? '#8e24aa' : val > 0.15 ? '#ce93d8' : '#e53935';
+  }
+  return { display: val.toFixed(3), pct, label, color: col };
+}
+
+function renderCards(statsMap) {
+  const meta = INDEX_META[currentIndex];
+  const container = document.getElementById('cuartelCards');
+  container.innerHTML = CUARTELES.map(c => {
+    const raw  = statsMap[c.id];
+    const { display, pct, label, color } = displayValue(raw);
+    return `
+      <div class="cuartel-card" style="border-left-color:${c.color}">
+        <div class="card-top">
+          <span class="card-name">${c.id}</span>
+          <span class="card-ha">${c.ha.toFixed(1)} ha</span>
+        </div>
+        <div class="card-ndvi" style="color:${color}">${display}<span>${meta.label}</span></div>
+        <div class="ndvi-bar-bg">
+          <div class="ndvi-bar-fill" style="width:${pct}%;background:${color}"></div>
+        </div>
+        <div class="card-meta">${label}</div>
+      </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════════════
+// CHART SERIE TEMPORAL
+// ══════════════════════════════════════════════════════════════
+function initChart() {
+  const ctx = document.getElementById('chartNDVI').getContext('2d');
+  ndviChart = new Chart(ctx, {
+    type: 'line',
+    data: { labels: [], datasets: [] },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 400 },
+      interaction: { intersect: false, mode: 'index' },
+      plugins: {
+        legend: {
+          labels: { color: '#6b8499', font: { size: 10 }, padding: 12,
+                    usePointStyle: true, pointStyle: 'line' }
+        },
+        tooltip: {
+          backgroundColor: '#132232',
+          borderColor: '#1e3347',
+          borderWidth: 1,
+          titleColor: '#c9d6df',
+          bodyColor: '#6b8499',
+          padding: 10,
+          callbacks: {
+            label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(3) : 's/d'}`
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#4b6478', maxRotation: 45, font: { size: 9 }, maxTicksLimit: 12 },
+          grid: { color: '#0f1e2d' }
+        },
+        y: {
+          min: 0, max: 1,
+          ticks: { color: '#4b6478', font: { size: 9 }, stepSize: 0.2 },
+          grid: { color: '#122030' },
+          title: { display: true, text: 'NDVI', color: '#4b6478', font: { size: 9 } }
+        }
+      }
+    }
+  });
+}
+
+function updateChartYAxis() {
+  if (!ndviChart) return;
+  const meta = INDEX_META[currentIndex] || INDEX_META.ndvi;
+  ndviChart.options.scales.y.min = meta.min;
+  ndviChart.options.scales.y.max = meta.max;
+  ndviChart.options.scales.y.title.text = meta.label;
+  ndviChart.update('none');
+}
+
+function updateChart(seriesData) {
+  // seriesData: { C2: [{date, mean, p25, p75},...], ... }
+  const allDates = [...new Set(
+    Object.values(seriesData).flat().map(p => p.date)
+  )].sort();
+
+  const colors = { C2: '#43a047', C3: '#1e88e5', C4: '#8e24aa' };
+
+  ndviChart.data.labels = allDates.map(d => {
+    const dt = new Date(d + 'T12:00:00Z');
+    return `${dt.getUTCDate().toString().padStart(2,'0')}/${(dt.getUTCMonth()+1).toString().padStart(2,'0')}`;
+  });
+
+  ndviChart.data.datasets = CUARTELES.map(c => {
+    const series = seriesData[c.id] || [];
+    const byDate = Object.fromEntries(series.map(p => [p.date, p]));
+    return {
+      label: c.id,
+      data: allDates.map(d => byDate[d]?.mean ?? null),
+      borderColor: colors[c.id],
+      backgroundColor: colors[c.id] + '18',
+      pointBackgroundColor: colors[c.id],
+      borderWidth: 1.8,
+      pointRadius: 2,
+      pointHoverRadius: 5,
+      tension: 0.35,
+      spanGaps: true,
+      fill: false
+    };
+  });
+  ndviChart.update();
+}
+
+// ══════════════════════════════════════════════════════════════
+// SELECTOR DE ESCENAS
+// ══════════════════════════════════════════════════════════════
+async function populateSceneSelector() {
+  setStatus('Buscando imágenes disponibles...', 'loading');
+  const sel = document.getElementById('selectScene');
+  sel.innerHTML = '<option value="">Buscando...</option>';
+
+  // Generar ventanas de 5 días hacia atrás (período de revisita S2)
+  // como fallback si el Catalog API falla
+  function buildFallbackScenes(daysBack = 120) {
+    const scenes = [];
+    const now = Date.now();
+    for (let d = 0; d < daysBack; d += 5) {
+      const date = isoDate(now - d * 86400000);
+      scenes.push({ id: date, date, cloudCover: '?', platform: 'S2' });
+    }
+    return scenes;
+  }
+
+  try {
+    availableScenes = await searchScenes(400);
+  } catch (err) {
+    console.warn('Catalog API falló, usando fechas estimadas:', err.message);
+    availableScenes = [];
+  }
+
+  // Si el catalog falló o devolvió vacío → usar fechas estimadas
+  if (!availableScenes.length) {
+    availableScenes = buildFallbackScenes(120);
+    sel.innerHTML = availableScenes.map((s, i) =>
+      `<option value="${i}">${s.date} (S2 ~5d)</option>`
+    ).join('');
+    setStatus('Modo estimado · selecciona una fecha y haz clic en "Ver NDVI"');
+  } else {
+    sel.innerHTML = availableScenes.map((s, i) =>
+      `<option value="${i}">${s.date} ☁️${s.cloudCover}%</option>`
+    ).join('');
+    setStatus(`${availableScenes.length} imágenes disponibles · última: ${availableScenes[0].date}`);
+  }
+
+  selectedScene = availableScenes[0];
+  document.getElementById('btnLoad').disabled = false;
+  // Cargar automáticamente la más reciente
+  await loadNDVI();
+}
+
+function onSceneChange() {
+  const idx = parseInt(document.getElementById('selectScene').value);
+  if (!isNaN(idx) && availableScenes[idx]) {
+    selectedScene = availableScenes[idx];
+    loadNDVI(); // carga automática al cambiar fecha
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// CARGAR IMAGEN NDVI EN EL MAPA
+// ══════════════════════════════════════════════════════════════
+async function loadNDVI() {
+  if (!selectedScene) return;
+  showMapLoading('Cargando imagen NDVI...');
+  document.getElementById('btnLoad').disabled = true;
+  setStatus(`Cargando NDVI ${selectedScene.date}...`, 'loading');
+  try {
+    // Ventana de ±1 día alrededor de la fecha seleccionada
+    const dateFrom = selectedScene.date;
+    const dateTo   = addDays(selectedScene.date, 1);
+
+    // Imagen para el mapa
+    const blob = await fetchNDVIImage(dateFrom, dateTo);
+    updateNDVILayer(blob);
+
+    // Stats del mismo pasaje para las cards (secuencial)
+    const statsResults = [];
+    for (const c of CUARTELES) {
+      const r = await fetchNDVIStats(c.coords, dateFrom, dateTo, 'P1D');
+      statsResults.push(r);
+    }
+    const statsMap = {};
+    CUARTELES.forEach((c, i) => {
+      const items = statsResults[i];
+      if (items.length > 0) {
+        statsMap[c.id] = items[0].outputs.ndvi.bands.B0.stats.mean;
+      }
+    });
+    currentStats = statsMap;
+    renderCards(statsMap);
+    setStatus(`NDVI cargado · ${selectedScene.date} · ☁️ ${selectedScene.cloudCover}%`);
+  } catch (err) {
+    setStatus('Error cargando NDVI: ' + err.message, 'error');
+    console.error(err);
+  } finally {
+    hideMapLoading();
+    document.getElementById('btnLoad').disabled = false;
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// SERIE TEMPORAL
+// ══════════════════════════════════════════════════════════════
+async function loadTimeSeries() {
+  showChartLoading();
+  try {
+    const now = new Date();
+    const days = chartPeriod === '6m' ? 180 : chartPeriod === '1y' ? 365 : 730;
+    const dateFrom = isoDate(now - days * 86400000);
+    const dateTo   = isoDate(now);
+    const interval = chartPeriod === '6m' ? 'P7D' : 'P10D';
+
+    // Llamadas secuenciales para no saturar la API
+    const results = [];
+    for (const c of CUARTELES) {
+      const r = await fetchNDVIStats(c.coords, dateFrom, dateTo, interval);
+      results.push(r);
+    }
+
+    const seriesData = {};
+    CUARTELES.forEach((c, i) => {
+      seriesData[c.id] = results[i].map(d => {
+        const st = d.outputs.ndvi.bands.B0.stats;
+        return {
+          date: d.interval.from.slice(0, 10),
+          mean: st.mean,
+          p25:  st.percentiles?.['25.0'] ?? st.mean,
+          p75:  st.percentiles?.['75.0'] ?? st.mean
+        };
+      });
+    });
+    // Guardar globalmente para fenología (siempre usar NDVI como base)
+    if (currentIndex === 'ndvi' || Object.keys(lastSeriesData).length === 0) {
+      lastSeriesData = seriesData;
+      renderPhenology(seriesData);
+    }
+    updateChartYAxis();
+    updateChart(seriesData);
+    setStatus(`Serie temporal cargada · ${chartPeriod === '6m' ? '6 meses' : chartPeriod === '1y' ? '1 año' : '2 años'}`);
+  } catch (err) {
+    setStatus('Error serie temporal: ' + err.message, 'error');
+    console.error(err);
+  } finally {
+    hideChartLoading();
+  }
+}
+
+function setChartPeriod(period, el) {
+  if (chartPeriod === period) return;
+  chartPeriod = period;
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  // Limpiar gráfico mientras carga
+  ndviChart.data.labels = [];
+  ndviChart.data.datasets = [];
+  ndviChart.update('none');
+  loadTimeSeries();
+}
+
+// ══════════════════════════════════════════════════════════════
+// HELPERS UI
+// ══════════════════════════════════════════════════════════════
+function setStatus(msg, type = 'ok') {
+  document.getElementById('statusText').textContent = msg;
+  const dot = document.getElementById('statusDot');
+  dot.className = 'status-dot' + (type === 'error' ? ' error' : type === 'loading' ? ' loading' : '');
+  document.getElementById('btnReconnect').style.display = (type === 'error') ? 'inline-block' : 'none';
+}
+
+async function reconnect() {
+  document.getElementById('btnReconnect').style.display = 'none';
+  accessToken = null;
+  tokenExpiry  = 0;
+  sessionStorage.removeItem('cdse_token');
+  sessionStorage.removeItem('cdse_token_expiry');
+  setStatus('Reconectando...', 'loading');
+  try {
+    await fetchNewToken();
+    setStatus('Reconectado ✓');
+    loadTimeSeries();
+  } catch (err) {
+    setStatus('Error al reconectar: ' + err.message, 'error');
+  }
+}
+
+function showMapLoading(msg = 'Cargando...') {
+  document.getElementById('mapLoadingText').textContent = msg;
+  document.getElementById('mapLoading').classList.remove('hidden');
+}
+function hideMapLoading() {
+  document.getElementById('mapLoading').classList.add('hidden');
+}
+function showChartLoading() {
+  document.getElementById('chartOverlay').classList.remove('hidden');
+}
+function hideChartLoading() {
+  document.getElementById('chartOverlay').classList.add('hidden');
+}
+
+// ══════════════════════════════════════════════════════════════
+// HELPERS FECHA
+// ══════════════════════════════════════════════════════════════
+function isoDate(tsOrDate) {
+  return new Date(tsOrDate).toISOString().slice(0, 10);
+}
+function addDays(dateStr, days) {
+  const d = new Date(dateStr + 'T12:00:00Z');
+  d.setUTCDate(d.getUTCDate() + days);
+  return isoDate(d);
+}
+
+// ══════════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════════
+async function init() {
+  renderCards({});
+  initMap();
+  initChart();
+  hideChartLoading();
+
+  const c = getCreds();
+  if (!c.clientId || !c.clientSecret) {
+    document.getElementById('modalConfig').classList.add('show');
+    setStatus('Esperando credenciales CDSE...');
+    return;
+  }
+
+  try {
+    setStatus('Autenticando con Copernicus CDSE...', 'loading');
+    await getToken();
+    setStatus('Conectado a Copernicus CDSE ✓');
+    await populateSceneSelector();
+    loadTimeSeries();
+  } catch (err) {
+    // No abrir el modal si ya hay credenciales guardadas — solo mostrar el error
+    setStatus('Error de conexión: ' + err.message, 'error');
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const c = getCreds();
+  if (c.clientId) {
+    document.getElementById('modalConfig').classList.remove('show');
+  }
+  init();
+});
+</script>
+</body>
+</html>
