@@ -413,6 +413,7 @@
       <option value="">— Selecciona imagen —</option>
     </select>
     <button class="btn" id="btnLoad" onclick="loadNDVI()" style="display:none" disabled>Ver NDVI</button>
+    <button class="btn-outline" id="btnHQ" onclick="toggleHQ()" title="Calidad de imagen">🔍 Normal</button>
     <button class="btn-outline" onclick="showConfig()" title="Configurar credenciales">⚙️</button>
   </div>
 </div>
@@ -543,6 +544,7 @@ let availableScenes = [];
 let selectedScene  = null;
 let chartPeriod    = '6m';
 let currentStats   = {}; // {C2: 0.72, C3: 0.68, C4: 0.75}
+let hqMode         = false; // toggle calidad imagen: false=640px, true=1280px
 
 // ══════════════════════════════════════════════════════════════
 // CONFIGURACIÓN / CREDENCIALES
@@ -1145,7 +1147,7 @@ async function fetchNDVIImage(dateFrom, dateTo) {
     },
     evalscript: getActiveEvalscript(),
     output: {
-      width: 640, height: 640,
+      width: hqMode ? 1280 : 640, height: hqMode ? 1280 : 640,
       responses: [{ format: { type: "image/png" } }]
     }
   };
@@ -1892,6 +1894,21 @@ async function loadTimeSeries() {
   } finally {
     hideChartLoading();
   }
+}
+
+function toggleHQ() {
+  hqMode = !hqMode;
+  const btn = document.getElementById('btnHQ');
+  if (hqMode) {
+    btn.textContent = '🔍 Alta res';
+    btn.style.borderColor = '#4caf50';
+    btn.style.color = '#4caf50';
+  } else {
+    btn.textContent = '🔍 Normal';
+    btn.style.borderColor = '';
+    btn.style.color = '';
+  }
+  if (selectedScene) loadNDVI(); // recargar con nueva resolución
 }
 
 function setChartPeriod(period, el) {
