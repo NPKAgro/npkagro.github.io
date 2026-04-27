@@ -1506,41 +1506,42 @@ function detectPhenology(series) {
     }
   }
 
-  // ── Estado actual ──
-  const last = sm[sm.length - 1];
-  const prev = sm.length > 1 ? sm[sm.length - 2] : last;
-  const trend = last.mean - prev.mean;
-  const nowM = new Date().getUTCMonth() + 1;
-  let state = '—';
-
-  if (last.mean < 0.18) {
-    state = '❄️ Latencia';
-  } else if (trend > 0.025 && (nowM >= 7 && nowM <= 10)) {
-    state = '🌱 Brotación / Desarrollo';
-  } else if (last.mean >= 0.55 && Math.abs(trend) < 0.025) {
-    state = '🍃 Máx. vegetativo';
-  } else if (trend > 0.01 && last.mean < 0.7) {
-    state = '🌿 Crecimiento activo';
-  } else if (trend < -0.04 && (nowM >= 10 || nowM <= 2)) {
-    state = '🍒 Maduración / Cosecha';
-  } else if (trend < -0.02) {
-    state = '🍂 Senescencia';
-  } else {
-    state = '🌿 Desarrollo vegetativo';
-  }
-
-  return { state, events };
+  // ── Estado actual (se recalcula con fecha+valor externo si se pasa) ──
+  return { events, _sm: sm };
 }
 
-function renderPhenology(seriesData) {
+function stateFromDateAndNDVI(date, ndvi) {
+  if (ndvi === undefined || ndvi === null || isNaN(ndvi)) return '—';
+  const m = new Date((date || new Date().toISOString().slice(0,10)) + 'T12:00:00Z').getUTCMonth() + 1;
+  const v = ndvi;
+  if (v < 0.15) return '❄️ Latencia';
+  if (m >= 5 && m <= 7 && v < 0.28) return '❄️ Latencia / Reposo';
+  if (m >= 7 && m <= 9 && v < 0.40) return '🌱 Brotación / Desarrollo';
+  if (m >= 8 && m <= 10 && v >= 0.30 && v < 0.55) return '🌿 Crecimiento activo';
+  if (m >= 9 && m <= 11 && v >= 0.55) return '🍃 Máx. vegetativo';
+  if ((m >= 10 || m <= 2) && v >= 0.35) return '🍒 Maduración / Cosecha';
+  if ((m >= 11 || m <= 2) && v < 0.35) return '🌾 Post-cosecha';
+  if (m >= 2 && m <= 4 && v < 0.45) return '🍂 Senescencia';
+  if (m >= 3 && m <= 5 && v < 0.28) return '🍂 Caída de hoja';
+  return '🌿 Desarrollo vegetativo';
+}
+
+function renderPhenology(seriesData, refDate, statsMap) {
   const section = document.getElementById('phenoSection');
   const content = document.getElementById('phenoContent');
   if (!seriesData || !Object.keys(seriesData).length) { section.style.display = 'none'; return; }
 
+  // refDate: fecha de la imagen seleccionada; statsMap: {C2: ndvi, C3: ndvi, ...}
+  const useDate   = refDate   || selectedScene?.date || null;
+  const useStats  = statsMap  || currentStats || {};
+
   const rows = CUARTELES.map(c => {
     const series = seriesData[c.id] || [];
     if (!series.length) return '';
-    const { state, events } = detectPhenology(series);
+    const { events } = detectPhenology(series);
+    // Estado basado en la imagen seleccionada, no en el último punto de la serie
+    const ndviVal = useStats[c.id];
+    const state   = stateFromDateAndNDVI(useDate, ndviVal);
     const chips = events.map(e =>
       `<div class="pheno-chip">${e.emoji} <b>${e.tipo}</b> · ${e.date}</div>`
     ).join('');
@@ -1822,6 +1823,8 @@ async function loadNDVI() {
     });
     currentStats = statsMap;
     renderCards(statsMap);
+    // Actualizar sección fenológica con estado según imagen seleccionada
+    if (Object.keys(lastSeriesData).length) renderPhenology(lastSeriesData, selectedScene.date, statsMap);
     setStatus(`NDVI cargado · ${selectedScene.date} · ☁️ ${selectedScene.cloudCover}%`);
   } catch (err) {
     setStatus('Error cargando NDVI: ' + err.message, 'error');
@@ -1866,7 +1869,7 @@ async function loadTimeSeries() {
     // Guardar globalmente para fenología (siempre usar NDVI como base)
     if (currentIndex === 'ndvi' || Object.keys(lastSeriesData).length === 0) {
       lastSeriesData = seriesData;
-      renderPhenology(seriesData);
+      renderPhenology(seriesData, selectedScene?.date, currentStats);
     }
     updateChartYAxis();
     updateChart(seriesData);
