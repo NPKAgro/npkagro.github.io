@@ -1532,16 +1532,28 @@ function renderPhenology(seriesData, refDate, statsMap) {
   if (!seriesData || !Object.keys(seriesData).length) { section.style.display = 'none'; return; }
 
   // refDate: fecha de la imagen seleccionada; statsMap: {C2: ndvi, C3: ndvi, ...}
-  const useDate   = refDate   || selectedScene?.date || null;
-  const useStats  = statsMap  || currentStats || {};
+  const useDate = refDate || selectedScene?.date || null;
 
   const rows = CUARTELES.map(c => {
     const series = seriesData[c.id] || [];
     if (!series.length) return '';
     const { events } = detectPhenology(series);
-    // Estado basado en la imagen seleccionada, no en el último punto de la serie
-    const ndviVal = useStats[c.id];
-    const state   = stateFromDateAndNDVI(useDate, ndviVal);
+
+    // Para el estado: preferir statsMap si el índice activo es NDVI,
+    // sino buscar el punto de la serie NDVI más cercano a la fecha seleccionada.
+    // Así funciona correctamente aunque el mapa esté en EVI/PSRI/CIRE.
+    let ndviVal;
+    if (statsMap && statsMap[c.id] !== undefined && currentIndex === 'ndvi') {
+      ndviVal = statsMap[c.id];
+    } else if (series.length) {
+      const target = useDate ? new Date(useDate).getTime() : Date.now();
+      let minDiff = Infinity;
+      for (const p of series) {
+        const diff = Math.abs(new Date(p.date).getTime() - target);
+        if (diff < minDiff) { minDiff = diff; ndviVal = p.mean; }
+      }
+    }
+    const state = stateFromDateAndNDVI(useDate, ndviVal);
     const chips = events.map(e =>
       `<div class="pheno-chip">${e.emoji} <b>${e.tipo}</b> · ${e.date}</div>`
     ).join('');
