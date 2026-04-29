@@ -161,6 +161,10 @@
       padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
       display: flex; flex-direction: column; gap: 6px; z-index: 40;
     }
+    .submit-bar-inner {
+      width: 100%; max-width: 680px; margin: 0 auto;
+      display: flex; flex-direction: column; gap: 6px;
+    }
     .submit-count {
       font-size: 12px; color: var(--text3);
       text-align: center;
@@ -298,8 +302,10 @@
 
 <!-- Submit bar -->
 <div class="submit-bar">
-  <div class="submit-count" id="countTxt">Sin registros</div>
-  <button class="btn-submit" id="btnSubmit" onclick="guardarRegistro()">Guardar jornada</button>
+  <div class="submit-bar-inner">
+    <div class="submit-count" id="countTxt">Sin registros</div>
+    <button class="btn-submit" id="btnSubmit" onclick="guardarRegistro()">Guardar jornada</button>
+  </div>
 </div>
 
 <!-- Modal agregar persona -->
