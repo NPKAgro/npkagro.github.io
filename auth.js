@@ -134,7 +134,7 @@
     div.id = 'lq-auth-screen';
     div.innerHTML = [
       '<div class="lq-logo">',
-        '<div class="lq-eyebrow">Agrícola del Pedregal</div>',
+        '<div class="lq-eyebrow">Agrícola del Pedregal by Prototipo App</div>',
         '<div class="lq-appname">La <span>Quinta</span></div>',
         '<div class="lq-appsub">Temporada 2025–2026 · Santina</div>',
       '</div>',
