@@ -122,7 +122,6 @@
     .app-card.compra::before     { background: #10b981; }
     .app-card.petroleo::before   { background: #f97316; }
     .app-card.mano-obra::before  { background: #ec4899; }
-    .app-card.cosecha::before    { background: #e11d48; }
 
     .app-card:hover {
       border-color: rgba(255,255,255,0.16);
@@ -147,7 +146,6 @@
     .app-card.compra     .app-arrow { color: #6ee7b7; }
     .app-card.petroleo   .app-arrow { color: #fdba74; }
     .app-card.mano-obra  .app-arrow { color: #f9a8d4; }
-    .app-card.cosecha    .app-arrow { color: #fda4af; }
 
     footer {
       text-align: center;
@@ -174,15 +172,6 @@
   <div class="hero-sub">Selecciona la app para registrar datos en terreno</div>
 
   <div class="apps-grid">
-
-    <a class="app-card cosecha" href="cosecha.html">
-      <span class="app-icon">🍒</span>
-      <div class="app-info">
-        <div class="app-name">Cosecha</div>
-        <div class="app-sub">Bins, totes, kg estimados y costos por cuartel. Registro diario de temporada.</div>
-      </div>
-      <span class="app-arrow">→</span>
-    </a>
 
     <a class="app-card fenologia" href="campo.html">
       <span class="app-icon">🌸</span>
@@ -266,4 +255,9 @@ if ('serviceWorker' in navigator) {
         if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
       })
       .catch(function(err) { console.warn('[SW] registro fallido:', err); });
- 
+  });
+}
+</script>
+
+</body>
+</html>

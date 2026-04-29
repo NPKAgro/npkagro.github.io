@@ -1,7 +1,7 @@
 {
-  "name": "Prototipo App · La Quinta",
-  "short_name": "Prototipo App",
-  "description": "Apps de campo · La Quinta · Agrícola del Pedregal by Prototipo App",
+  "name": "Fenología La Quinta",
+  "short_name": "La Quinta",
+  "description": "Registro fenológico y cuaderno de campo · Agrícola del Pedregal",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
