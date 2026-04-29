@@ -143,13 +143,13 @@
     }
     .btn-add-item:active { border-color: var(--accent); color: var(--accent); }
 
-    /* Fixed submit bar */
+    /* Submit bar */
     .submit-bar {
-      padding: 16px;
-      display: flex; gap: 8px;
+      padding: 0 16px 16px;
+      display: flex; flex-direction: column; gap: 6px;
     }
     .total-info {
-      flex: 1;
+      text-align: center;
       display: flex; flex-direction: column; justify-content: center;
       font-size: 11px; color: var(--text3);
     }
@@ -159,16 +159,18 @@
       font-variant-numeric: tabular-nums;
     }
     .btn-submit {
+      width: 100%;
       background: var(--accent);
       color: #000;
       border: none;
       border-radius: var(--radius);
-      padding: 14px 24px;
-      font-size: 15px;
+      padding: 15px;
+      font-size: 16px;
       font-weight: 700;
       cursor: pointer;
-      flex: 1;
+      transition: opacity 0.12s;
     }
+    .btn-submit:active { opacity: 0.85; }
     .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
 
     /* Modal */
@@ -425,6 +427,7 @@
 <div class="submit-bar">
   <div class="total-info">
     <div id="itemCountTxt" style="color:var(--text3); font-size:13px">0 productos</div>
+    <div id="totalValTxt" class="total-val"></div>
   </div>
   <button class="btn-submit" id="btnSubmit" onclick="enviarCompra()">Guardar compra</button>
 </div>
@@ -449,9 +452,19 @@
           <label>Producto</label>
           <input type="text" id="selProdName" readonly>
         </div>
+        <div class="row">
+          <div class="field">
+            <label id="selCantLbl">Cantidad</label>
+            <input type="number" step="0.01" min="0" id="selCantidad" inputmode="decimal">
+          </div>
+          <div class="field">
+            <label>Precio unitario ($)</label>
+            <input type="number" step="1" min="0" id="selPrecio" inputmode="numeric" placeholder="0">
+          </div>
+        </div>
         <div class="field">
-          <label id="selCantLbl">Cantidad</label>
-          <input type="number" step="0.01" min="0" id="selCantidad" inputmode="decimal">
+          <label>Subtotal ($)</label>
+          <input type="number" id="selSubtotal" readonly style="color:var(--accent); font-weight:700">
         </div>
       </div>
     </div>
@@ -524,6 +537,16 @@
         <div class="field">
           <label>Dosis referencia (opcional)</label>
           <input type="text" id="nvDosis" placeholder="Ej. 50 cc/100 L">
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>Precio unitario ($ CLP)</label>
+          <input type="number" step="1" min="0" id="nvPrecio" inputmode="numeric" placeholder="0">
+        </div>
+        <div class="field">
+          <label>Subtotal ($)</label>
+          <input type="number" id="nvSubtotal" readonly style="color:var(--accent); font-weight:700">
         </div>
       </div>
     </div>
@@ -613,6 +636,8 @@ function seleccionarProducto(codigo){
   document.getElementById('selProdName').value = p.nombre_comercial + ' (' + p.codigo + ')';
   document.getElementById('selCantLbl').textContent = 'Cantidad (' + p.unidad + ')';
   document.getElementById('selCantidad').value = '';
+  document.getElementById('selPrecio').value = '';
+  document.getElementById('selSubtotal').value = '';
   document.getElementById('selCantidad').focus();
 }
 
@@ -629,7 +654,7 @@ function abrirModalProducto(){
   document.getElementById('searchProd').value = '';
   document.getElementById('selectedProdForm').style.display = 'none';
   // Reset nuevo
-  ['nvNombre','nvCategoria','nvUnidad','nvCantidad','nvIA','nvUso','nvCarencia','nvDosis'].forEach(id => {
+  ['nvNombre','nvCategoria','nvUnidad','nvCantidad','nvIA','nvUso','nvCarencia','nvDosis','nvPrecio','nvSubtotal'].forEach(id => {
     const el = document.getElementById(id);
     if (el && el.tagName === 'SELECT') el.value = el.id === 'nvUnidad' ? 'L' : '';
     else if (el) el.value = '';
@@ -663,12 +688,16 @@ async function agregarItem(){
     if (!state.selectedProd) { toast('Selecciona un producto', 'error'); btn.disabled = false; return; }
     const cant   = parseFloat(document.getElementById('selCantidad').value);
     if (!cant || cant <= 0)   { toast('Cantidad inválida', 'error'); btn.disabled = false; return; }
+    const selPrecio   = parseFloat(document.getElementById('selPrecio').value) || 0;
+    const selSubtotal = selPrecio ? Math.round(selPrecio * cant) : 0;
     state.items.push({
       codigo:    state.selectedProd.codigo,
       nombre_comercial: state.selectedProd.nombre_comercial,
       unidad:    state.selectedProd.unidad,
       categoria: state.selectedProd.categoria,
       cantidad:  cant,
+      precio_unitario: selPrecio || undefined,
+      subtotal:  selSubtotal || undefined,
       ia_detectado: desdeIA || undefined
     });
     if (desdeIA) {
@@ -735,9 +764,13 @@ async function agregarItem(){
         categoria, unidad, proveedor: proveedorSel,
         precio_ref_clp: 0
       });
+      const nvPrecio   = parseFloat(document.getElementById('nvPrecio').value) || 0;
+      const nvSubtotal = nvPrecio ? Math.round(nvPrecio * cantidad) : 0;
       state.items.push({
         codigo, nombre_comercial: nombre, unidad, categoria,
         cantidad,
+        precio_unitario: nvPrecio || undefined,
+        subtotal:  nvSubtotal || undefined,
         nuevo: true,
         ia_detectado: desdeIA || undefined
       });
@@ -762,6 +795,7 @@ function renderItems(){
   if (!state.items.length) {
     cont.innerHTML = '<div style="padding:10px; color:var(--text3); font-size:12px; text-align:center">Sin productos agregados</div>';
     document.getElementById('itemCountTxt').textContent = '0 productos';
+    document.getElementById('totalValTxt').textContent = '';
     return;
   }
   cont.innerHTML = state.items.map((it, i) => {
@@ -769,17 +803,21 @@ function renderItems(){
     if (it.nuevo) badges += '<span style="color:var(--accent); font-size:10px; font-weight:700; text-transform:uppercase; margin-left:6px">· nuevo</span>';
     if (it.ia_detectado) badges += '<span class="ia-badge">✨ IA</span>';
     const cls = it.ia_detectado ? 'item ia-mark' : 'item';
+    const precioStr = it.precio_unitario ? ' · ' + fmtCLP(it.precio_unitario) + '/' + esc(it.unidad) : '';
+    const subtotalStr = it.subtotal ? ' · <strong style="color:var(--accent)">' + fmtCLP(it.subtotal) + '</strong>' : '';
     return `
     <div class="${cls}">
       <div class="item-info">
         <div class="item-name">${esc(it.nombre_comercial)}${badges}</div>
-        <div class="item-meta">${fmtNum(it.cantidad)} ${esc(it.unidad)}</div>
+        <div class="item-meta">${fmtNum(it.cantidad)} ${esc(it.unidad)}${precioStr}${subtotalStr}</div>
       </div>
       <button class="item-remove" onclick="removerItem(${i})" title="Quitar">×</button>
     </div>`;
   }).join('');
   const n = state.items.length;
   document.getElementById('itemCountTxt').textContent = n + ' producto' + (n===1?'':'s') + ' agregado' + (n===1?'':'s');
+  const total = state.items.reduce((sum, it) => sum + (it.subtotal || 0), 0);
+  document.getElementById('totalValTxt').textContent = total > 0 ? 'Total: ' + fmtCLP(total) : '';
 }
 
 function removerItem(i){ state.items.splice(i, 1); renderItems(); }
@@ -1071,9 +1109,25 @@ async function enviarCompra(){
   }
 }
 
+// Auto-cálculo subtotales
+function calcSelSubtotal(){
+  const cant   = parseFloat(document.getElementById('selCantidad').value) || 0;
+  const precio = parseFloat(document.getElementById('selPrecio').value)   || 0;
+  document.getElementById('selSubtotal').value = (cant && precio) ? Math.round(cant * precio) : '';
+}
+function calcNvSubtotal(){
+  const cant   = parseFloat(document.getElementById('nvCantidad').value) || 0;
+  const precio = parseFloat(document.getElementById('nvPrecio').value)   || 0;
+  document.getElementById('nvSubtotal').value = (cant && precio) ? Math.round(cant * precio) : '';
+}
+
 // Init
 document.getElementById('fecha').value = new Date().toISOString().slice(0,10);
 document.getElementById('searchProd').addEventListener('input', renderProdList);
+document.getElementById('selCantidad').addEventListener('input', calcSelSubtotal);
+document.getElementById('selPrecio').addEventListener('input', calcSelSubtotal);
+document.getElementById('nvCantidad').addEventListener('input', calcNvSubtotal);
+document.getElementById('nvPrecio').addEventListener('input', calcNvSubtotal);
 document.querySelectorAll('.modal-tab').forEach(t => {
   t.addEventListener('click', () => cambiarTab(t.dataset.tab));
 });
