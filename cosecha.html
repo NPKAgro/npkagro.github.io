@@ -626,4 +626,245 @@ async function supaInsert(table, payload) {
 }
 
 async function supaSelect(table, filters) {
-  let url = `${SUPA_URL}/rest/v1/${table}?${filters}&o
+  let url = `${SUPA_URL}/rest/v1/${table}?${filters}&order=created_at.desc&limit=30`;
+  const res = await fetch(url, {
+    headers: { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}` }
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+// ── EMPRESA / CAMPO (hardcoded La Quinta hasta unificar auth Fase 7) ─────────
+const _EMPRESA_ID = 1;
+const _CAMPO_ID   = 1;
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  const hoy = new Date().toISOString().split('T')[0];
+  document.getElementById('fecha').value = hoy;
+  document.getElementById('hdr-fecha').textContent = getFechaDisplay(hoy);
+  onFechaChange();
+  cargarHistorial();
+});
+
+function onFechaChange() {
+  const v = document.getElementById('fecha').value;
+  document.getElementById('temporada').value = getTemporada(v);
+  document.getElementById('hdr-fecha').textContent = getFechaDisplay(v);
+}
+
+// ── TOGGLES ───────────────────────────────────────────────────────────────────
+let _binInc = false;
+function toggleBinInc() {
+  _binInc = !_binInc;
+  const chk = document.getElementById('bin-inc-check');
+  const det = document.getElementById('bin-inc-detail');
+  chk.textContent = _binInc ? '✓' : '';
+  chk.classList.toggle('on', _binInc);
+  det.classList.toggle('open', _binInc);
+  if (!_binInc) {
+    document.getElementById('totes_parciales').value = '';
+    document.getElementById('totes_vacios_disp').value = '';
+  }
+  recalcular();
+}
+
+function toggleCostos() {
+  const c = document.getElementById('costos-content');
+  const a = document.getElementById('arrow-costos');
+  const open = c.classList.toggle('open');
+  a.style.transform = open ? 'rotate(180deg)' : '';
+}
+
+// ── CÁLCULOS ─────────────────────────────────────────────────────────────────
+function recalcular() {
+  const KG_TOTE  = parseFloat(document.getElementById('kg_por_tote').value) || 9.2;
+  const TOTES_BIN = 24;
+  const binsC    = parseFloat(document.getElementById('bins_completos').value) || 0;
+  const ha       = parseFloat(document.getElementById('ha_cosechadas').value) || 0;
+
+  let totalTotes = binsC * TOTES_BIN;
+  let totalBins  = binsC;
+
+  if (_binInc) {
+    const tp = parseInt(document.getElementById('totes_parciales').value) || 0;
+    const tv = TOTES_BIN - tp;
+    document.getElementById('totes_vacios_disp').value = tv > 0 ? tv : '';
+    totalTotes += tp;
+    totalBins  += tp / TOTES_BIN;
+  }
+
+  const kgEst = totalTotes * KG_TOTE;
+
+  document.getElementById('total_totes').value  = totalTotes;
+  document.getElementById('total_bins').value   = parseFloat(totalBins.toFixed(3));
+  document.getElementById('kg_estimados').value = parseFloat(kgEst.toFixed(1));
+
+  const badge = document.getElementById('calc-badge');
+  if (totalTotes > 0) {
+    badge.style.display = '';
+    document.getElementById('calc-totaltotes').textContent = totalTotes;
+    document.getElementById('calc-kgest').textContent     = Math.round(kgEst).toLocaleString('es-CL');
+    document.getElementById('calc-kgbin').textContent     = binsC > 0 ? Math.round(kgEst / binsC).toLocaleString('es-CL') : '—';
+    document.getElementById('calc-kgha').textContent      = ha > 0    ? Math.round(kgEst / ha).toLocaleString('es-CL')    : '—';
+  } else {
+    badge.style.display = 'none';
+  }
+
+  // sync kg to cost display
+  document.getElementById('r_trato_kg').textContent = Math.round(kgEst).toLocaleString('es-CL');
+  calcularCosto();
+}
+
+function calcularCosto() {
+  const kgEst = parseFloat(document.getElementById('kg_estimados').value) || 0;
+  const pctC  = (parseFloat(document.getElementById('pct_contratista').value) || 0) / 100;
+
+  const roles = [
+    { id: 'trato',  tipo: 'kg'   },
+    { id: 'floreo', tipo: 'dias' },
+    { id: 'cc',     tipo: 'dias' },
+    { id: 'trac',   tipo: 'dias' },
+    { id: 'acopio', tipo: 'dias' },
+    { id: 'grua',   tipo: 'dias' },
+  ];
+
+  let moNeta = 0;
+  roles.forEach(r => {
+    let sub = 0;
+    if (r.tipo === 'kg') {
+      const precio = parseFloat(document.getElementById(`r_${r.id}_precio`)?.value) || 0;
+      sub = precio * kgEst;
+    } else {
+      const n      = parseInt(document.getElementById(`r_${r.id}_n`)?.value)     || 0;
+      const precio = parseFloat(document.getElementById(`r_${r.id}_precio`)?.value) || 0;
+      sub = n * precio;
+    }
+    moNeta += sub;
+    const el = document.getElementById(`r_${r.id}_sub`);
+    if (el) el.textContent = sub > 0 ? '$' + Math.round(sub).toLocaleString('es-CL') : '—';
+  });
+
+  const flete       = parseFloat(document.getElementById('flete_bines').value) || 0;
+  const contratista = moNeta * pctC;
+  const totalMO     = moNeta + contratista;
+  const costoKg     = kgEst > 0 ? (totalMO + flete) / kgEst : 0;
+
+  document.getElementById('costo_contratista').value = Math.round(contratista);
+
+  const badge = document.getElementById('costo-badge');
+  if (moNeta > 0 || flete > 0) {
+    badge.style.display = '';
+    document.getElementById('calc-mo-neta').textContent         = '$' + Math.round(moNeta).toLocaleString('es-CL');
+    document.getElementById('calc-contratista-cargo').textContent = '$' + Math.round(contratista).toLocaleString('es-CL');
+    document.getElementById('calc-total-mo').textContent        = '$' + Math.round(totalMO).toLocaleString('es-CL');
+    document.getElementById('calc-costo-kg').textContent        = costoKg > 0 ? Math.round(costoKg).toLocaleString('es-CL') : '—';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+// ── GUARDAR ───────────────────────────────────────────────────────────────────
+async function guardarCosecha() {
+  const fecha    = document.getElementById('fecha').value;
+  const cuartel  = document.getElementById('cuartel').value;
+  const totalBins = parseFloat(document.getElementById('total_bins').value) || 0;
+
+  if (!fecha)     { toast('Ingresa la fecha', 'error'); return; }
+  if (!cuartel)   { toast('Selecciona el cuartel', 'error'); return; }
+  if (!totalBins) { toast('Ingresa los bins cosechados', 'error'); return; }
+
+  const btn = document.getElementById('btn-submit');
+  btn.disabled = true;
+  btn.textContent = 'Guardando…';
+
+  try {
+    const kgEst   = parseFloat(document.getElementById('kg_estimados').value) || null;
+    const totalTotes = parseFloat(document.getElementById('total_totes').value) || null;
+    const ha      = parseFloat(document.getElementById('ha_cosechadas').value) || null;
+    const costoCont = parseFloat(document.getElementById('costo_contratista').value) || null;
+    const flete   = parseFloat(document.getElementById('flete_bines').value) || null;
+
+    const payload = {
+      empresa_id:        _EMPRESA_ID,
+      campo_id:          _CAMPO_ID,
+      fecha:             fecha,
+      temporada:         document.getElementById('temporada').value,
+      cuartel:           cuartel,
+      hileras:           document.getElementById('hileras').value   || null,
+      ha_cosechadas:     ha,
+      n_trabajadores:    parseInt(document.getElementById('n_trabajadores').value) || null,
+      total_totes:       totalTotes,
+      total_bins:        totalBins,
+      kg_estimados:      kgEst,
+      kg_por_ha:         (kgEst && ha)        ? parseFloat((kgEst / ha).toFixed(1))        : null,
+      kg_por_bin:        (kgEst && totalBins)  ? parseFloat((kgEst / totalBins).toFixed(1)) : null,
+      costo_contratista: costoCont,
+      flete_bines:       flete,
+      costo_kg_total:    (kgEst && (costoCont || flete))
+                           ? parseFloat(((costoCont||0)+(flete||0)) / kgEst).toFixed(1)
+                           : null,
+      operario:          null,
+      notas:             document.getElementById('notas').value || null,
+      created_by:        window._currentUser || 'PWA'
+    };
+
+    await supaInsert('cosecha_campo', payload);
+    toast('✓ Registro guardado', 'ok');
+
+    // reset producción
+    ['hileras','n_trabajadores','bins_completos','ha_cosechadas',
+     'totes_parciales','totes_vacios_disp','notas','flete_bines',
+     'r_trato_precio','r_floreo_n','r_floreo_precio','r_cc_n','r_cc_precio',
+     'r_trac_n','r_trac_precio','r_acopio_n','r_acopio_precio',
+     'r_grua_n','r_grua_precio'
+    ].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    if (_binInc) toggleBinInc();
+    recalcular();
+    await cargarHistorial();
+
+  } catch (err) {
+    toast('Error: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Guardar registro de cosecha';
+  }
+}
+
+// ── HISTORIAL ─────────────────────────────────────────────────────────────────
+async function cargarHistorial() {
+  const fecha = document.getElementById('fecha').value;
+  if (!fecha) return;
+  const list = document.getElementById('hist-list');
+  try {
+    const rows = await supaSelect('cosecha_campo',
+      `empresa_id=eq.${_EMPRESA_ID}&campo_id=eq.${_CAMPO_ID}&fecha=eq.${fecha}`);
+    if (!rows.length) {
+      list.innerHTML = '<div class="hist-empty">Sin registros hoy</div>';
+      return;
+    }
+    list.innerHTML = rows.map(r => `
+      <div class="hist-item">
+        <div class="hist-top">
+          <div>
+            <div class="hist-date">${getFechaDisplay(r.fecha)} · ${r.cuartel}</div>
+            <div class="hist-cuartel">${r.hileras ? 'Hileras ' + r.hileras : ''} · ${r.n_trabajadores || '—'} personas</div>
+          </div>
+          <div class="hist-kg">${fmtN(r.kg_estimados)} kg</div>
+        </div>
+        <div class="hist-meta">
+          ${fmtN(r.total_bins, 1)} bins · ${fmtN(r.total_totes)} totes
+          ${r.kg_por_ha ? ' · ' + fmtN(r.kg_por_ha) + ' kg/ha' : ''}
+          ${r.notas ? '<br><em>' + esc(r.notas) + '</em>' : ''}
+        </div>
+      </div>`).join('');
+  } catch (err) {
+    list.innerHTML = `<div class="hist-empty" style="color:var(--red)">Error: ${esc(err.message)}</div>`;
+  }
+}
+</script>
+</body>
+</html>

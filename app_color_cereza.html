@@ -1,0 +1,1346 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#8B0000">
+<title>CherryGrade · Clasificador PUC</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html { min-height: 100%; background: #0f0407; font-size: 16px; }
+  html, body { min-height: 100vh; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: linear-gradient(180deg, #1a0608 0%, #2d0a0e 100%);
+    color: #fff;
+    padding: 16px;
+    padding-bottom: 40px;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+  /* En desktop, reducir todo significativamente */
+  @media (min-width: 600px) {
+    html { font-size: 13px; }
+    body {
+      max-width: 380px;
+      padding: 10px;
+      padding-bottom: 24px;
+      box-shadow: 0 0 80px rgba(0,0,0,0.7);
+      border-left: 1px solid rgba(255,255,255,0.05);
+      border-right: 1px solid rgba(255,255,255,0.05);
+    }
+    .header { padding: 6px 0 12px !important; }
+    .header h1 { font-size: 17px !important; }
+    .header p { font-size: 10px !important; }
+    .card { padding: 10px !important; margin-bottom: 8px !important; border-radius: 12px !important; }
+    .card h2 { font-size: 11px !important; margin-bottom: 8px !important; }
+    .placeholder p { font-size: 11px !important; }
+    .placeholder svg { width: 36px !important; height: 36px !important; }
+    .btn { padding: 9px !important; font-size: 12px !important; border-radius: 9px !important; }
+    .btn-analyze { padding: 11px !important; font-size: 12px !important; }
+    .stat-label { font-size: 8px !important; }
+    .stat-value { font-size: 16px !important; }
+    .stat-sub { font-size: 9px !important; }
+    .calib-panel { padding: 10px !important; }
+    .calib-panel h3 { font-size: 11px !important; }
+    .calib-row label { font-size: 10px !important; }
+    .calib-row input[type="number"] { font-size: 12px !important; padding: 6px 8px !important; }
+    .calib-info { font-size: 9px !important; }
+    .quality-bar { padding: 10px !important; margin-bottom: 8px !important; }
+    .quality-bar h3 { font-size: 10px !important; margin-bottom: 8px !important; }
+    .bar-track { height: 18px !important; }
+    .bar-segment { font-size: 10px !important; }
+    .legend { font-size: 10px !important; }
+    .cat-row { padding: 6px 0 !important; gap: 8px !important; }
+    .cat-swatch { width: 18px !important; height: 18px !important; }
+    .cat-title { font-size: 11px !important; }
+    .cat-code { font-size: 12px !important; }
+    .cat-meta { font-size: 9px !important; }
+    .cat-pct { font-size: 12px !important; min-width: 44px !important; }
+    .cat-market-tag { font-size: 8px !important; padding: 1px 5px !important; }
+    .matrix { font-size: 9px !important; }
+    .matrix th, .matrix td { padding: 3px 4px !important; min-width: 32px !important; }
+    .matrix th.col-head .swatch { width: 12px !important; height: 12px !important; }
+    .info-banner { font-size: 10px !important; padding: 8px 10px !important; }
+    .scale-table { font-size: 10px !important; }
+    .scale-section h3 { font-size: 10px !important; }
+    .footer { font-size: 9px !important; }
+    .capture-area {
+      max-height: 280px !important;
+      aspect-ratio: 4/3;
+    }
+  }
+  .header { text-align: center; padding: 12px 0 20px; }
+  .header h1 {
+    font-size: 22px; font-weight: 700;
+    background: linear-gradient(90deg, #ff4444, #cc0000);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text; letter-spacing: 0.5px;
+  }
+  .header p { font-size: 12px; color: #aaa; margin-top: 4px; }
+  .card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px; padding: 16px; margin-bottom: 14px;
+    backdrop-filter: blur(10px);
+  }
+  .card h2 {
+    font-size: 14px; font-weight: 600; color: #ff8888;
+    margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px;
+  }
+  .capture-area {
+    position: relative; width: 100%; aspect-ratio: 4/3;
+    background: #000; border-radius: 12px; overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+    border: 2px dashed rgba(255,68,68,0.3);
+  }
+  .capture-area.has-image { border-style: solid; border-color: rgba(255,68,68,0.6); }
+  #preview {
+    width: 100%; height: 100%; object-fit: cover; display: block;
+  }
+  #overlay {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none;
+  }
+  #canvas { display: none; }
+  .placeholder { text-align: center; color: #666; padding: 20px; }
+  .placeholder svg { width: 48px; height: 48px; opacity: 0.5; margin-bottom: 8px; }
+  .placeholder p { font-size: 13px; }
+
+  .controls {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px;
+  }
+  .btn {
+    padding: 14px; border: none; border-radius: 12px;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    transition: transform 0.1s, opacity 0.2s;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary {
+    background: linear-gradient(135deg, #cc0000, #8b0000);
+    color: white; box-shadow: 0 4px 12px rgba(204,0,0,0.4);
+  }
+  .btn-secondary {
+    background: rgba(255,255,255,0.1); color: white;
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+  .btn-analyze {
+    grid-column: 1 / -1;
+    background: linear-gradient(135deg, #ff4444, #cc0000);
+    color: white; padding: 16px; font-size: 15px;
+    box-shadow: 0 4px 16px rgba(255,68,68,0.4);
+  }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  input[type="file"] { display: none; }
+
+  .result-grid {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px;
+  }
+  .stat {
+    background: rgba(0,0,0,0.3); border-radius: 10px;
+    padding: 10px 6px; text-align: center;
+  }
+  .stat-label {
+    font-size: 9px; color: #888; text-transform: uppercase;
+    letter-spacing: 1px; margin-bottom: 4px;
+  }
+  .stat-value { font-size: 20px; font-weight: 700; color: #fff; }
+  .stat-sub { font-size: 10px; color: #aaa; margin-top: 2px; }
+
+  .calib-panel {
+    background: rgba(255,200,0,0.08);
+    border: 1px solid rgba(255,200,0,0.25);
+    border-radius: 12px; padding: 14px; margin-bottom: 12px;
+  }
+  .calib-panel h3 {
+    font-size: 12px; color: #ffcc66; margin-bottom: 8px;
+    text-transform: uppercase; letter-spacing: 1px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .calib-row {
+    display: flex; align-items: center; gap: 10px; margin-top: 8px;
+  }
+  .calib-row label {
+    font-size: 12px; color: #ddd; flex: 1;
+  }
+  .calib-row input[type="number"] {
+    width: 70px; padding: 8px 10px; border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.2);
+    background: rgba(0,0,0,0.3); color: #fff;
+    font-size: 14px; font-weight: 700; text-align: center;
+  }
+  .calib-row input[type="number"]:focus {
+    outline: none; border-color: #ffcc66;
+  }
+  .calib-slider {
+    width: 100%; margin-top: 4px;
+    accent-color: #ff4444;
+  }
+  .calib-info {
+    font-size: 10px; color: #ffaa66; margin-top: 8px; line-height: 1.4;
+  }
+
+  .quality-bar {
+    margin-top: 8px; background: rgba(0,0,0,0.4);
+    border-radius: 12px; padding: 14px; margin-bottom: 12px;
+  }
+  .quality-bar h3 {
+    font-size: 12px; color: #ffaaaa; margin-bottom: 10px;
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+  .bar-track {
+    height: 24px; background: rgba(255,255,255,0.08);
+    border-radius: 12px; overflow: hidden; display: flex; margin-bottom: 8px;
+  }
+  .bar-segment {
+    height: 100%; transition: width 0.6s ease;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: white;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  }
+  .bar-export { background: linear-gradient(90deg, #00aa44, #00cc66); }
+  .bar-internal { background: linear-gradient(90deg, #ff8800, #ffaa00); }
+  .legend {
+    display: flex; justify-content: space-between; font-size: 11px; color: #ccc;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+  /* Lista de categorías (desglose) */
+  .cat-row {
+    display: flex; align-items: center; gap: 10px; padding: 8px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .cat-row:last-child { border-bottom: none; }
+  .cat-row.is-zero { opacity: 0.35; }
+  .cat-swatch {
+    width: 22px; height: 22px; border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.15); flex-shrink: 0;
+  }
+  .cat-info { flex: 1; min-width: 0; }
+  .cat-title {
+    font-size: 12px; font-weight: 600; color: #fff;
+    display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap;
+  }
+  .cat-code { font-weight: 700; color: #ff8888; font-size: 13px; }
+  .cat-meta { font-size: 10px; color: #888; margin-top: 2px; }
+  .cat-pct {
+    font-size: 14px; font-weight: 700; color: #fff;
+    min-width: 56px; text-align: right;
+  }
+  .cat-bar {
+    height: 4px; background: rgba(255,255,255,0.08);
+    border-radius: 2px; overflow: hidden; margin-top: 4px;
+  }
+  .cat-bar-fill { height: 100%; border-radius: 2px; transition: width 0.6s ease; }
+  .cat-market-tag {
+    font-size: 9px; padding: 2px 6px; border-radius: 4px;
+    font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .tag-export { background: rgba(0,204,102,0.2); color: #66ee99; }
+  .tag-internal { background: rgba(255,170,0,0.2); color: #ffcc66; }
+
+  /* Matriz Color × Calibre */
+  .matrix-wrap {
+    overflow-x: auto; -webkit-overflow-scrolling: touch;
+    margin: 0 -16px; padding: 0 16px;
+  }
+  .matrix {
+    border-collapse: separate; border-spacing: 2px;
+    font-size: 10px; min-width: 100%;
+  }
+  .matrix th, .matrix td {
+    padding: 4px 6px; text-align: center; border-radius: 4px;
+    min-width: 38px;
+  }
+  .matrix th {
+    font-size: 9px; color: #aaa; text-transform: uppercase;
+    letter-spacing: 0.5px; font-weight: 600;
+  }
+  .matrix th.row-head {
+    text-align: right; padding-right: 8px;
+    font-size: 10px; color: #ffaaaa;
+  }
+  .matrix th.col-head {
+    background: rgba(255,255,255,0.04);
+  }
+  .matrix th.col-head .swatch {
+    width: 14px; height: 14px; border-radius: 50%;
+    margin: 0 auto 2px;
+    border: 1px solid rgba(255,255,255,0.15);
+  }
+  .matrix td.cell {
+    background: rgba(255,255,255,0.04);
+    color: #888; font-weight: 600;
+    transition: background 0.3s;
+  }
+  .matrix td.cell.has-data { color: #fff; }
+  .matrix td.cell.export-cell { background: rgba(0,170,68,0.15); }
+  .matrix td.cell.export-cell.has-data { background: rgba(0,200,80,0.4); }
+  .matrix td.cell.internal-cell { background: rgba(255,140,0,0.15); }
+  .matrix td.cell.internal-cell.has-data { background: rgba(255,170,0,0.4); }
+
+  .info-banner {
+    background: rgba(0,170,68,0.1);
+    border: 1px solid rgba(0,170,68,0.3);
+    border-radius: 10px; padding: 10px 12px;
+    font-size: 11px; color: #aaffcc;
+    margin-bottom: 12px; display: flex; gap: 8px;
+  }
+  .info-banner.warn {
+    background: rgba(255,170,0,0.1);
+    border-color: rgba(255,170,0,0.3);
+    color: #ffddaa;
+  }
+  .info-icon { flex-shrink: 0; font-size: 14px; }
+
+  .hidden { display: none !important; }
+
+  .loading {
+    display: inline-block; width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff;
+    border-radius: 50%; animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .footer {
+    text-align: center; font-size: 10px; color: #555;
+    margin-top: 20px; line-height: 1.6;
+  }
+
+  .scale-tables { display: grid; gap: 10px; }
+  .scale-section h3 {
+    font-size: 11px; color: #ffaaaa; margin-bottom: 6px;
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+  .scale-table { width: 100%; font-size: 11px; border-collapse: collapse; }
+  .scale-table tr { border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .scale-table tr:last-child { border-bottom: none; }
+  .scale-table td { padding: 6px 4px; }
+  .scale-table .col-swatch {
+    width: 20px; height: 20px; border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.15);
+  }
+  .scale-table .col-code { font-weight: 700; }
+</style>
+</head>
+<body>
+  <div class="header">
+    <h1>🍒 CherryGrade PUC</h1>
+    <p>Clasificación independiente · Color & Calibre</p>
+  </div>
+
+  <div class="card">
+    <h2>📷 Captura</h2>
+    <div class="capture-area" id="captureArea">
+      <div class="placeholder" id="placeholder">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg>
+        <p>Toma o sube una foto de cerezas separadas sobre fondo claro</p>
+      </div>
+      <img id="preview" class="hidden" alt="Vista previa">
+      <canvas id="overlay" class="hidden"></canvas>
+      <canvas id="canvas"></canvas>
+    </div>
+
+    <div class="controls">
+      <button class="btn btn-primary" id="cameraBtn">📷 Cámara</button>
+      <button class="btn btn-secondary" id="galleryBtn">🖼️ Galería</button>
+      <button class="btn btn-analyze" id="analyzeBtn" disabled>
+        <span id="analyzeLabel">⚡ Detectar cerezas</span>
+      </button>
+    </div>
+
+    <input type="file" id="cameraInput" accept="image/*" capture="environment">
+    <input type="file" id="galleryInput" accept="image/*">
+  </div>
+
+  <div class="card hidden" id="resultsCard">
+    <h2>📊 Resultado</h2>
+
+    <div class="info-banner" id="infoBanner">
+      <span class="info-icon">✓</span>
+      <span id="infoText">--</span>
+    </div>
+
+    <div class="result-grid">
+      <div class="stat">
+        <div class="stat-label">Cerezas</div>
+        <div class="stat-value" id="cherryCount">0</div>
+        <div class="stat-sub">detectadas</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Color</div>
+        <div class="stat-value" id="dominantColor">--</div>
+        <div class="stat-sub" id="dominantColorName">--</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Calibre</div>
+        <div class="stat-value" id="dominantCaliber">--</div>
+        <div class="stat-sub">mm modal</div>
+      </div>
+    </div>
+
+    <!-- Calibración -->
+    <div class="calib-panel">
+      <h3>📏 Calibración de escala</h3>
+      <div style="font-size:11px; color:#ddd; line-height:1.5;">
+        Para convertir píxeles a milímetros, indica el diámetro real esperado
+        de las cerezas en esta toma. Mueve el slider hasta que los calibres se vean correctos.
+      </div>
+      <div class="calib-row">
+        <label>Diámetro de referencia (cereza promedio):</label>
+        <input type="number" id="calibInput" min="18" max="40" step="0.5" value="28">
+        <span style="font-size:13px; color:#ffcc66; font-weight:700;">mm</span>
+      </div>
+      <input type="range" class="calib-slider" id="calibSlider" min="18" max="40" step="0.5" value="28">
+      <div class="calib-info" id="calibInfo">Mediana detectada: -- px → -- mm/px</div>
+    </div>
+
+    <!-- Matriz Color × Calibre -->
+    <div class="quality-bar">
+      <h3>🎯 Matriz Color × Calibre</h3>
+      <div style="font-size:10px; color:#aaa; margin-bottom: 10px;">
+        Cantidad de cerezas en cada combinación. Verde = exportación · Naranja = mercado interno
+      </div>
+      <div class="matrix-wrap">
+        <table class="matrix" id="matrixTable"></table>
+      </div>
+    </div>
+
+    <!-- Distribución por Color -->
+    <div class="quality-bar">
+      <h3>🍒 Distribución por Color</h3>
+      <div id="colorList"></div>
+    </div>
+
+    <!-- Distribución por Calibre -->
+    <div class="quality-bar">
+      <h3>📐 Distribución por Calibre</h3>
+      <div id="caliberList"></div>
+    </div>
+
+    <!-- Mercado -->
+    <div class="quality-bar">
+      <h3>🌍 Distribución de Mercado</h3>
+      <div style="font-size:10px; color:#aaa; margin-bottom: 8px;">
+        Exportación requiere: color ≥ 3 (Rojo Caoba o más oscuro) Y calibre ≥ 24 mm
+      </div>
+      <div class="bar-track">
+        <div class="bar-segment bar-export" id="barExport" style="width:0%"></div>
+        <div class="bar-segment bar-internal" id="barInternal" style="width:0%"></div>
+      </div>
+      <div class="legend">
+        <div class="legend-item">
+          <span class="legend-dot" style="background:#00cc66;"></span>
+          <span>Exportación: <strong id="pctExport">0%</strong></span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot" style="background:#ffaa00;"></span>
+          <span>Mercado Interno: <strong id="pctInternal">0%</strong></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>📋 Escalas PUC de Referencia</h2>
+    <div class="scale-tables">
+      <div class="scale-section">
+        <h3>Escala de Color</h3>
+        <table class="scale-table" id="colorScaleTable"><tbody></tbody></table>
+      </div>
+      <div class="scale-section">
+        <h3>Escala de Calibre</h3>
+        <table class="scale-table" id="caliberScaleTable"><tbody></tbody></table>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    Sistema basado en la Tabla de Color y Calibre<br>
+    Facultad de Agronomía y Sistemas Naturales · PUC Chile<br>
+    Inspirado en Hectre Color Grade
+  </div>
+
+<script>
+// ============================================================
+// ESCALAS PUC INDEPENDIENTES
+// ============================================================
+const COLOR_SCALE = [
+  { code: '2',   name: 'Rojo',         rgb: [200, 30, 30] },
+  { code: '3',   name: 'Rojo Caoba',   rgb: [160, 20, 25] },
+  { code: '3.3', name: 'Rojo Caoba+',  rgb: [130, 18, 22] },
+  { code: '3.5', name: 'Caoba',        rgb: [100, 15, 20] },
+  { code: '3.8', name: 'Oscuro',       rgb: [70, 10, 15] },
+  { code: '4',   name: 'Caoba Oscuro', rgb: [45, 8, 12] },
+  { code: '5',   name: 'Negro',        rgb: [22, 6, 10] }
+];
+
+const CALIBER_SCALE = [
+  { mm: 22, label: 'XS' },
+  { mm: 24, label: 'S' },
+  { mm: 26, label: 'M' },
+  { mm: 28, label: 'L' },
+  { mm: 30, label: 'XL' },
+  { mm: 32, label: 'XXL' },
+  { mm: 34, label: 'Jumbo' }
+];
+
+// Reglas de exportación PUC: color >= 3 AND calibre >= 24mm
+function isExportable(colorCode, caliberMm) {
+  const colorCodeNum = parseFloat(colorCode);
+  return colorCodeNum >= 3 && caliberMm >= 24;
+}
+
+// ============================================================
+// DOM
+// ============================================================
+const $ = id => document.getElementById(id);
+const preview = $('preview');
+const canvas = $('canvas');
+const overlay = $('overlay');
+const ctx = canvas.getContext('2d', { willReadFrequently: true });
+const overlayCtx = overlay.getContext('2d');
+const placeholder = $('placeholder');
+const captureArea = $('captureArea');
+const analyzeBtn = $('analyzeBtn');
+const resultsCard = $('resultsCard');
+
+let lastDetections = null; // {cherries, imageWidth, imageHeight, medianDiameterPx}
+
+// ============================================================
+// REFERENCIA: Tablas de escalas
+// ============================================================
+function buildScaleTables() {
+  const colorBody = $('colorScaleTable').querySelector('tbody');
+  colorBody.innerHTML = COLOR_SCALE.map(c => `
+    <tr>
+      <td><div class="col-swatch" style="background:rgb(${c.rgb.join(',')})"></div></td>
+      <td class="col-code">${c.code}</td>
+      <td>${c.name}</td>
+      <td style="text-align:right; color:${parseFloat(c.code) >= 3 ? '#00cc66' : '#ffaa00'}; font-size:10px;">
+        ${parseFloat(c.code) >= 3 ? 'apto exp.' : 'interno'}
+      </td>
+    </tr>
+  `).join('');
+
+  const calBody = $('caliberScaleTable').querySelector('tbody');
+  calBody.innerHTML = CALIBER_SCALE.map(c => `
+    <tr>
+      <td class="col-code">${c.mm} mm</td>
+      <td>${c.label}</td>
+      <td style="text-align:right; color:${c.mm >= 24 ? '#00cc66' : '#ffaa00'}; font-size:10px;">
+        ${c.mm >= 24 ? 'apto exp.' : 'interno'}
+      </td>
+    </tr>
+  `).join('');
+}
+buildScaleTables();
+
+// ============================================================
+// INPUT DE IMAGEN
+// ============================================================
+$('cameraBtn').addEventListener('click', () => $('cameraInput').click());
+$('galleryBtn').addEventListener('click', () => $('galleryInput').click());
+
+[$('cameraInput'), $('galleryInput')].forEach(input => {
+  input.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      preview.src = ev.target.result;
+      preview.classList.remove('hidden');
+      placeholder.classList.add('hidden');
+      overlay.classList.add('hidden');
+      captureArea.classList.add('has-image');
+      analyzeBtn.disabled = false;
+      resultsCard.classList.add('hidden');
+      lastDetections = null;
+    };
+    reader.readAsDataURL(file);
+  });
+});
+
+// ============================================================
+// ANÁLISIS PRINCIPAL
+// ============================================================
+analyzeBtn.addEventListener('click', () => {
+  if (!preview.src || preview.classList.contains('hidden')) return;
+  analyzeBtn.disabled = true;
+  $('analyzeLabel').innerHTML = '<span class="loading"></span> Detectando...';
+  setTimeout(runAnalysis, 50);
+});
+
+function runAnalysis() {
+  // Reescalar imagen para procesamiento más rápido
+  const img = preview;
+  const maxDim = 800;
+  const scale = Math.min(maxDim / img.naturalWidth, maxDim / img.naturalHeight, 1);
+  const w = Math.floor(img.naturalWidth * scale);
+  const h = Math.floor(img.naturalHeight * scale);
+  canvas.width = w;
+  canvas.height = h;
+  ctx.drawImage(img, 0, 0, w, h);
+
+  const imageData = ctx.getImageData(0, 0, w, h);
+  const data = imageData.data;
+
+  // === MÉTODO BASADO EN PEDICELOS ===
+  // Cada cereza tiene UN pedicelo (tallo) verde-amarillento.
+  // Detectar pedicelos es más robusto que segmentar cada cereza.
+
+  // 1. Máscara de pedicelos
+  let stemMask = buildStemMask(imageData);
+  // Cierre suave para conectar tallos cortados por sombras
+  stemMask = closeMask(stemMask, w, h, 1);
+
+  // 2. Componentes conectados de pedicelos
+  const stemComponents = connectedComponents(stemMask, w, h);
+
+  // 3. Filtrar pedicelos válidos por tamaño y forma
+  // Un pedicelo típico tiene 30-600 píxeles de área y es elongado
+  const validStems = stemComponents.filter(c => {
+    const bboxW = c.bbox.maxX - c.bbox.minX + 1;
+    const bboxH = c.bbox.maxY - c.bbox.minY + 1;
+    const longSide = Math.max(bboxW, bboxH);
+    if (c.area < 12) return false;        // muy chico (ruido)
+    if (c.area > 1200) return false;      // muy grande (no es un tallo)
+    if (longSide < 6) return false;       // muy pequeño
+    return true;
+  });
+
+  if (validStems.length === 0) {
+    alert('No se detectaron pedicelos. La cereza necesita tener su tallo visible para usar este método.');
+    analyzeBtn.disabled = false;
+    $('analyzeLabel').textContent = '⚡ Detectar cerezas';
+    return;
+  }
+
+  // 4. Máscara de cerezas para muestrear color (no es necesaria para conteo)
+  let cherryMask = buildCherryMask(imageData);
+  cherryMask = fillHighlightHoles(cherryMask, imageData, w, h);
+  cherryMask = closeMask(cherryMask, w, h, 2);
+
+  // 5. Estimar radio típico de cereza
+  // Usar área total de cerezas / cantidad de pedicelos
+  let totalCherryArea = 0;
+  for (let i = 0; i < cherryMask.length; i++) totalCherryArea += cherryMask[i];
+  const avgCherryArea = totalCherryArea / validStems.length;
+  let estimatedRadius = Math.sqrt(avgCherryArea / Math.PI);
+  // Acotar a un rango razonable
+  estimatedRadius = Math.max(8, Math.min(estimatedRadius, 80));
+
+  // 6. Para cada pedicelo, encontrar su cereza asociada y muestrear color
+  const searchRadius = estimatedRadius * 1.6;
+  const sr2 = searchRadius * searchRadius;
+
+  const cherries = validStems.map(stem => {
+    let sumPx = 0, sumPy = 0, sumR = 0, sumG = 0, sumB = 0, count = 0;
+
+    // Buscar píxeles de cereza alrededor del centroide del pedicelo
+    const sx = stem.cx, sy = stem.cy;
+    const minX = Math.max(0, Math.floor(sx - searchRadius));
+    const maxX = Math.min(w - 1, Math.ceil(sx + searchRadius));
+    const minY = Math.max(0, Math.floor(sy - searchRadius));
+    const maxY = Math.min(h - 1, Math.ceil(sy + searchRadius));
+
+    for (let y = minY; y <= maxY; y++) {
+      for (let x = minX; x <= maxX; x++) {
+        const dx = x - sx, dy = y - sy;
+        if (dx*dx + dy*dy > sr2) continue;
+        const ci = y * w + x;
+        if (cherryMask[ci]) {
+          sumPx += x; sumPy += y;
+          const di = ci * 4;
+          sumR += data[di]; sumG += data[di+1]; sumB += data[di+2];
+          count++;
+        }
+      }
+    }
+
+    if (count < 8) return null; // pedicelo aislado, sin cereza adyacente
+
+    return {
+      cx: sumPx / count,
+      cy: sumPy / count,
+      diameterPx: estimatedRadius * 2,
+      stemBbox: stem.bbox,
+      stemCx: sx,
+      stemCy: sy,
+      color: [Math.round(sumR/count), Math.round(sumG/count), Math.round(sumB/count)]
+    };
+  }).filter(c => c !== null);
+
+  if (cherries.length === 0) {
+    alert('Detecté pedicelos pero ninguno tenía cereza adyacente. Verifica que las cerezas sean visibles junto a sus tallos.');
+    analyzeBtn.disabled = false;
+    $('analyzeLabel').textContent = '⚡ Detectar cerezas';
+    return;
+  }
+
+  // 7. Calcular mediana del diámetro para calibración
+  const sortedDiameters = cherries.map(c => c.diameterPx).sort((a, b) => a - b);
+  const medianDiameterPx = sortedDiameters[Math.floor(sortedDiameters.length / 2)];
+
+  lastDetections = {
+    cherries,
+    imageWidth: w,
+    imageHeight: h,
+    medianDiameterPx
+  };
+
+  drawOverlay(cherries, w, h);
+  updateResults();
+
+  analyzeBtn.disabled = false;
+  $('analyzeLabel').textContent = '🔄 Re-detectar';
+}
+
+// ============================================================
+// DETECCIÓN DE PÍXEL DE PEDICELO (TALLO)
+// Los pedicelos son verde-amarillentos: G y R altos, B bajo.
+// Esto contrasta fuertemente con las cerezas (rojo dominante).
+// ============================================================
+function isStemPixel(r, g, b) {
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+
+  // Rechazar muy oscuros o muy brillantes
+  if (max < 55) return false;
+  if (r > 235 && g > 235 && b > 235) return false;
+
+  // Rechazar acromáticos (grises, blancos)
+  if (max - min < 22) return false;
+
+  // El azul DEBE ser el canal mínimo (verde y amarillo tienen B bajo)
+  if (b > g) return false;
+  if (b > r) return false;
+
+  // El verde debe estar cerca o sobre el rojo
+  // Verde puro: G >> R · Amarillo-verde: G ≈ R · Amarillo: G ligeramente < R
+  // Rechazamos colores donde R >> G (rojos, naranjas, marrones)
+  if (g < r - 28) return false;
+
+  // Rechazar marrones muy puros (R alto, G medio, B bajo, con poca diferencia G-B)
+  // Un pedicelo seco amarillo tiene G-B alto; un marrón tiene G-B bajo
+  if (g - b < 18) return false;
+
+  return true;
+}
+
+function buildStemMask(imageData) {
+  const w = imageData.width, h = imageData.height;
+  const mask = new Uint8Array(w * h);
+  const data = imageData.data;
+  for (let i = 0, p = 0; i < data.length; i += 4, p++) {
+    if (isStemPixel(data[i], data[i+1], data[i+2])) mask[p] = 1;
+  }
+  return mask;
+}
+
+// ============================================================
+// CONNECTED COMPONENTS (genérico) — usado para tallos
+// ============================================================
+function connectedComponents(mask, w, h) {
+  const labels = new Int32Array(w * h);
+  const parent = [0];
+  let nextLabel = 1;
+
+  function find(x) {
+    while (parent[x] !== x) { parent[x] = parent[parent[x]]; x = parent[x]; }
+    return x;
+  }
+  function union(a, b) {
+    const ra = find(a), rb = find(b);
+    if (ra !== rb) parent[Math.max(ra, rb)] = Math.min(ra, rb);
+  }
+
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const idx = y * w + x;
+      if (!mask[idx]) continue;
+      const left = x > 0 ? labels[idx - 1] : 0;
+      const top = y > 0 ? labels[idx - w] : 0;
+      if (left === 0 && top === 0) {
+        labels[idx] = nextLabel;
+        parent[nextLabel] = nextLabel;
+        nextLabel++;
+      } else if (left !== 0 && top === 0) {
+        labels[idx] = left;
+      } else if (left === 0 && top !== 0) {
+        labels[idx] = top;
+      } else {
+        labels[idx] = Math.min(left, top);
+        if (left !== top) union(left, top);
+      }
+    }
+  }
+
+  const stats = new Map();
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const idx = y * w + x;
+      if (labels[idx] === 0) continue;
+      const root = find(labels[idx]);
+      if (!stats.has(root)) {
+        stats.set(root, {
+          area: 0, sumX: 0, sumY: 0,
+          minX: x, maxX: x, minY: y, maxY: y
+        });
+      }
+      const s = stats.get(root);
+      s.area++;
+      s.sumX += x; s.sumY += y;
+      if (x < s.minX) s.minX = x;
+      if (x > s.maxX) s.maxX = x;
+      if (y < s.minY) s.minY = y;
+      if (y > s.maxY) s.maxY = y;
+    }
+  }
+
+  return Array.from(stats.values()).map(s => ({
+    cx: s.sumX / s.area,
+    cy: s.sumY / s.area,
+    area: s.area,
+    bbox: { minX: s.minX, maxX: s.maxX, minY: s.minY, maxY: s.maxY }
+  }));
+}
+
+// ============================================================
+// DETECCIÓN DE PÍXEL DE CEREZA
+// Solo acepta píxeles con DOMINANCIA DE ROJO real, no cualquier pixel oscuro.
+// Esto rechaza sombras grises, fondos blancos, y elementos no-cereza.
+// ============================================================
+function isCherryPixel(r, g, b) {
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const brightness = (r + g + b) / 3;
+
+  // 1. Rechazar fondos muy claros (papel blanco, plástico, mesa)
+  if (brightness > 210) return false;
+
+  // 2. Rechazar píxeles demasiado oscuros (no se puede determinar color)
+  if (max < 16) return false;
+
+  // 3. Rechazar acromáticos: blancos, grises, negros neutros (sombras)
+  // Saturación = qué tan colorido es el pixel
+  const saturation = (max - min) / max;
+  if (saturation < 0.18) return false;
+
+  // 4. El rojo DEBE ser el canal dominante
+  if (r < g) return false;             // verde gana → hoja/tallo
+  if (r < b - 6) return false;         // azul gana → cielo/sombra azul
+                                        // (permitimos un poco de azul para púrpuras)
+
+  // 5. Rojo debe estar suficientemente sobre el verde
+  if (brightness > 60) {
+    if (r - g < 12) return false;       // necesita ser claramente rojo
+  } else {
+    if (r - g < 3) return false;        // para muy oscuros, basta poca diferencia
+  }
+
+  // 6. Rechazar marrones/sepias/café (madera, cartón): la cereza tiene
+  // ratio R/G mucho más alto que un marrón
+  // Cereza Rojo: R/G ≈ 6.7 · Caoba: R/G ≈ 6.7 · Negro: R/G ≈ 3.7
+  // Marrón típico: R/G ≈ 1.5-1.9
+  if (g > 25 && r / g < 1.9) return false;
+
+  return true;
+}
+
+function buildCherryMask(imageData) {
+  const w = imageData.width, h = imageData.height;
+  const mask = new Uint8Array(w * h);
+  const data = imageData.data;
+  for (let i = 0, p = 0; i < data.length; i += 4, p++) {
+    if (isCherryPixel(data[i], data[i+1], data[i+2])) mask[p] = 1;
+  }
+  return mask;
+}
+
+// ============================================================
+// RELLENAR PEQUEÑOS HOYOS (reflejos especulares en cerezas brillantes)
+// ============================================================
+function fillHighlightHoles(mask, imageData, w, h) {
+  const result = new Uint8Array(mask);
+  for (let y = 2; y < h - 2; y++) {
+    for (let x = 2; x < w - 2; x++) {
+      const idx = y * w + x;
+      if (mask[idx]) continue;
+      let cherryCount = 0;
+      for (let dy = -2; dy <= 2; dy++) {
+        for (let dx = -2; dx <= 2; dx++) {
+          if (mask[(y+dy)*w + (x+dx)]) cherryCount++;
+        }
+      }
+      if (cherryCount >= 17) result[idx] = 1;
+    }
+  }
+  return result;
+}
+
+// ============================================================
+// OPERACIONES MORFOLÓGICAS: dilate, erode, close
+// ============================================================
+function dilate(mask, w, h, iterations) {
+  let current = mask;
+  for (let it = 0; it < iterations; it++) {
+    const next = new Uint8Array(current);
+    for (let y = 1; y < h - 1; y++) {
+      for (let x = 1; x < w - 1; x++) {
+        const idx = y * w + x;
+        if (current[idx]) continue;
+        if (current[idx-1] || current[idx+1] ||
+            current[idx-w] || current[idx+w] ||
+            current[idx-w-1] || current[idx-w+1] ||
+            current[idx+w-1] || current[idx+w+1]) {
+          next[idx] = 1;
+        }
+      }
+    }
+    current = next;
+  }
+  return current;
+}
+
+function erode(mask, w, h, iterations) {
+  let current = mask;
+  for (let it = 0; it < iterations; it++) {
+    const next = new Uint8Array(w * h);
+    for (let y = 1; y < h - 1; y++) {
+      for (let x = 1; x < w - 1; x++) {
+        const idx = y * w + x;
+        if (!current[idx]) continue;
+        if (current[idx-1] && current[idx+1] &&
+            current[idx-w] && current[idx+w] &&
+            current[idx-w-1] && current[idx-w+1] &&
+            current[idx+w-1] && current[idx+w+1]) {
+          next[idx] = 1;
+        }
+      }
+    }
+    current = next;
+  }
+  return current;
+}
+
+// Cierre morfológico: dilatar luego erosionar.
+// Rellena hoyos y conecta regiones separadas por brechas pequeñas.
+function closeMask(mask, w, h, iterations) {
+  return erode(dilate(mask, w, h, iterations), w, h, iterations);
+}
+
+// ============================================================
+// TRANSFORMADA DE DISTANCIA (Chamfer 2-pass)
+// Cada píxel "cherry" recibe la distancia al píxel "fondo" más cercano
+// ============================================================
+function distanceTransform(mask, w, h) {
+  const INF = w + h;
+  const dist = new Float32Array(w * h);
+  for (let i = 0; i < mask.length; i++) {
+    dist[i] = mask[i] ? INF : 0;
+  }
+  // Pasada hacia adelante
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const idx = y * w + x;
+      if (!mask[idx]) continue;
+      let v = dist[idx];
+      if (x > 0)               v = Math.min(v, dist[idx - 1] + 1);
+      if (y > 0)               v = Math.min(v, dist[idx - w] + 1);
+      if (x > 0 && y > 0)      v = Math.min(v, dist[idx - w - 1] + 1.41421);
+      if (x < w-1 && y > 0)    v = Math.min(v, dist[idx - w + 1] + 1.41421);
+      dist[idx] = v;
+    }
+  }
+  // Pasada hacia atrás
+  for (let y = h - 1; y >= 0; y--) {
+    for (let x = w - 1; x >= 0; x--) {
+      const idx = y * w + x;
+      if (!mask[idx]) continue;
+      let v = dist[idx];
+      if (x < w-1)             v = Math.min(v, dist[idx + 1] + 1);
+      if (y < h-1)             v = Math.min(v, dist[idx + w] + 1);
+      if (x < w-1 && y < h-1)  v = Math.min(v, dist[idx + w + 1] + 1.41421);
+      if (x > 0 && y < h-1)    v = Math.min(v, dist[idx + w - 1] + 1.41421);
+      dist[idx] = v;
+    }
+  }
+  return dist;
+}
+
+// ============================================================
+// REALZAR EL MAPA DE DISTANCIA: ayuda a separar cerezas pegadas
+// detectando concavidades (gradientes locales fuertes) que indican
+// el "encuentro" entre dos frutas
+// ============================================================
+function enhanceDistanceMap(dist, w, h) {
+  const result = new Float32Array(dist);
+  // Para cada pixel, comparar con vecinos a distancia 2:
+  // si está rodeado de valores significativamente más bajos en alguna
+  // dirección, es probable que sea un peak; si está en una "meseta",
+  // necesitamos no realzarlo demasiado
+  // El truco: aplicar un mini Laplaciano que enfatiza las "cumbres"
+  for (let y = 2; y < h - 2; y++) {
+    for (let x = 2; x < w - 2; x++) {
+      const idx = y * w + x;
+      const v = dist[idx];
+      if (v < 3) continue;
+
+      // Promedio de vecinos a 2 píxeles
+      const avg = (
+        dist[idx - 2] + dist[idx + 2] +
+        dist[idx - 2*w] + dist[idx + 2*w] +
+        dist[idx - 2*w - 2] + dist[idx - 2*w + 2] +
+        dist[idx + 2*w - 2] + dist[idx + 2*w + 2]
+      ) / 8;
+
+      // Realce: amplifica pixels que son "más altos" que su vecindad
+      // (cumbres), sin afectar mesetas planas
+      const diff = v - avg;
+      result[idx] = v + diff * 0.4;
+    }
+  }
+  return result;
+}
+
+// ============================================================
+// MÁXIMOS LOCALES con supresión no máxima (NMS)
+// Cada máximo local es un centro de cereza candidato
+// ============================================================
+function findLocalMaxima(dist, w, h, nmsRadius, minVal) {
+  const peaks = [];
+  const margin = 1;
+  for (let y = margin; y < h - margin; y++) {
+    for (let x = margin; x < w - margin; x++) {
+      const idx = y * w + x;
+      const v = dist[idx];
+      if (v < minVal) continue;
+      // Test rápido: vecinos inmediatos 3x3
+      // (left/top con > para no contar plateau dos veces)
+      if (dist[idx-1]   >  v) continue;
+      if (dist[idx-w]   >  v) continue;
+      if (dist[idx-w-1] >  v) continue;
+      if (dist[idx-w+1] >  v) continue;
+      if (dist[idx+1]   >= v) continue;
+      if (dist[idx+w]   >= v) continue;
+      if (dist[idx+w-1] >= v) continue;
+      if (dist[idx+w+1] >= v) continue;
+
+      // Test NMS más amplio
+      let isMax = true;
+      const r = nmsRadius;
+      for (let dy = -r; dy <= r && isMax; dy++) {
+        const ny = y + dy;
+        if (ny < 0 || ny >= h) continue;
+        for (let dx = -r; dx <= r; dx++) {
+          if (dx === 0 && dy === 0) continue;
+          const nx = x + dx;
+          if (nx < 0 || nx >= w) continue;
+          const ni = ny * w + nx;
+          if (dist[ni] > v) { isMax = false; break; }
+        }
+      }
+      if (isMax) peaks.push({ x, y, dist: v });
+    }
+  }
+  return peaks;
+}
+
+// ============================================================
+// CLASIFICACIÓN
+// ============================================================
+function colorDistance(c1, c2) {
+  const dr = c1[0] - c2[0], dg = c1[1] - c2[1], db = c1[2] - c2[2];
+  return Math.sqrt(dr*dr + dg*dg + db*db);
+}
+
+function classifyColor(rgb) {
+  let best = COLOR_SCALE[0], bestDist = Infinity;
+  for (const item of COLOR_SCALE) {
+    const d = colorDistance(rgb, item.rgb);
+    if (d < bestDist) { bestDist = d; best = item; }
+  }
+  return best;
+}
+
+function classifyCaliber(mm) {
+  let best = CALIBER_SCALE[0], bestDist = Infinity;
+  for (const item of CALIBER_SCALE) {
+    const d = Math.abs(mm - item.mm);
+    if (d < bestDist) { bestDist = d; best = item; }
+  }
+  return best;
+}
+
+// ============================================================
+// OVERLAY VISUAL SOBRE LA IMAGEN
+// ============================================================
+function drawOverlay(cherries, w, h) {
+  overlay.width = w;
+  overlay.height = h;
+  overlay.classList.remove('hidden');
+  overlayCtx.clearRect(0, 0, w, h);
+
+  const tooMany = cherries.length > 60;
+  overlayCtx.lineWidth = tooMany ? 1.5 : 2;
+  overlayCtx.font = 'bold 11px sans-serif';
+  overlayCtx.textAlign = 'center';
+  overlayCtx.textBaseline = 'middle';
+
+  cherries.forEach((c, i) => {
+    const r = c.diameterPx / 2;
+
+    // Círculo de la cereza (verde claro)
+    overlayCtx.strokeStyle = 'rgba(0,255,150,0.85)';
+    overlayCtx.beginPath();
+    overlayCtx.arc(c.cx, c.cy, r, 0, Math.PI * 2);
+    overlayCtx.stroke();
+
+    // Pedicelo detectado (caja amarilla)
+    if (c.stemBbox) {
+      const sb = c.stemBbox;
+      overlayCtx.strokeStyle = 'rgba(255,235,0,0.9)';
+      overlayCtx.lineWidth = 1.2;
+      overlayCtx.strokeRect(
+        sb.minX - 1, sb.minY - 1,
+        sb.maxX - sb.minX + 2,
+        sb.maxY - sb.minY + 2
+      );
+      overlayCtx.lineWidth = tooMany ? 1.5 : 2;
+    }
+
+    // Línea pedicelo → centro cereza
+    if (c.stemCx !== undefined) {
+      overlayCtx.strokeStyle = 'rgba(255,235,0,0.4)';
+      overlayCtx.lineWidth = 1;
+      overlayCtx.beginPath();
+      overlayCtx.moveTo(c.stemCx, c.stemCy);
+      overlayCtx.lineTo(c.cx, c.cy);
+      overlayCtx.stroke();
+      overlayCtx.lineWidth = tooMany ? 1.5 : 2;
+    }
+
+    // Punto central
+    overlayCtx.fillStyle = 'rgba(0,255,150,0.95)';
+    overlayCtx.beginPath();
+    overlayCtx.arc(c.cx, c.cy, 2, 0, Math.PI * 2);
+    overlayCtx.fill();
+
+    // Número
+    if (!tooMany) {
+      overlayCtx.fillStyle = 'rgba(0,0,0,0.7)';
+      overlayCtx.fillText(String(i + 1), c.cx, c.cy - r - 6);
+      overlayCtx.fillStyle = '#fff';
+      overlayCtx.fillText(String(i + 1), c.cx, c.cy - r - 7);
+    }
+  });
+}
+
+// ============================================================
+// CALIBRACIÓN: actualización en vivo
+// ============================================================
+const calibSlider = $('calibSlider');
+const calibInput = $('calibInput');
+calibSlider.addEventListener('input', () => {
+  calibInput.value = calibSlider.value;
+  updateResults();
+});
+calibInput.addEventListener('input', () => {
+  let v = parseFloat(calibInput.value);
+  if (isNaN(v)) return;
+  v = Math.max(18, Math.min(40, v));
+  calibSlider.value = v;
+  updateResults();
+});
+
+// ============================================================
+// CÁLCULO DE RESULTADOS
+// ============================================================
+function updateResults() {
+  if (!lastDetections) return;
+  const referenceMm = parseFloat(calibInput.value) || 28;
+  const { cherries, medianDiameterPx } = lastDetections;
+  const mmPerPx = referenceMm / medianDiameterPx;
+
+  // Clasificar cada cereza
+  const classified = cherries.map(c => {
+    const colorClass = classifyColor(c.color);
+    const caliberMm = c.diameterPx * mmPerPx;
+    const caliberClass = classifyCaliber(caliberMm);
+    return {
+      ...c,
+      caliberMm,
+      colorCode: colorClass.code,
+      colorName: colorClass.name,
+      caliberMm_bucket: caliberClass.mm,
+      caliberLabel: caliberClass.label,
+      isExport: isExportable(colorClass.code, caliberClass.mm)
+    };
+  });
+
+  renderResults(classified, referenceMm, mmPerPx, medianDiameterPx);
+}
+
+function renderResults(cherries, referenceMm, mmPerPx, medianPx) {
+  resultsCard.classList.remove('hidden');
+
+  const total = cherries.length;
+  $('cherryCount').textContent = total;
+  $('calibInfo').textContent =
+    `Mediana detectada: ${medianPx.toFixed(1)} px → escala: ${mmPerPx.toFixed(3)} mm/px`;
+
+  // Color dominante (modo)
+  const colorCounts = {};
+  COLOR_SCALE.forEach(c => colorCounts[c.code] = 0);
+  cherries.forEach(c => colorCounts[c.colorCode]++);
+  let domColor = COLOR_SCALE[0];
+  let maxC = 0;
+  for (const item of COLOR_SCALE) {
+    if (colorCounts[item.code] > maxC) {
+      maxC = colorCounts[item.code]; domColor = item;
+    }
+  }
+  $('dominantColor').textContent = domColor.code;
+  $('dominantColorName').textContent = domColor.name;
+
+  // Calibre dominante (modo)
+  const calCounts = {};
+  CALIBER_SCALE.forEach(c => calCounts[c.mm] = 0);
+  cherries.forEach(c => calCounts[c.caliberMm_bucket]++);
+  let domCal = CALIBER_SCALE[0];
+  let maxCa = 0;
+  for (const item of CALIBER_SCALE) {
+    if (calCounts[item.mm] > maxCa) {
+      maxCa = calCounts[item.mm]; domCal = item;
+    }
+  }
+  $('dominantCaliber').textContent = domCal.mm;
+
+  // Banner de info
+  const banner = $('infoBanner');
+  if (total >= 5) {
+    banner.classList.remove('warn');
+    $('infoText').textContent = `${total} cerezas detectadas. Calibración: ${referenceMm} mm equivale a ${medianPx.toFixed(0)} px (mediana).`;
+  } else {
+    banner.classList.add('warn');
+    $('infoText').textContent = `Solo ${total} cereza(s) detectada(s). Para mejor estadística, separa más las cerezas y usa fondo claro.`;
+  }
+
+  // Distribución por Color
+  renderColorList(cherries, total);
+
+  // Distribución por Calibre
+  renderCaliberList(cherries, total);
+
+  // Matriz Color × Calibre
+  renderMatrix(cherries);
+
+  // Mercado
+  const exportCount = cherries.filter(c => c.isExport).length;
+  const internalCount = total - exportCount;
+  const pctExp = total ? Math.round((exportCount / total) * 100) : 0;
+  const pctInt = 100 - pctExp;
+  $('barExport').style.width = pctExp + '%';
+  $('barInternal').style.width = pctInt + '%';
+  $('barExport').textContent = pctExp > 8 ? pctExp + '%' : '';
+  $('barInternal').textContent = pctInt > 8 ? pctInt + '%' : '';
+  $('pctExport').textContent = pctExp + '%';
+  $('pctInternal').textContent = pctInt + '%';
+}
+
+function renderColorList(cherries, total) {
+  const list = $('colorList');
+  const counts = {};
+  COLOR_SCALE.forEach(c => counts[c.code] = 0);
+  cherries.forEach(c => counts[c.colorCode]++);
+
+  list.innerHTML = COLOR_SCALE.map(item => {
+    const n = counts[item.code];
+    const pct = total ? (n / total) * 100 : 0;
+    const isExp = parseFloat(item.code) >= 3;
+    const fill = `rgb(${Math.min(255, item.rgb[0]+60)}, ${item.rgb[1]+30}, ${item.rgb[2]+30})`;
+    return `
+      <div class="cat-row ${n === 0 ? 'is-zero' : ''}">
+        <div class="cat-swatch" style="background:rgb(${item.rgb.join(',')})"></div>
+        <div class="cat-info">
+          <div class="cat-title">
+            <span class="cat-code">${item.code}</span>
+            <span>${item.name}</span>
+            <span class="cat-market-tag ${isExp ? 'tag-export' : 'tag-internal'}">${isExp ? 'apto' : 'interno'}</span>
+          </div>
+          <div class="cat-meta">${n} cereza${n === 1 ? '' : 's'}</div>
+          <div class="cat-bar"><div class="cat-bar-fill" style="width:${pct}%; background:${fill};"></div></div>
+        </div>
+        <div class="cat-pct">${pct.toFixed(1)}%</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderCaliberList(cherries, total) {
+  const list = $('caliberList');
+  const counts = {};
+  CALIBER_SCALE.forEach(c => counts[c.mm] = 0);
+  cherries.forEach(c => counts[c.caliberMm_bucket]++);
+
+  list.innerHTML = CALIBER_SCALE.map(item => {
+    const n = counts[item.mm];
+    const pct = total ? (n / total) * 100 : 0;
+    const isExp = item.mm >= 24;
+    return `
+      <div class="cat-row ${n === 0 ? 'is-zero' : ''}">
+        <div class="cat-swatch" style="background:#660000; display:flex; align-items:center; justify-content:center; font-size:9px; color:#fff; font-weight:700;">${item.mm}</div>
+        <div class="cat-info">
+          <div class="cat-title">
+            <span class="cat-code">${item.mm} mm</span>
+            <span>${item.label}</span>
+            <span class="cat-market-tag ${isExp ? 'tag-export' : 'tag-internal'}">${isExp ? 'apto' : 'interno'}</span>
+          </div>
+          <div class="cat-meta">${n} cereza${n === 1 ? '' : 's'}</div>
+          <div class="cat-bar"><div class="cat-bar-fill" style="width:${pct}%; background:linear-gradient(90deg, #cc4444, #ff6666);"></div></div>
+        </div>
+        <div class="cat-pct">${pct.toFixed(1)}%</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderMatrix(cherries) {
+  const table = $('matrixTable');
+  // Construir matriz: filas = calibre, columnas = color
+  const grid = {};
+  for (const cal of CALIBER_SCALE) {
+    grid[cal.mm] = {};
+    for (const col of COLOR_SCALE) grid[cal.mm][col.code] = 0;
+  }
+  cherries.forEach(c => {
+    grid[c.caliberMm_bucket][c.colorCode]++;
+  });
+
+  let html = '<thead><tr><th></th>';
+  for (const col of COLOR_SCALE) {
+    html += `<th class="col-head">
+      <div class="swatch" style="background:rgb(${col.rgb.join(',')})"></div>
+      ${col.code}
+    </th>`;
+  }
+  html += '</tr></thead><tbody>';
+  for (const cal of CALIBER_SCALE) {
+    html += `<tr><th class="row-head">${cal.mm}mm</th>`;
+    for (const col of COLOR_SCALE) {
+      const n = grid[cal.mm][col.code];
+      const exp = isExportable(col.code, cal.mm);
+      const cls = `cell ${exp ? 'export-cell' : 'internal-cell'} ${n > 0 ? 'has-data' : ''}`;
+      html += `<td class="${cls}">${n > 0 ? n : ''}</td>`;
+    }
+    html += '</tr>';
+  }
+  html += '</tbody>';
+  table.innerHTML = html;
+}
+</script>
+</body>
+</html>
