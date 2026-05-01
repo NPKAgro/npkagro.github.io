@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
+  <title>Registro de Personal · Panel</title>
+  <meta name="theme-color" content="#0f1117">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:     #0f1117;
+      --bg2:    #161b24;
+      --bg3:    #1e2534;
+      --border: rgba(255,255,255,0.08);
+      --text:   #f0f2f5;
+      --text2:  #8b93a5;
+      --text3:  #555e70;
+      --accent: #3b82f6;
+      --green:  #10b981;
+      --red:    #ef4444;
+      --amber:  #f59e0b;
+      --radius: 12px;
+    }
+    body { background: var(--bg); color: var(--text); font-family: -apple-system,'Segoe UI',sans-serif; min-height: 100vh; }
+
+    header {
+      background: var(--bg2); border-bottom: 1px solid var(--border);
+      padding: 0 1.5rem; height: 60px;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    .btn-back {
+      display: flex; align-items: center; justify-content: center;
+      width: 34px; height: 34px; border-radius: 8px;
+      background: var(--bg3); border: 1px solid var(--border);
+      color: var(--text2); font-size: 18px; text-decoration: none;
+    }
+    .header-title { font-size: 16px; font-weight: 700; }
+    .header-sub   { font-size: 11px; color: var(--text3); margin-top: 1px; }
+
+    .main { max-width: 1200px; margin: 0 auto; padding: 1.5rem; }
+
+    .toolbar {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 10px; margin-bottom: 1rem;
+    }
+    .search-box {
+      flex: 1; max-width: 320px;
+      background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+      color: var(--text); font-size: 13px; padding: 8px 12px; font-family: inherit;
+    }
+    .search-box:focus { outline: none; border-color: var(--accent); }
+    .search-box::placeholder { color: var(--text3); }
+    .info-text { font-size: 13px; color: var(--text3); }
+
+    .btn {
+      padding: 8px 16px; border-radius: 8px; border: none;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 6px; transition: opacity 0.12s;
+    }
+    .btn:active { opacity: 0.8; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-ghost   { background: var(--bg3); border: 1px solid var(--border); color: var(--text2); }
+    .btn-sm { padding: 5px 10px; font-size: 12px; }
+
+    /* ── Tabla ── */
+    .pt-wrap { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    .personas-table { width: 100%; border-collapse: collapse; background: var(--bg2); }
+
+    .personas-table thead th {
+      padding: 10px 12px; text-align: left;
+      font-size: 11px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.4px; color: var(--text3);
+      background: var(--bg3); border-bottom: 1px solid var(--border);
+      white-space: nowrap; user-select: none;
+    }
+    .personas-table thead th.sortable { cursor: pointer; }
+    .personas-table thead th.sortable:hover { color: var(--text2); }
+    .sort-arrow { font-size: 10px; margin-left: 4px; opacity: 0.4; }
+    .sort-arrow.on { opacity: 1; color: var(--accent); }
+
+    .personas-table td {
+      padding: 9px 12px; font-size: 13px;
+      border-bottom: 1px solid var(--border); vertical-align: middle;
+    }
+    .personas-table tr:last-child td { border-bottom: none; }
+    .personas-table tbody tr:hover td { background: rgba(255,255,255,0.015); }
+
+    /* Celda editable (clic simple) */
+    .ec {
+      cursor: pointer; min-width: 80px;
+      border-radius: 5px; padding: 3px 5px; margin: -3px -5px;
+      transition: background 0.1s;
+    }
+    .ec:hover { background: rgba(59,130,246,0.08); }
+    .ec.empty { color: var(--text3); font-style: italic; }
+
+    /* Input/select inline */
+    .ei {
+      background: var(--bg3); border: 1px solid var(--accent);
+      border-radius: 5px; color: var(--text); font-size: 12px;
+      padding: 4px 7px; font-family: inherit;
+      width: 100%; min-width: 100px;
+    }
+    .ei:focus { outline: none; }
+    .ei-select { cursor: pointer; }
+
+    /* Badge completitud */
+    .pct-bar {
+      display: inline-block; width: 40px; height: 5px;
+      background: var(--bg3); border-radius: 99px; overflow: hidden; vertical-align: middle;
+    }
+    .pct-fill { height: 100%; border-radius: 99px; background: var(--green); transition: width 0.3s; }
+
+    /* Expand row */
+    .row-extra { display: none; background: rgba(59,130,246,0.04); }
+    .row-extra.open { display: table-row; }
+    .row-extra td { padding: 12px 16px; border-bottom: 1px solid var(--border); }
+    .extra-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
+    }
+    .extra-field label {
+      display: block; font-size: 10px; color: var(--text3);
+      text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 4px;
+    }
+
+    .btn-expand {
+      width: 22px; height: 22px; border-radius: 4px;
+      background: transparent; border: 1px solid var(--border);
+      color: var(--text3); font-size: 11px; cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center;
+      transition: all 0.12s; flex-shrink: 0;
+    }
+    .btn-expand:hover { background: var(--bg3); color: var(--text); }
+    .btn-expand.open { background: var(--bg3); color: var(--accent); border-color: rgba(59,130,246,0.3); }
+
+    .empty-state { text-align: center; padding: 3rem 1rem; color: var(--text3); font-size: 14px; }
+
+    /* Modal nuevo */
+    .overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+      display: none; align-items: center; justify-content: center; z-index: 100; padding: 1rem;
+    }
+    .overlay.visible { display: flex; }
+    .modal {
+      background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 1.5rem; width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto;
+    }
+    .modal-title { font-size: 17px; font-weight: 700; margin-bottom: 1.2rem; }
+    .mfield { margin-bottom: 11px; }
+    .mfield label {
+      display: block; font-size: 10px; color: var(--text3);
+      text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 4px;
+    }
+    .mfield input, .mfield select {
+      width: 100%; background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text); font-size: 13px;
+      padding: 9px 12px; font-family: inherit;
+    }
+    .mfield input:focus, .mfield select:focus { outline: none; border-color: var(--accent); }
+    .mrow { display: flex; gap: 8px; }
+    .mrow > * { flex: 1; }
+    .modal-footer { display: flex; gap: 8px; margin-top: 1.2rem; }
+    .modal-footer .btn { flex: 1; justify-content: center; padding: 11px; }
+    .section-sep { font-size: 10px; font-weight: 700; color: var(--text3); text-transform: uppercase;
+      letter-spacing: 0.5px; margin: 14px 0 8px; border-top: 1px solid var(--border); padding-top: 12px; }
+
+    .toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      background: var(--bg3); border: 1px solid var(--border); color: var(--text);
+      padding: 10px 18px; border-radius: 99px; font-size: 13px;
+      z-index: 300; opacity: 0; transition: opacity 0.2s; pointer-events: none;
+    }
+    .toast.visible { opacity: 1; }
+    .toast.ok    { border-color: var(--green); color: #6ee7b7; }
+    .toast.error { border-color: var(--red);   color: #fca5a5; }
+    .hint { font-size: 11px; color: var(--text3); margin-top: 8px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <a class="btn-back" href="index.html">←</a>
+    <div>
+      <div class="header-title">Registro de Personal</div>
+      <div class="header-sub">Ficha personal · Clic en celda para editar · ▸ para más campos</div>
+    </div>
+  </div>
+  <button class="btn btn-primary" onclick="abrirNuevo()">+ Nuevo</button>
+</header>
+
+<div class="main">
+  <div class="toolbar">
+    <input class="search-box" id="searchBox" placeholder="Buscar por nombre o RUT…"
+      oninput="renderTabla()">
+    <div class="info-text" id="info-count">— cargando —</div>
+  </div>
+  <div id="tabla-container"><div class="empty-state">Cargando…</div></div>
+</div>
+
+<!-- Modal nuevo -->
+<div class="overlay" id="overlayNuevo" onclick="cerrarNuevo(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-title">Nuevo registro de personal</div>
+
+    <div class="mrow">
+      <div class="mfield"><label>Nombre completo *</label>
+        <input id="mNombre" type="text" autocapitalize="words" placeholder="Juan Pérez">
+      </div>
+      <div class="mfield"><label>RUT</label>
+        <input id="mRut" type="text" placeholder="12.345.678-9">
+      </div>
+    </div>
+
+    <div class="section-sep">Previsión</div>
+    <div class="mrow">
+      <div class="mfield"><label>ISAPRE / Fonasa</label>
+        <select id="mIsapre">
+          <option value="">— sin datos —</option>
+          <option>Fonasa</option>
+          <option>Consalud</option>
+          <option>Banmédica</option>
+          <option>Cruz Blanca</option>
+          <option>Colmena</option>
+          <option>Nueva Masvida</option>
+          <option>Vida Tres</option>
+        </select>
+      </div>
+      <div class="mfield"><label>AFP</label>
+        <select id="mAfp">
+          <option value="">— sin datos —</option>
+          <option>AFP Habitat</option>
+          <option>AFP Capital</option>
+          <option>AFP Cuprum</option>
+          <option>AFP Modelo</option>
+          <option>AFP Planvital</option>
+          <option>AFP ProVida</option>
+          <option>AFP Uno</option>
+        </select>
+      </div>
+    </div>
+    <div class="mfield" style="max-width:120px"><label>Cargas familiares</label>
+      <input id="mCargas" type="number" min="0" placeholder="0" value="0">
+    </div>
+
+    <div class="section-sep">Cuenta bancaria</div>
+    <div class="mrow">
+      <div class="mfield"><label>Banco</label>
+        <select id="mBanco">
+          <option value="">— sin datos —</option>
+          <option>Banco Estado</option>
+          <option>BCI</option>
+          <option>Santander</option>
+          <option>Banco de Chile</option>
+          <option>Scotiabank</option>
+          <option>Itaú</option>
+          <option>BICE</option>
+          <option>Security</option>
+          <option>Falabella</option>
+          <option>Ripley</option>
+        </select>
+      </div>
+      <div class="mfield"><label>Tipo de cuenta</label>
+        <select id="mTipoCuenta">
+          <option value="">— sin datos —</option>
+          <option>CTA Corriente</option>
+          <option>CTA Vista / RUT</option>
+          <option>CTA Ahorro</option>
+        </select>
+      </div>
+    </div>
+    <div class="mfield"><label>Número de cuenta</label>
+      <input id="mCuenta" type="text" placeholder="000-00000-00">
+    </div>
+
+    <div class="section-sep">Contacto</div>
+    <div class="mrow">
+      <div class="mfield"><label>Email</label>
+        <input id="mEmail" type="email" placeholder="correo@mail.com">
+      </div>
+      <div class="mfield"><label>Teléfono</label>
+        <input id="mTelefono" type="tel" placeholder="+56 9 1234 5678">
+      </div>
+    </div>
+    <div class="mfield"><label>Dirección</label>
+      <input id="mDireccion" type="text" placeholder="Calle y número, ciudad">
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="cerrarNuevo()">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarNuevo()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPA_URL   = 'https://eunuqwzrbqqpykyywjbu.supabase.co';
+const SUPA_KEY   = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV1bnVxd3pyYnFxcHlreXl3amJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3NzYyOTMsImV4cCI6MjA5MTM1MjI5M30.iiCd-6pa8mQgXR6DzMtZjGsJnn-8OD_-ayrRtXj-YkM';
+const EMPRESA_ID = 1;
+
+let _personas   = [];
+let _sortCol    = 'nombre';
+let _sortDir    = 'asc';
+let _expanded   = new Set();
+
+// ── Supabase ──────────────────────────────────────────────────────
+async function _get(path) {
+  const r = await fetch(`${SUPA_URL}/rest/v1/${path}`, {
+    headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`, Accept: 'application/json' }
+  });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+async function _post(tabla, data) {
+  const r = await fetch(`${SUPA_URL}/rest/v1/${tabla}`, {
+    method: 'POST',
+    headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`,
+               'Content-Type': 'application/json', Prefer: 'return=representation' },
+    body: JSON.stringify(data)
+  });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+async function _patch(id, data) {
+  const r = await fetch(`${SUPA_URL}/rest/v1/personas?id=eq.${id}`, {
+    method: 'PATCH',
+    headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`,
+               'Content-Type': 'application/json', Prefer: 'return=minimal' },
+    body: JSON.stringify(data)
+  });
+  if (!r.ok) throw new Error(await r.text());
+}
+
+// ── Carga ─────────────────────────────────────────────────────────
+async function cargar() {
+  try {
+    _personas = await _get(`personas?empresa_id=eq.${EMPRESA_ID}&order=nombre.asc&select=*`);
+    renderTabla();
+  } catch(e) {
+    document.getElementById('tabla-container').innerHTML =
+      `<div class="empty-state" style="color:var(--red)">Error: ${e.message}</div>`;
+  }
+}
+
+// ── Utilidades ────────────────────────────────────────────────────
+function _tc(s) {
+  if (!s) return '';
+  const skip = new Set(['de','del','la','las','los','el','y','e','o']);
+  return String(s).toLowerCase().replace(/\S+/g,(w,i)=>
+    (i===0||!skip.has(w))?w[0].toUpperCase()+w.slice(1):w);
+}
+
+function _pct(p) {
+  const fields = ['rut','isapre_fonasa','afp','cargas','banco','cuenta_bancaria','email','telefono'];
+  const filled = fields.filter(f => p[f] !== null && p[f] !== undefined && p[f] !== '').length;
+  return Math.round(filled / fields.length * 100);
+}
+
+function _val(v, fallback='—') {
+  if (v === null || v === undefined || v === '') return `<span class="ec empty">${fallback}</span>`;
+  return String(v);
+}
+
+function _sortIcon(col) {
+  if (_sortCol !== col) return '<span class="sort-arrow">↕</span>';
+  return `<span class="sort-arrow on">${_sortDir==='asc'?'↑':'↓'}</span>`;
+}
+
+function sortBy(col) {
+  if (_sortCol === col) _sortDir = _sortDir==='asc'?'desc':'asc';
+  else { _sortCol = col; _sortDir = 'asc'; }
+  renderTabla();
+}
+
+// ── Render ────────────────────────────────────────────────────────
+function renderTabla() {
+  const q = document.getElementById('searchBox').value.toLowerCase();
+  let filas = _personas.filter(p =>
+    !q || (p.nombre||'').toLowerCase().includes(q) || (p.rut||'').toLowerCase().includes(q)
+  );
+
+  filas.sort((a,b) => {
+    let va = a[_sortCol]??'', vb = b[_sortCol]??'';
+    if (typeof va==='string') va=va.toLowerCase();
+    if (typeof vb==='string') vb=vb.toLowerCase();
+    if (va<vb) return _sortDir==='asc'?-1:1;
+    if (va>vb) return _sortDir==='asc'?1:-1;
+    return 0;
+  });
+
+  document.getElementById('info-count').textContent =
+    `${filas.length} persona${filas.length!==1?'s':''}`;
+
+  const cont = document.getElementById('tabla-container');
+  if (!filas.length) {
+    cont.innerHTML = `<div class="pt-wrap"><div class="empty-state">Sin resultados.</div></div>`;
+    return;
+  }
+
+  const rows = filas.map(p => {
+    const pct   = _pct(p);
+    const isExp = _expanded.has(p.id);
+    const mainRow = `
+    <tr>
+      <td>
+        <button class="btn-expand ${isExp?'open':''}" onclick="_toggleExpand(${p.id})" title="Ver/ocultar campos adicionales">${isExp?'▾':'▸'}</button>
+      </td>
+      <td onclick="_editCell(this,${p.id},'nombre',${JSON.stringify(p.nombre||'')})">
+        <span class="ec ${!p.nombre?'empty':''}">${p.nombre?_tc(p.nombre):'Sin nombre'}</span>
+      </td>
+      <td onclick="_editCell(this,${p.id},'rut',${JSON.stringify(p.rut||'')})">
+        <span class="ec ${!p.rut?'empty':''}">${p.rut||'—'}</span>
+      </td>
+      <td onclick="_editSelect(this,${p.id},'isapre_fonasa',${JSON.stringify(p.isapre_fonasa||'')},['Fonasa','Consalud','Banmédica','Cruz Blanca','Colmena','Nueva Masvida','Vida Tres'])">
+        <span class="ec ${!p.isapre_fonasa?'empty':''}">${p.isapre_fonasa||'—'}</span>
+      </td>
+      <td onclick="_editSelect(this,${p.id},'afp',${JSON.stringify(p.afp||'')},['AFP Habitat','AFP Capital','AFP Cuprum','AFP Modelo','AFP Planvital','AFP ProVida','AFP Uno'])">
+        <span class="ec ${!p.afp?'empty':''}">${p.afp||'—'}</span>
+      </td>
+      <td onclick="_editSelect(this,${p.id},'banco',${JSON.stringify(p.banco||'')},['Banco Estado','BCI','Santander','Banco de Chile','Scotiabank','Itaú','BICE','Security','Falabella','Ripley'])">
+        <span class="ec ${!p.banco?'empty':''}">${p.banco||'—'}</span>
+      </td>
+      <td onclick="_editCell(this,${p.id},'email',${JSON.stringify(p.email||'')})">
+        <span class="ec ${!p.email?'empty':''}">${p.email||'—'}</span>
+      </td>
+      <td>
+        <div title="${pct}% completado" style="display:flex;align-items:center;gap:6px">
+          <div class="pct-bar"><div class="pct-fill" style="width:${pct}%"></div></div>
+          <span style="font-size:10px;color:var(--text3)">${pct}%</span>
+        </div>
+      </td>
+    </tr>`;
+
+    const extraRow = `
+    <tr class="row-extra ${isExp?'open':''}" id="extra-${p.id}">
+      <td colspan="8">
+        <div class="extra-grid">
+          <div class="extra-field">
+            <label>Teléfono</label>
+            <span class="ec ${!p.telefono?'empty':''}"
+              onclick="_editCell(this.closest('td'),${p.id},'telefono',${JSON.stringify(p.telefono||'')})"
+            >${p.telefono||'—'}</span>
+          </div>
+          <div class="extra-field">
+            <label>Tipo de cuenta</label>
+            <span class="ec ${!p.tipo_cuenta?'empty':''}"
+              onclick="_editSelect(this.closest('td'),${p.id},'tipo_cuenta',${JSON.stringify(p.tipo_cuenta||'')},['CTA Corriente','CTA Vista / RUT','CTA Ahorro'])"
+            >${p.tipo_cuenta||'—'}</span>
+          </div>
+          <div class="extra-field">
+            <label>Número de cuenta</label>
+            <span class="ec ${!p.cuenta_bancaria?'empty':''}"
+              onclick="_editCell(this.closest('td'),${p.id},'cuenta_bancaria',${JSON.stringify(p.cuenta_bancaria||'')})"
+            >${p.cuenta_bancaria||'—'}</span>
+          </div>
+          <div class="extra-field">
+            <label>AFP</label>
+            <span class="ec ${!p.afp?'empty':''}"
+              onclick="_editSelect(this.closest('td'),${p.id},'afp',${JSON.stringify(p.afp||'')},['AFP Habitat','AFP Capital','AFP Cuprum','AFP Modelo','AFP Planvital','AFP ProVida','AFP Uno'])"
+            >${p.afp||'—'}</span>
+          </div>
+          <div class="extra-field">
+            <label>Cargas familiares</label>
+            <span class="ec"
+              onclick="_editCell(this.closest('td'),${p.id},'cargas',${p.cargas??0},'number')"
+            >${p.cargas??'—'}</span>
+          </div>
+          <div class="extra-field">
+            <label>Fecha nacimiento</label>
+            <span class="ec ${!p.fecha_nacimiento?'empty':''}"
+              onclick="_editCell(this.closest('td'),${p.id},'fecha_nacimiento',${JSON.stringify(p.fecha_nacimiento||'')},'date')"
+            >${p.fecha_nacimiento||'—'}</span>
+          </div>
+          <div class="extra-field" style="grid-column:span 2">
+            <label>Dirección</label>
+            <span class="ec ${!p.direccion?'empty':''}"
+              onclick="_editCell(this.closest('td'),${p.id},'direccion',${JSON.stringify(p.direccion||'')})"
+            >${p.direccion||'—'}</span>
+          </div>
+        </div>
+      </td>
+    </tr>`;
+
+    return mainRow + extraRow;
+  }).join('');
+
+  cont.innerHTML = `
+  <div class="pt-wrap">
+  <table class="personas-table">
+    <thead><tr>
+      <th style="width:36px"></th>
+      <th class="sortable" onclick="sortBy('nombre')">NOMBRE ${_sortIcon('nombre')}</th>
+      <th class="sortable" onclick="sortBy('rut')">RUT ${_sortIcon('rut')}</th>
+      <th class="sortable" onclick="sortBy('isapre_fonasa')">ISAPRE / FONASA ${_sortIcon('isapre_fonasa')}</th>
+      <th class="sortable" onclick="sortBy('afp')">AFP ${_sortIcon('afp')}</th>
+      <th class="sortable" onclick="sortBy('banco')">BANCO ${_sortIcon('banco')}</th>
+      <th>EMAIL</th>
+      <th title="% campos completados">FICHA</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>
+  </div>
+  <p class="hint" style="margin-top:8px">💡 Clic en cualquier celda para editar · ▸ para ver teléfono, cuenta, dirección</p>`;
+}
+
+// ── Expand/collapse fila extra ────────────────────────────────────
+function _toggleExpand(id) {
+  if (_expanded.has(id)) _expanded.delete(id);
+  else _expanded.add(id);
+  renderTabla();
+}
+
+// ── Edición inline ────────────────────────────────────────────────
+function _editCell(td, personaId, field, value, type) {
+  if (td.dataset.editing) return;
+  td.dataset.editing = '1';
+  const orig = td.innerHTML;
+
+  const el = document.createElement('input');
+  el.className = 'ei';
+  el.type = type || 'text';
+  el.value = value || '';
+  if (type === 'number') { el.min = '0'; el.step = '1'; }
+  if (field === 'nombre') el.setAttribute('autocapitalize', 'words');
+
+  td.innerHTML = '';
+  td.appendChild(el);
+  el.focus();
+  if (el.select && type !== 'date') el.select();
+
+  let done = false;
+  const save = async () => {
+    if (done) return; done = true;
+    delete td.dataset.editing;
+    const raw = el.value.trim();
+    let patch = {};
+    if (field === 'nombre')  patch.nombre = raw.toUpperCase();
+    else if (type === 'number') patch[field] = parseInt(raw) || 0;
+    else patch[field] = raw || null;
+    try {
+      await _patch(personaId, patch);
+      const p = _personas.find(x=>x.id===personaId);
+      if (p) Object.assign(p, patch);
+      renderTabla();
+      toast('✓ Guardado', 'ok');
+    } catch(e) {
+      td.innerHTML = orig; delete td.dataset.editing;
+      toast('Error: '+e.message, 'error');
+    }
+  };
+  el.addEventListener('blur', save);
+  el.addEventListener('keydown', e => {
+    if (e.key==='Enter')  { e.preventDefault(); el.blur(); }
+    if (e.key==='Escape') { done=true; el.removeEventListener('blur',save); td.innerHTML=orig; delete td.dataset.editing; }
+  });
+}
+
+function _editSelect(td, personaId, field, value, options) {
+  if (td.dataset.editing) return;
+  td.dataset.editing = '1';
+  const orig = td.innerHTML;
+
+  const el = document.createElement('select');
+  el.className = 'ei ei-select';
+  const blankOpt = new Option('— sin datos —', '');
+  if (!value) blankOpt.selected = true;
+  el.add(blankOpt);
+  options.forEach(v => {
+    const o = new Option(v, v);
+    if (v === value) o.selected = true;
+    el.add(o);
+  });
+
+  td.innerHTML = '';
+  td.appendChild(el);
+  el.focus();
+
+  let done = false;
+  const save = async () => {
+    if (done) return; done = true;
+    delete td.dataset.editing;
+    const patch = { [field]: el.value || null };
+    try {
+      await _patch(personaId, patch);
+      const p = _personas.find(x=>x.id===personaId);
+      if (p) Object.assign(p, patch);
+      renderTabla();
+      toast('✓ Guardado', 'ok');
+    } catch(e) {
+      td.innerHTML = orig; delete td.dataset.editing;
+      toast('Error: '+e.message, 'error');
+    }
+  };
+  el.addEventListener('blur', save);
+  el.addEventListener('change', () => el.blur());
+  el.addEventListener('keydown', e => {
+    if (e.key==='Escape') { done=true; el.removeEventListener('blur',save); td.innerHTML=orig; delete td.dataset.editing; }
+  });
+}
+
+// ── Modal nuevo ───────────────────────────────────────────────────
+function abrirNuevo() {
+  ['mNombre','mRut','mCuenta','mEmail','mTelefono','mDireccion'].forEach(id => document.getElementById(id).value='');
+  ['mIsapre','mAfp','mBanco','mTipoCuenta'].forEach(id => document.getElementById(id).value='');
+  document.getElementById('mCargas').value = '0';
+  document.getElementById('overlayNuevo').classList.add('visible');
+  setTimeout(()=>document.getElementById('mNombre').focus(),100);
+}
+function cerrarNuevo(e) {
+  if (e && e.target!==e.currentTarget) return;
+  document.getElementById('overlayNuevo').classList.remove('visible');
+}
+async function guardarNuevo() {
+  const nombre = document.getElementById('mNombre').value.trim();
+  if (!nombre) { toast('Ingresa el nombre', 'error'); return; }
+  const payload = {
+    empresa_id:     EMPRESA_ID,
+    nombre:         nombre.toUpperCase(),
+    rut:            document.getElementById('mRut').value.trim() || null,
+    isapre_fonasa:  document.getElementById('mIsapre').value || null,
+    afp:            document.getElementById('mAfp').value || null,
+    cargas:         parseInt(document.getElementById('mCargas').value) || 0,
+    banco:          document.getElementById('mBanco').value || null,
+    tipo_cuenta:    document.getElementById('mTipoCuenta').value || null,
+    cuenta_bancaria:document.getElementById('mCuenta').value.trim() || null,
+    email:          document.getElementById('mEmail').value.trim() || null,
+    telefono:       document.getElementById('mTelefono').value.trim() || null,
+    direccion:      document.getElementById('mDireccion').value.trim() || null,
+  };
+  try {
+    await _post('personas', payload);
+    toast('✅ Persona agregada', 'ok');
+    cerrarNuevo();
+    await cargar();
+  } catch(e) {
+    toast('Error: '+e.message, 'error');
+  }
+}
+
+// ── Toast ─────────────────────────────────────────────────────────
+function toast(msg, tipo) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast visible '+(tipo||'');
+  clearTimeout(t._to);
+  t._to = setTimeout(()=>t.classList.remove('visible'), 2500);
+}
+
+cargar();
+</script>
+</body>
+</html>
