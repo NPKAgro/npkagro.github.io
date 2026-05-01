@@ -510,6 +510,7 @@ function renderTabla() {
   <table class="workers-table">
     <thead>
       <tr class="th-names">
+        <th style="width:90px">CÓDIGO</th>
         <th class="sortable" onclick="sortBy('nombre')">NOMBRE ${_sortIcon('nombre')}</th>
         <th>RUT</th>
         <th class="sortable" onclick="sortBy('tipo_contrato')">CONTRATO ${_sortIcon('tipo_contrato')}</th>
@@ -519,6 +520,7 @@ function renderTabla() {
         <th style="width:80px"></th>
       </tr>
       <tr class="th-filters">
+        <th></th>
         <th><input class="th-filter-input" placeholder="Buscar nombre…"
           value="${_fltNombre.replace(/"/g,'&quot;')}"
           oninput="_fltNombre=this.value;renderTabla()"></th>
@@ -544,6 +546,9 @@ function renderTabla() {
     <tbody>
       ${filas.map(w => `
       <tr>
+        <td>
+          <span style="font-family:monospace;font-size:11px;color:var(--text3);letter-spacing:.5px">${w.codigo||'—'}</span>
+        </td>
         <td data-editable data-id="${w.id}" data-field="nombre" data-type="text"
             ondblclick="_startEdit(this, ${w.id}, 'nombre', ${JSON.stringify(w.nombre||'')}, 'text')">
           <div class="worker-name">${_toTitleCase(w.nombre)}</div>
@@ -739,7 +744,7 @@ function mostrarQR(id) {
   const url    = qrUrl(id);
   const qrSrc  = `https://chart.googleapis.com/chart?cht=qr&chs=220x220&chl=${encodeURIComponent(url)}&choe=UTF-8`;
   document.getElementById('qrNombre').textContent   = _toTitleCase(w.nombre);
-  document.getElementById('qrMeta').textContent     = [w.tipo_contrato, w.formato_labor].filter(Boolean).join(' · ');
+  document.getElementById('qrMeta').textContent     = [w.codigo, w.tipo_contrato, w.formato_labor].filter(Boolean).join(' · ');
   document.getElementById('qrImg').src              = qrSrc;
   document.getElementById('qrUrl').textContent      = url;
   document.getElementById('qrDescarga').href        = qrSrc;
