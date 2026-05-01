@@ -75,6 +75,27 @@
     .cv { display:block; }
     .cv.empty { color:var(--text3); font-style:italic; }
 
+    /* Celda tipo select — con flecha indicadora */
+    td[data-eid][data-type="select"] {
+      position: relative;
+    }
+    td[data-eid][data-type="select"] .cv::after {
+      content: ' ▾';
+      font-size: 9px;
+      color: var(--text3);
+      opacity: 0.7;
+    }
+    td[data-eid][data-type="select"]:hover .cv::after {
+      color: var(--accent);
+      opacity: 1;
+    }
+    /* Celdas select en fila extra también */
+    span[data-eid][data-type="select"]::after {
+      content: ' ▾';
+      font-size: 9px;
+      color: var(--text3);
+    }
+
     /* Input inline */
     .ei {
       background:var(--bg3); border:1px solid var(--accent);
@@ -322,6 +343,7 @@ function renderTabla() {
       ${_td(p.id,'banco',  _cv(p.banco), 'select')}
       ${_td(p.id,'tipo_cuenta', _cv(p.tipo_cuenta), 'select')}
       ${_td(p.id,'cuenta_bancaria', _cv(p.cuenta_bancaria), 'text')}
+      ${_td(p.id,'email', _cv(p.email), 'text')}
       <td>
         <div style="display:flex;align-items:center;gap:6px" title="${pct}% completado">
           <div class="pct-bar"><div class="pct-fill" style="width:${pct}%"></div></div>
@@ -331,7 +353,7 @@ function renderTabla() {
     </tr>`;
 
     const extraRow = `<tr class="row-extra${exp?' open':''}" id="extra-${p.id}">
-      <td colspan="9">
+      <td colspan="10">
         <div class="extra-grid">
           <div class="extra-field">
             <label>Teléfono</label>
@@ -367,6 +389,7 @@ function renderTabla() {
       <th class="sortable" onclick="sortBy('banco')">BANCO ${_si('banco')}</th>
       <th class="sortable" onclick="sortBy('tipo_cuenta')">TIPO CUENTA ${_si('tipo_cuenta')}</th>
       <th>N° CUENTA</th>
+      <th>EMAIL</th>
       <th title="% campos completados">FICHA</th>
     </tr></thead>
     <tbody>${html}</tbody>
