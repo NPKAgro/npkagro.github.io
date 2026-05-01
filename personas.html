@@ -217,18 +217,6 @@
 
     <div class="section-sep">Previsión</div>
     <div class="mrow">
-      <div class="mfield"><label>ISAPRE / Fonasa</label>
-        <select id="mIsapre">
-          <option value="">— sin datos —</option>
-          <option>Fonasa</option>
-          <option>Consalud</option>
-          <option>Banmédica</option>
-          <option>Cruz Blanca</option>
-          <option>Colmena</option>
-          <option>Nueva Masvida</option>
-          <option>Vida Tres</option>
-        </select>
-      </div>
       <div class="mfield"><label>AFP</label>
         <select id="mAfp">
           <option value="">— sin datos —</option>
@@ -239,6 +227,18 @@
           <option>AFP Planvital</option>
           <option>AFP ProVida</option>
           <option>AFP Uno</option>
+        </select>
+      </div>
+      <div class="mfield"><label>Fonasa / ISAPRE</label>
+        <select id="mIsapre">
+          <option value="">— sin datos —</option>
+          <option>Fonasa</option>
+          <option>Consalud</option>
+          <option>Banmédica</option>
+          <option>Cruz Blanca</option>
+          <option>Colmena</option>
+          <option>Nueva Masvida</option>
+          <option>Vida Tres</option>
         </select>
       </div>
     </div>
@@ -264,11 +264,11 @@
         </select>
       </div>
       <div class="mfield"><label>Tipo de cuenta</label>
-        <select id="mTipoCuenta">
+        <select id="mTipoCuenta" onchange="_autoFillCuentaRut()">
           <option value="">— sin datos —</option>
-          <option>CTA Corriente</option>
-          <option>CTA Vista / RUT</option>
-          <option>CTA Ahorro</option>
+          <option>Cuenta Corriente</option>
+          <option>Cuenta Vista</option>
+          <option>Cuenta RUT</option>
         </select>
       </div>
     </div>
@@ -416,11 +416,11 @@ function renderTabla() {
       <td onclick="_editCell(this,${p.id},'rut',${JSON.stringify(p.rut||'')})">
         <span class="ec ${!p.rut?'empty':''}">${p.rut||'—'}</span>
       </td>
-      <td onclick="_editSelect(this,${p.id},'isapre_fonasa',${JSON.stringify(p.isapre_fonasa||'')},['Fonasa','Consalud','Banmédica','Cruz Blanca','Colmena','Nueva Masvida','Vida Tres'])">
-        <span class="ec ${!p.isapre_fonasa?'empty':''}">${p.isapre_fonasa||'—'}</span>
-      </td>
       <td onclick="_editSelect(this,${p.id},'afp',${JSON.stringify(p.afp||'')},['AFP Habitat','AFP Capital','AFP Cuprum','AFP Modelo','AFP Planvital','AFP ProVida','AFP Uno'])">
         <span class="ec ${!p.afp?'empty':''}">${p.afp||'—'}</span>
+      </td>
+      <td onclick="_editSelect(this,${p.id},'isapre_fonasa',${JSON.stringify(p.isapre_fonasa||'')},['Fonasa','Consalud','Banmédica','Cruz Blanca','Colmena','Nueva Masvida','Vida Tres'])">
+        <span class="ec ${!p.isapre_fonasa?'empty':''}">${p.isapre_fonasa||'—'}</span>
       </td>
       <td onclick="_editSelect(this,${p.id},'banco',${JSON.stringify(p.banco||'')},['Banco Estado','BCI','Santander','Banco de Chile','Scotiabank','Itaú','BICE','Security','Falabella','Ripley'])">
         <span class="ec ${!p.banco?'empty':''}">${p.banco||'—'}</span>
@@ -449,14 +449,14 @@ function renderTabla() {
           <div class="extra-field">
             <label>Tipo de cuenta</label>
             <span class="ec ${!p.tipo_cuenta?'empty':''}"
-              onclick="_editSelect(this.closest('td'),${p.id},'tipo_cuenta',${JSON.stringify(p.tipo_cuenta||'')},['CTA Corriente','CTA Vista / RUT','CTA Ahorro'])"
+              onclick="_editSelect(this.closest('td'),${p.id},'tipo_cuenta',${JSON.stringify(p.tipo_cuenta||'')},['Cuenta Corriente','Cuenta Vista','Cuenta RUT'],${p.id})"
             >${p.tipo_cuenta||'—'}</span>
           </div>
           <div class="extra-field">
-            <label>Número de cuenta</label>
+            <label>N° de cuenta</label>
             <span class="ec ${!p.cuenta_bancaria?'empty':''}"
               onclick="_editCell(this.closest('td'),${p.id},'cuenta_bancaria',${JSON.stringify(p.cuenta_bancaria||'')})"
-            >${p.cuenta_bancaria||'—'}</span>
+            >${p.cuenta_bancaria ? '<strong>'+p.cuenta_bancaria+'</strong>' : '— tocar para ingresar'}</span>
           </div>
           <div class="extra-field">
             <label>AFP</label>
@@ -496,8 +496,8 @@ function renderTabla() {
       <th style="width:36px"></th>
       <th class="sortable" onclick="sortBy('nombre')">NOMBRE ${_sortIcon('nombre')}</th>
       <th class="sortable" onclick="sortBy('rut')">RUT ${_sortIcon('rut')}</th>
-      <th class="sortable" onclick="sortBy('isapre_fonasa')">ISAPRE / FONASA ${_sortIcon('isapre_fonasa')}</th>
       <th class="sortable" onclick="sortBy('afp')">AFP ${_sortIcon('afp')}</th>
+      <th class="sortable" onclick="sortBy('isapre_fonasa')">FONASA / ISAPRE ${_sortIcon('isapre_fonasa')}</th>
       <th class="sortable" onclick="sortBy('banco')">BANCO ${_sortIcon('banco')}</th>
       <th>EMAIL</th>
       <th title="% campos completados">FICHA</th>
@@ -560,7 +560,7 @@ function _editCell(td, personaId, field, value, type) {
   });
 }
 
-function _editSelect(td, personaId, field, value, options) {
+function _editSelect(td, personaId, field, value, options, rutPersonaId) {
   if (td.dataset.editing) return;
   td.dataset.editing = '1';
   const orig = td.innerHTML;
@@ -585,6 +585,14 @@ function _editSelect(td, personaId, field, value, options) {
     if (done) return; done = true;
     delete td.dataset.editing;
     const patch = { [field]: el.value || null };
+    // Auto-fill Cuenta RUT
+    if (field === 'tipo_cuenta' && el.value === 'Cuenta RUT') {
+      const p2 = _personas.find(x=>x.id===personaId);
+      if (p2 && p2.rut && !p2.cuenta_bancaria) {
+        const cuentaRut = _rutToAccount(p2.rut);
+        if (cuentaRut) patch.cuenta_bancaria = cuentaRut;
+      }
+    }
     try {
       await _patch(personaId, patch);
       const p = _personas.find(x=>x.id===personaId);
@@ -636,7 +644,23 @@ async function guardarNuevo() {
     await _post('personas', payload);
     toast('✅ Persona agregada', 'ok');
     cerrarNuevo();
-    await cargar();
+    await // ── Utilidad Cuenta RUT ──────────────────────────────────────────
+function _rutToAccount(rut) {
+  // "12.345.678-9" → "12345678" (sin puntos, sin guión ni dígito verificador)
+  if (!rut) return '';
+  return rut.replace(/\./g,'').split('-')[0].trim();
+}
+
+function _autoFillCuentaRut() {
+  const tipo = document.getElementById('mTipoCuenta').value;
+  const rut  = document.getElementById('mRut').value.trim();
+  const cuentaField = document.getElementById('mCuenta');
+  if (tipo === 'Cuenta RUT' && rut && !cuentaField.value) {
+    cuentaField.value = _rutToAccount(rut);
+  }
+}
+
+cargar();
   } catch(e) {
     toast('Error: '+e.message, 'error');
   }
