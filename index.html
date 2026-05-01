@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
-  <title>Panel de Revisión · Agrícola del Pedregal by Prototipo App</title>
+  <title>Panel de Registro · Agrícola del Pedregal</title>
   <meta name="theme-color" content="#0f1117">
   <link rel="manifest" href="manifest.json">
   <script>window.LQ_AUTH_MODE = 'admin';</script>
@@ -206,14 +206,38 @@
 <header>
   <div class="logo-block">
     <div class="logo-empresa">Agrícola <span>del Pedregal</span></div>
-    <div class="logo-predio">La Quinta · Santina · Panel de Revisión</div>
+    <div class="logo-predio">La Quinta · Santina · Panel de Registro</div>
   </div>
   <div class="header-badge">🔐 Solo administración</div>
 </header>
 
 <main>
-  <div class="hero-title">Panel de Revisión</div>
-  <div class="hero-sub">Visualiza y revisa todos los datos registrados en campo</div>
+  <div class="hero-title">Panel de Registro</div>
+  <div class="hero-sub">Gestión y revisión de datos del campo</div>
+
+  <div class="section-label">Registro de personal</div>
+
+  <div class="cards">
+
+    <a class="panel-card" href="trabajadores.html" style="border-color:rgba(16,185,129,0.3)">
+      <span style="position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--radius) var(--radius) 0 0;background:#10b981"></span>
+      <span class="card-icon">👷</span>
+      <div class="card-title">Trabajadores</div>
+      <div class="card-desc">Base de datos del personal. Agrega, edita y genera el QR individual de cada trabajador para registro rápido en campo.</div>
+      <span class="card-link" style="border-color:rgba(16,185,129,0.4);color:#6ee7b7">Gestionar trabajadores →</span>
+    </a>
+
+    <a class="panel-card" href="labores_agricolas.html" style="border-color:rgba(236,72,153,0.3)">
+      <span style="position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--radius) var(--radius) 0 0;background:#ec4899"></span>
+      <span class="card-icon">🌾</span>
+      <div class="card-title">Registrar Labores</div>
+      <div class="card-desc">Formulario de registro de jornada. También se accede automáticamente al escanear el QR de un trabajador.</div>
+      <span class="card-link" style="border-color:rgba(236,72,153,0.4);color:#f9a8d4">Registrar jornada →</span>
+    </a>
+
+  </div>
+
+  <hr class="divider">
 
   <div class="section-label">Módulos de revisión</div>
 
@@ -222,7 +246,7 @@
     <a class="panel-card fenologia" href="revision.html">
       <span class="card-icon">🌸</span>
       <div class="card-title">Fenología</div>
-      <div class="card-desc">Observaciones de estado fenológico por cuartel, hilera y planta. Con fotos, GPS y aprobación JP.</div>
+      <div class="card-desc">Observaciones de estado fenológico por cuartel, hilera y planta. Con fotos, GPS y aprobación.</div>
       <span class="card-link">Ver observaciones →</span>
     </a>
 
@@ -236,7 +260,7 @@
     <a class="panel-card aforado" href="aforado_dashboard.html">
       <span class="card-icon">💧</span>
       <div class="card-title">Aforado de Riego</div>
-      <div class="card-desc">Mediciones de caudal y uniformidad de distribución (UD%) por cuartel. Gráficos y tabla comparativa.</div>
+      <div class="card-desc">Mediciones de caudal y uniformidad de distribución (UD%) por cuartel.</div>
       <span class="card-link">Ver aforados →</span>
     </a>
 
@@ -259,7 +283,7 @@
 </main>
 
 <footer>
-  La Quinta · Agrícola del Pedregal by Prototipo App · Panel de administración
+  La Quinta · Agrícola del Pedregal · Panel de administración
 </footer>
 
 <script>

@@ -389,6 +389,61 @@
 const GAS_URL   = 'https://script.google.com/macros/s/AKfycbydi5imjeA5bXY5TlA7MBVGkG6-Aq4XhYC0soXGPUMl41lEvdL8rc-xhjeRv9m0_aJg/exec';
 const GAS_TOKEN = 'LQ2026-Santina';
 
+// ── Pre-carga desde QR (?t=TRABAJADOR_ID) ────────────────────────
+const SUPA_URL = 'https://eunuqwzrbqqpykyywjbu.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV1bnVxd3pyYnFxcHlreXl3amJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3NzYyOTMsImV4cCI6MjA5MTM1MjI5M30.iiCd-6pa8mQgXR6DzMtZjGsJnn-8OD_-ayrRtXj-YkM';
+
+async function precargarDesdeQR(trabajadorId) {
+  try {
+    const res = await fetch(
+      `${SUPA_URL}/rest/v1/trabajadores?id=eq.${trabajadorId}&empresa_id=eq.1&campo_id=eq.1&select=*&limit=1`,
+      { headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` } }
+    );
+    const data = await res.json();
+    const w = data && data[0];
+    if (!w) { toast('Trabajador no encontrado', 'error'); return; }
+
+    // Abrir modal y pre-llenar con datos del trabajador
+    // Los campos son editables por si ese día cambia algo
+    document.getElementById('modalOverlay').classList.add('visible');
+
+    const fix = s => s ? String(s).toLowerCase().replace(/\S+/g, (ww, i) => {
+      const min = new Set(['de','del','la','las','los','el']);
+      return (i === 0 || !min.has(ww)) ? ww.charAt(0).toUpperCase() + ww.slice(1) : ww;
+    }) : '';
+
+    document.getElementById('mNombre').value    = fix(w.nombre);
+    document.getElementById('mCategoria').value = w.tipo_contrato  || 'N2';
+    document.getElementById('mFormato').value   = w.formato_labor  || 'Jornada';
+    document.getElementById('mUnidad').value    = w.unidad_control || 'Día';
+    document.getElementById('mValor').value     = w.valor_unitario || '';
+    document.getElementById('mProveedor').value = w.proveedor      || '';
+    setModo('individual');
+    calcTotal();
+
+    // Pre-llenar también la categoría principal si existe
+    if (w.labor_habitual) {
+      const sel = document.getElementById('labor_principal');
+      if ([...sel.options].some(o => o.value === w.labor_habitual)) {
+        sel.value = w.labor_habitual;
+      }
+    }
+    if (w.sublabor) document.getElementById('sublabor').value = w.sublabor;
+
+    // Banner informativo arriba del modal
+    const banner = document.createElement('div');
+    banner.style.cssText = 'background:rgba(59,130,246,0.12);border:1px solid rgba(59,130,246,0.25);border-radius:8px;padding:8px 12px;font-size:12px;color:#93c5fd;margin-bottom:12px;';
+    banner.textContent = `📲 Datos cargados para ${fix(w.nombre)} · Podés modificar cualquier campo`;
+    const modal = document.querySelector('.modal');
+    if (modal && !modal.querySelector('.qr-banner')) {
+      banner.classList.add('qr-banner');
+      modal.insertBefore(banner, modal.firstChild);
+    }
+  } catch(e) {
+    toast('Error al cargar datos: ' + e.message, 'error');
+  }
+}
+
 const state = { workers: [], modoModal: 'individual' };
 
 function esc(s) {
@@ -564,6 +619,17 @@ document.getElementById('fecha').value = new Date().toISOString().slice(0, 10);
 document.getElementById('mValor').addEventListener('input', calcTotal);
 document.getElementById('mProduccion').addEventListener('input', calcTotal);
 renderWorkers();
+
+// Pre-carga desde QR: si la URL contiene ?t=ID abre el modal con datos del trabajador
+const _qrParams = new URLSearchParams(window.location.search);
+const _qrTId = _qrParams.get('t');
+if (_qrTId) {
+  document.addEventListener('DOMContentLoaded', () => precargarDesdeQR(_qrTId));
+  // Por si DOMContentLoaded ya pasó
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    precargarDesdeQR(_qrTId);
+  }
+}
 </script>
 
 </body>

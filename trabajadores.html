@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
+  <title>Trabajadores · Panel de Registro</title>
+  <meta name="theme-color" content="#0f1117">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:      #0f1117;
+      --bg2:     #161b24;
+      --bg3:     #1e2534;
+      --border:  rgba(255,255,255,0.08);
+      --text:    #f0f2f5;
+      --text2:   #8b93a5;
+      --text3:   #555e70;
+      --accent:  #3b82f6;
+      --green:   #10b981;
+      --red:     #ef4444;
+      --amber:   #f59e0b;
+      --radius:  12px;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, 'Segoe UI', sans-serif;
+      min-height: 100vh;
+    }
+    header {
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      padding: 0 1.5rem;
+      height: 60px;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    .btn-back {
+      display: flex; align-items: center; justify-content: center;
+      width: 34px; height: 34px; border-radius: 8px;
+      background: var(--bg3); border: 1px solid var(--border);
+      color: var(--text2); font-size: 18px; text-decoration: none;
+    }
+    .header-title { font-size: 16px; font-weight: 700; }
+    .header-sub   { font-size: 11px; color: var(--text3); margin-top: 1px; }
+
+    .main { max-width: 900px; margin: 0 auto; padding: 1.5rem; }
+
+    .toolbar {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 10px; margin-bottom: 1rem;
+    }
+    .toolbar-left { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .info-text { font-size: 13px; color: var(--text3); }
+
+    .btn {
+      padding: 8px 16px; border-radius: 8px; border: none;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 6px; transition: opacity 0.12s;
+    }
+    .btn:active { opacity: 0.8; }
+    .btn-primary  { background: var(--accent); color: #fff; }
+    .btn-ghost    { background: var(--bg3); border: 1px solid var(--border); color: var(--text2); }
+    .btn-danger   { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); color: #fca5a5; }
+    .btn-sm { padding: 5px 10px; font-size:12px; }
+
+    /* Filtro activo/inactivo */
+    .filter-tabs { display: flex; gap: 4px; }
+    .ftab {
+      padding: 6px 14px; border-radius: 6px; border: 1px solid var(--border);
+      background: var(--bg3); color: var(--text3); font-size: 12px;
+      font-weight: 600; cursor: pointer; transition: all 0.12s;
+    }
+    .ftab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+    /* Tabla de trabajadores */
+    .workers-table {
+      width: 100%; border-collapse: collapse;
+      background: var(--bg2); border-radius: var(--radius);
+      overflow: hidden; border: 1px solid var(--border);
+    }
+    .workers-table th {
+      padding: 10px 14px; text-align: left;
+      font-size: 11px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.4px; color: var(--text3);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg3);
+    }
+    .workers-table td {
+      padding: 11px 14px; font-size: 13px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    .workers-table tr:last-child td { border-bottom: none; }
+    .workers-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+    .badge {
+      display: inline-block; padding: 2px 8px; border-radius: 99px;
+      font-size: 11px; font-weight: 600;
+    }
+    .badge-blue   { background: rgba(59,130,246,0.15); color: #93c5fd; }
+    .badge-green  { background: rgba(16,185,129,0.15); color: #6ee7b7; }
+    .badge-amber  { background: rgba(245,158,11,0.15); color: #fcd34d; }
+    .badge-gray   { background: rgba(255,255,255,0.06); color: var(--text3); }
+    .badge-red    { background: rgba(239,68,68,0.12); color: #fca5a5; }
+
+    .worker-name  { font-weight: 700; }
+    .worker-rut   { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+    .actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+    /* Modal */
+    .overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.75);
+      display: none; align-items: center; justify-content: center;
+      z-index: 100; padding: 1rem;
+    }
+    .overlay.visible { display: flex; }
+    .modal {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.5rem;
+      width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto;
+    }
+    .modal-title { font-size: 17px; font-weight: 700; margin-bottom: 1rem; }
+    .field { margin-bottom: 12px; }
+    .field label {
+      display: block; font-size: 11px; color: var(--text3);
+      text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 4px;
+    }
+    .field input, .field select {
+      width: 100%; background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text); font-size: 14px;
+      padding: 10px 12px; font-family: inherit;
+    }
+    .field input:focus, .field select:focus { outline: none; border-color: var(--accent); }
+    .row { display: flex; gap: 8px; }
+    .row > * { flex: 1; }
+    .modal-actions { display: flex; gap: 8px; margin-top: 1rem; }
+    .modal-actions .btn { flex: 1; justify-content: center; padding: 11px; }
+
+    /* Modal QR */
+    .qr-modal { text-align: center; }
+    .qr-name  { font-size: 18px; font-weight: 700; margin: 8px 0 4px; }
+    .qr-meta  { font-size: 12px; color: var(--text3); margin-bottom: 16px; }
+    .qr-img   { display: block; margin: 0 auto 16px;
+                background: #fff; padding: 12px; border-radius: 8px; }
+    .qr-url   {
+      font-size: 11px; color: var(--text3); word-break: break-all;
+      background: var(--bg3); padding: 8px 12px; border-radius: 6px;
+      border: 1px solid var(--border); margin-bottom: 14px;
+    }
+
+    /* Print QR cards */
+    @media print {
+      body { background: #fff; color: #000; }
+      header, .toolbar, .workers-table, .overlay:not(.printing) { display: none !important; }
+      .print-cards { display: flex !important; flex-wrap: wrap; gap: 16px; padding: 16px; }
+      .print-card {
+        border: 2px solid #000; border-radius: 8px; padding: 16px;
+        text-align: center; width: 200px;
+      }
+      .print-card-name { font-size: 14px; font-weight: 700; margin-top: 8px; }
+      .print-card-meta { font-size: 11px; color: #555; margin-top: 4px; }
+    }
+    .print-cards { display: none; }
+
+    .empty-state {
+      text-align: center; padding: 3rem 1rem;
+      color: var(--text3); font-size: 14px;
+    }
+    .toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      background: var(--bg3); border: 1px solid var(--border); color: var(--text);
+      padding: 10px 18px; border-radius: 99px; font-size: 13px;
+      z-index: 300; opacity: 0; transition: opacity 0.2s; pointer-events: none;
+    }
+    .toast.visible { opacity: 1; }
+    .toast.ok    { border-color: var(--green); color: #6ee7b7; }
+    .toast.error { border-color: var(--red);   color: #fca5a5; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <a class="btn-back" href="index.html">←</a>
+    <div>
+      <div class="header-title">Trabajadores</div>
+      <div class="header-sub">Base de datos del campo · QR por persona</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:8px">
+    <button class="btn btn-ghost btn-sm" onclick="imprimirQRs()" title="Imprimir fichas QR de todos los trabajadores activos">🖨 Imprimir QRs</button>
+    <button class="btn btn-primary" onclick="abrirModalEditar()">+ Nuevo trabajador</button>
+  </div>
+</header>
+
+<div class="main">
+
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <div class="filter-tabs">
+        <div class="ftab active" id="ftab-activos" onclick="setFiltro('activos')">Activos</div>
+        <div class="ftab" id="ftab-todos"   onclick="setFiltro('todos')">Todos</div>
+        <div class="ftab" id="ftab-inactivos" onclick="setFiltro('inactivos')">Inactivos</div>
+      </div>
+    </div>
+    <div class="info-text" id="info-count">— cargando —</div>
+  </div>
+
+  <div id="tabla-container">
+    <div class="empty-state">Cargando trabajadores…</div>
+  </div>
+
+</div>
+
+<!-- Print cards (hidden, for print only) -->
+<div class="print-cards" id="printCards"></div>
+
+<!-- Modal editar / crear trabajador -->
+<div class="overlay" id="overlayEditar" onclick="cerrarModalEditar(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-title" id="modalEditarTitulo">Nuevo trabajador</div>
+
+    <div class="row">
+      <div class="field">
+        <label>Nombre completo *</label>
+        <input type="text" id="eNombre" placeholder="Ej: Juan Pérez" autocapitalize="words">
+      </div>
+      <div class="field">
+        <label>RUT</label>
+        <input type="text" id="eRut" placeholder="12.345.678-9">
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>Labor habitual</label>
+        <select id="eLaborHabitual">
+          <option value="">— ninguna —</option>
+          <option value="Cosecha">Cosecha</option>
+          <option value="Plantacion">Plantación</option>
+          <option value="Riego">Riego</option>
+          <option value="Mantencion del huerto">Mantención del huerto</option>
+          <option value="Tractorista">Tractorista</option>
+          <option value="Traslados">Traslados</option>
+          <option value="Inversiones">Inversiones</option>
+          <option value="Otros costos laborales">Otros costos laborales</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Descripción de labor</label>
+        <input type="text" id="eSublabor" placeholder="Ej: Poda corte levante">
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>Tipo de contrato *</label>
+        <select id="eTipoContrato">
+          <option value="N2">N2</option>
+          <option value="N1">N1</option>
+          <option value="Pp">Pp (Personal propio)</option>
+          <option value="Contratista">Contratista</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Formato de pago *</label>
+        <select id="eFormato">
+          <option value="Jornada">Jornada</option>
+          <option value="Trato">Trato</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>Unidad de control</label>
+        <select id="eUnidad">
+          <option value="Día">Día</option>
+          <option value="Kg">Kg</option>
+          <option value="ha">ha</option>
+          <option value="Hilera">Hilera</option>
+          <option value="Planta">Planta</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Valor unitario ($)</label>
+        <input type="number" id="eValor" placeholder="25000" step="100" min="0" inputmode="numeric">
+      </div>
+    </div>
+    <div class="field">
+      <label>Proveedor (si es contratista)</label>
+      <input type="text" id="eProveedor" placeholder="Empresa o persona que lo envía">
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="cerrarModalEditar()">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarTrabajador()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal QR -->
+<div class="overlay" id="overlayQR" onclick="cerrarModalQR(event)">
+  <div class="modal qr-modal" onclick="event.stopPropagation()" style="max-width:340px">
+    <div class="modal-title" style="text-align:center">Código QR</div>
+    <div class="qr-name" id="qrNombre"></div>
+    <div class="qr-meta" id="qrMeta"></div>
+    <img class="qr-img" id="qrImg" width="200" height="200" alt="QR">
+    <div class="qr-url" id="qrUrl"></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-ghost" style="flex:1;justify-content:center" onclick="cerrarModalQR()">Cerrar</button>
+      <a class="btn btn-primary" id="qrDescarga" download style="flex:1;justify-content:center;text-decoration:none">⬇ Descargar</a>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Config ────────────────────────────────────────────────────────
+const SUPA_URL  = 'https://eunuqwzrbqqpykyywjbu.supabase.co';
+const SUPA_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV1bnVxd3pyYnFxcHlreXl3amJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3NzYyOTMsImV4cCI6MjA5MTM1MjI5M30.iiCd-6pa8mQgXR6DzMtZjGsJnn-8OD_-ayrRtXj-YkM';
+const EMPRESA_ID = 1;
+const CAMPO_ID   = 1;
+const PWA_BASE   = 'https://jpdelped-adp.github.io/fenologia-laquinta/labores_agricolas.html';
+
+// ── Estado ────────────────────────────────────────────────────────
+let _workers    = [];
+let _filtro     = 'activos';
+let _editandoId = null;   // null = nuevo, número = editando existente
+
+// ── Supabase helpers ──────────────────────────────────────────────
+async function _supaGet(path) {
+  const r = await fetch(`${SUPA_URL}/rest/v1/${path}`, {
+    headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`,
+               'Content-Type': 'application/json', Accept: 'application/json' }
+  });
+  if (!r.ok) throw new Error(`${r.status}: ${await r.text()}`);
+  return r.json();
+}
+async function _supaPost(tabla, data) {
+  const r = await fetch(`${SUPA_URL}/rest/v1/${tabla}`, {
+    method: 'POST',
+    headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`,
+               'Content-Type': 'application/json', Prefer: 'return=representation' },
+    body: JSON.stringify(data)
+  });
+  if (!r.ok) throw new Error(`${r.status}: ${await r.text()}`);
+  return r.json();
+}
+async function _supaPatch(tabla, id, data) {
+  const r = await fetch(`${SUPA_URL}/rest/v1/${tabla}?id=eq.${id}`, {
+    method: 'PATCH',
+    headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`,
+               'Content-Type': 'application/json', Prefer: 'return=minimal' },
+    body: JSON.stringify(data)
+  });
+  if (!r.ok) throw new Error(`${r.status}: ${await r.text()}`);
+}
+
+// ── Carga inicial ─────────────────────────────────────────────────
+async function cargarTrabajadores() {
+  try {
+    _workers = await _supaGet(
+      `trabajadores?empresa_id=eq.${EMPRESA_ID}&campo_id=eq.${CAMPO_ID}&order=nombre.asc&select=*`
+    );
+    renderTabla();
+  } catch(e) {
+    document.getElementById('tabla-container').innerHTML =
+      `<div class="empty-state" style="color:var(--red)">Error al cargar: ${e.message}</div>`;
+  }
+}
+
+function setFiltro(f) {
+  _filtro = f;
+  ['activos','todos','inactivos'].forEach(k => {
+    document.getElementById(`ftab-${k}`).classList.toggle('active', k === f);
+  });
+  renderTabla();
+}
+
+function _toTitleCase(s) {
+  if (!s) return '';
+  const min = new Set(['de','del','la','las','los','el','y','e','o']);
+  return String(s).toLowerCase().replace(/\S+/g, (w, i) =>
+    (i === 0 || !min.has(w)) ? w.charAt(0).toUpperCase() + w.slice(1) : w
+  );
+}
+
+function tipoContratoBadge(tc) {
+  if (!tc) return '';
+  const map = { N2:'badge-blue', N1:'badge-amber', Pp:'badge-green', Contratista:'badge-gray' };
+  return `<span class="badge ${map[tc]||'badge-gray'}">${tc}</span>`;
+}
+
+function renderTabla() {
+  let filas = _workers;
+  if (_filtro === 'activos')   filas = filas.filter(w => w.activo !== false);
+  if (_filtro === 'inactivos') filas = filas.filter(w => w.activo === false);
+
+  document.getElementById('info-count').textContent =
+    `${filas.length} trabajador${filas.length !== 1 ? 'es' : ''}`;
+
+  const cont = document.getElementById('tabla-container');
+  if (!filas.length) {
+    cont.innerHTML = `<div class="empty-state">
+      Sin trabajadores${_filtro !== 'todos' ? ` ${_filtro}` : ''}.
+      <br><button class="btn btn-primary" style="margin-top:12px" onclick="abrirModalEditar()">+ Agregar primero</button>
+    </div>`;
+    return;
+  }
+
+  cont.innerHTML = `
+  <table class="workers-table">
+    <thead>
+      <tr>
+        <th>Nombre / RUT</th>
+        <th>Labor habitual</th>
+        <th>Contrato</th>
+        <th>Formato · Valor</th>
+        <th>Estado</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      ${filas.map(w => `
+      <tr>
+        <td>
+          <div class="worker-name">${_toTitleCase(w.nombre)}</div>
+          ${w.rut ? `<div class="worker-rut">${w.rut}</div>` : ''}
+        </td>
+        <td>${w.labor_habitual || '<span style="color:var(--text3)">—</span>'}
+          ${w.sublabor ? `<div style="font-size:11px;color:var(--text3)">${w.sublabor}</div>` : ''}
+        </td>
+        <td>${tipoContratoBadge(w.tipo_contrato)}
+          ${w.proveedor ? `<div style="font-size:11px;color:var(--text3);margin-top:2px">${w.proveedor}</div>` : ''}
+        </td>
+        <td style="font-size:12px">
+          ${w.formato_labor || '—'} · ${w.unidad_control || '—'}
+          ${w.valor_unitario ? `<div style="font-size:11px;color:var(--text3)">$ ${Number(w.valor_unitario).toLocaleString('es-CL')}</div>` : ''}
+        </td>
+        <td>
+          <span class="badge ${w.activo !== false ? 'badge-green' : 'badge-red'}">
+            ${w.activo !== false ? 'Activo' : 'Inactivo'}
+          </span>
+        </td>
+        <td>
+          <div class="actions">
+            <button class="btn btn-ghost btn-sm" onclick="mostrarQR(${w.id})" title="Ver QR">QR</button>
+            <button class="btn btn-ghost btn-sm" onclick="abrirModalEditar(${w.id})" title="Editar">✏</button>
+            <button class="btn btn-sm ${w.activo !== false ? 'btn-danger' : 'btn-ghost'}"
+              onclick="toggleActivo(${w.id}, ${w.activo !== false})"
+              title="${w.activo !== false ? 'Desactivar' : 'Activar'}">
+              ${w.activo !== false ? 'Desactivar' : 'Activar'}
+            </button>
+          </div>
+        </td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+// ── Modal editar / crear ──────────────────────────────────────────
+function abrirModalEditar(id) {
+  _editandoId = id || null;
+  const w = id ? _workers.find(x => x.id === id) : null;
+  document.getElementById('modalEditarTitulo').textContent = w ? 'Editar trabajador' : 'Nuevo trabajador';
+
+  document.getElementById('eNombre').value        = w ? _toTitleCase(w.nombre) : '';
+  document.getElementById('eRut').value           = w ? (w.rut || '') : '';
+  document.getElementById('eLaborHabitual').value = w ? (w.labor_habitual || '') : '';
+  document.getElementById('eSublabor').value      = w ? (w.sublabor || '') : '';
+  document.getElementById('eTipoContrato').value  = w ? (w.tipo_contrato || 'N2') : 'N2';
+  document.getElementById('eFormato').value       = w ? (w.formato_labor || 'Jornada') : 'Jornada';
+  document.getElementById('eUnidad').value        = w ? (w.unidad_control || 'Día') : 'Día';
+  document.getElementById('eValor').value         = w ? (w.valor_unitario || '') : '25000';
+  document.getElementById('eProveedor').value     = w ? (w.proveedor || '') : '';
+
+  document.getElementById('overlayEditar').classList.add('visible');
+  setTimeout(() => document.getElementById('eNombre').focus(), 100);
+}
+function cerrarModalEditar(e) {
+  if (e && e.target !== e.currentTarget) return;
+  document.getElementById('overlayEditar').classList.remove('visible');
+}
+
+async function guardarTrabajador() {
+  const nombre = document.getElementById('eNombre').value.trim();
+  if (!nombre) { toast('Ingresa el nombre', 'error'); return; }
+
+  const payload = {
+    empresa_id:     EMPRESA_ID,
+    campo_id:       CAMPO_ID,
+    nombre:         nombre.toUpperCase(), // guardamos en mayúsculas, mostramos en title case
+    rut:            document.getElementById('eRut').value.trim() || null,
+    labor_habitual: document.getElementById('eLaborHabitual').value || null,
+    sublabor:       document.getElementById('eSublabor').value.trim() || null,
+    tipo_contrato:  document.getElementById('eTipoContrato').value,
+    formato_labor:  document.getElementById('eFormato').value,
+    unidad_control: document.getElementById('eUnidad').value,
+    valor_unitario: parseFloat(document.getElementById('eValor').value) || 0,
+    proveedor:      document.getElementById('eProveedor').value.trim() || null,
+  };
+
+  try {
+    if (_editandoId) {
+      await _supaPatch('trabajadores', _editandoId, payload);
+      toast('✅ Trabajador actualizado', 'ok');
+    } else {
+      payload.activo = true;
+      await _supaPost('trabajadores', payload);
+      toast('✅ Trabajador agregado', 'ok');
+    }
+    cerrarModalEditar();
+    await cargarTrabajadores();
+  } catch(e) {
+    toast('Error: ' + e.message, 'error');
+  }
+}
+
+async function toggleActivo(id, estadoActual) {
+  try {
+    await _supaPatch('trabajadores', id, { activo: !estadoActual });
+    toast(estadoActual ? 'Trabajador desactivado' : 'Trabajador activado', 'ok');
+    await cargarTrabajadores();
+  } catch(e) {
+    toast('Error: ' + e.message, 'error');
+  }
+}
+
+// ── QR ────────────────────────────────────────────────────────────
+function qrUrl(trabajadorId) {
+  return `${PWA_BASE}?t=${trabajadorId}`;
+}
+
+function mostrarQR(id) {
+  const w = _workers.find(x => x.id === id);
+  if (!w) return;
+
+  const url = qrUrl(id);
+  const qrApiUrl = `https://chart.googleapis.com/chart?cht=qr&chs=220x220&chl=${encodeURIComponent(url)}&choe=UTF-8`;
+
+  document.getElementById('qrNombre').textContent = _toTitleCase(w.nombre);
+  document.getElementById('qrMeta').textContent =
+    [w.labor_habitual, w.tipo_contrato, w.formato_labor].filter(Boolean).join(' · ');
+  document.getElementById('qrImg').src = qrApiUrl;
+  document.getElementById('qrUrl').textContent = url;
+  document.getElementById('qrDescarga').href = qrApiUrl;
+  document.getElementById('qrDescarga').download = `QR_${w.nombre.replace(/\s+/g,'_')}.png`;
+
+  document.getElementById('overlayQR').classList.add('visible');
+}
+function cerrarModalQR(e) {
+  if (e && e.target !== e.currentTarget) return;
+  document.getElementById('overlayQR').classList.remove('visible');
+}
+
+// ── Imprimir todas las fichas QR ──────────────────────────────────
+function imprimirQRs() {
+  const activos = _workers.filter(w => w.activo !== false);
+  if (!activos.length) { toast('No hay trabajadores activos', 'error'); return; }
+
+  const cards = document.getElementById('printCards');
+  cards.innerHTML = activos.map(w => {
+    const url = qrUrl(w.id);
+    const qrSrc = `https://chart.googleapis.com/chart?cht=qr&chs=180x180&chl=${encodeURIComponent(url)}&choe=UTF-8`;
+    return `<div class="print-card">
+      <img src="${qrSrc}" width="180" height="180" alt="QR ${w.nombre}">
+      <div class="print-card-name">${_toTitleCase(w.nombre)}</div>
+      <div class="print-card-meta">${[w.labor_habitual, w.tipo_contrato].filter(Boolean).join(' · ') || 'Trabajador'}</div>
+    </div>`;
+  }).join('');
+
+  toast('Abriendo impresión…', '');
+  setTimeout(() => window.print(), 400);
+}
+
+// ── Toast ─────────────────────────────────────────────────────────
+function toast(msg, tipo) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast visible ' + (tipo||'');
+  clearTimeout(t._to);
+  t._to = setTimeout(() => t.classList.remove('visible'), 3000);
+}
+
+// ── Init ──────────────────────────────────────────────────────────
+cargarTrabajadores();
+</script>
+</body>
+</html>
