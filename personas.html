@@ -429,10 +429,22 @@ document.addEventListener('click', function(e) {
 });
 
 // ── Edición inline ─────────────────────────────────────────────────
+// IMPORTANTE: nunca sacar el <td> del DOM — solo reemplazar el span .cv interno.
+// Así td.dataset.editing siempre apunta al elemento correcto en el DOM.
+
+function _replaceEl(target) {
+  // Si target es un TD, devuelve el span .cv dentro; si es span, lo devuelve directo.
+  return (target.tagName === 'TD')
+    ? (target.querySelector('.cv') || target.firstElementChild || target)
+    : target;
+}
+
 function _editCell(td, target, pid, field, value, type) {
   if (td.dataset.editing) return;
   td.dataset.editing = '1';
-  const orig = target.outerHTML;
+
+  const displayEl = _replaceEl(target);
+  const origHTML  = displayEl.outerHTML;
 
   const inp = document.createElement('input');
   inp.className = 'ei';
@@ -441,9 +453,14 @@ function _editCell(td, target, pid, field, value, type) {
   if (type==='number') { inp.min='0'; inp.step='1'; }
   if (field==='nombre') inp.setAttribute('autocapitalize','words');
 
-  target.replaceWith(inp);
+  displayEl.replaceWith(inp);   // solo el span interno, el <td> queda en el DOM
   inp.focus();
   if (inp.select && type!=='date') inp.select();
+
+  const restore = () => {
+    inp.replaceWith(document.createRange().createContextualFragment(origHTML));
+    delete td.dataset.editing;
+  };
 
   let done = false;
   const save = async () => {
@@ -460,17 +477,14 @@ function _editCell(td, target, pid, field, value, type) {
       if (p) Object.assign(p, patch);
       renderTabla(); toast('✓ Guardado','ok');
     } catch(err) {
-      const span = document.createElement('span');
-      span.outerHTML = orig;
-      inp.replaceWith(span);
-      delete td.dataset.editing;
+      restore();
       toast('Error: '+err.message,'error');
     }
   };
   inp.addEventListener('blur', save);
   inp.addEventListener('keydown', e => {
     if (e.key==='Enter')  { e.preventDefault(); inp.blur(); }
-    if (e.key==='Escape') { done=true; inp.removeEventListener('blur',save); inp.outerHTML=orig; delete td.dataset.editing; }
+    if (e.key==='Escape') { done=true; inp.removeEventListener('blur',save); restore(); }
   });
 }
 
@@ -478,13 +492,21 @@ function _editSelect(td, target, pid, field, value, options) {
   if (td.dataset.editing) return;
   td.dataset.editing = '1';
 
+  const displayEl = _replaceEl(target);
+  const origHTML  = displayEl.outerHTML;
+
   const sel = document.createElement('select');
   sel.className = 'ei';
   sel.add(new Option('— sin datos —',''));
   options.forEach(v => { const o=new Option(v,v); if(v===value)o.selected=true; sel.add(o); });
 
-  target.replaceWith(sel);
+  displayEl.replaceWith(sel);   // solo el span interno
   sel.focus();
+
+  const restore = () => {
+    sel.replaceWith(document.createRange().createContextualFragment(origHTML));
+    delete td.dataset.editing;
+  };
 
   let done = false;
   const save = async () => {
@@ -502,14 +524,14 @@ function _editSelect(td, target, pid, field, value, options) {
       if (p) Object.assign(p, patch);
       renderTabla(); toast('✓ Guardado','ok');
     } catch(err) {
-      delete td.dataset.editing;
-      renderTabla(); toast('Error: '+err.message,'error');
+      restore();
+      toast('Error: '+err.message,'error');
     }
   };
   sel.addEventListener('blur', save);
   sel.addEventListener('change', () => sel.blur());
   sel.addEventListener('keydown', e => {
-    if (e.key==='Escape') { done=true; sel.removeEventListener('blur',save); delete td.dataset.editing; renderTabla(); }
+    if (e.key==='Escape') { done=true; sel.removeEventListener('blur',save); restore(); }
   });
 }
 
