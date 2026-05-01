@@ -229,6 +229,21 @@
     }
     .print-cards { display: none; }
 
+    .cell-select {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 6px; color: var(--text2); font-size: 12px;
+      padding: 4px 6px; font-family: inherit; cursor: pointer; width: 100%;
+    }
+    .cell-select:hover { border-color: rgba(255,255,255,0.15); }
+    .cell-select:focus { outline: none; border-color: var(--accent); color: var(--text); }
+    .cell-input {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 6px; color: var(--text2); font-size: 12px;
+      padding: 4px 6px; font-family: inherit; width: 100%; max-width: 100px;
+    }
+    .cell-input:hover { border-color: rgba(255,255,255,0.15); }
+    .cell-input:focus { outline: none; border-color: var(--accent); color: var(--text); }
+
     .empty-state {
       text-align: center; padding: 3rem 1rem;
       color: var(--text3); font-size: 14px;
@@ -302,15 +317,15 @@
       <div class="field">
         <label>Tipo de contrato *</label>
         <select id="nTipoContrato">
-          <option value="N2">N2</option>
-          <option value="N1">N1</option>
-          <option value="Pp">Pp (Personal propio)</option>
+          <option value="Contratista">Contratista</option>
+          <option value="Personal Propio">Personal Propio</option>
+          <option value="Otros">Otros</option>
         </select>
       </div>
       <div class="field">
         <label>Formato de pago *</label>
         <select id="nFormato">
-          <option value="Día">Día</option>
+          <option value="Jornada">Jornada</option>
           <option value="Trato">Trato</option>
         </select>
       </div>
@@ -438,7 +453,7 @@ function _toTitleCase(s) {
 
 function _contratoBadge(tc) {
   if (!tc) return '<span style="color:var(--text3)">—</span>';
-  const map = { N2:'badge-blue', N1:'badge-amber', Pp:'badge-green' };
+  const map = { 'Contratista':'badge-gray', 'Personal Propio':'badge-green', 'Otros':'badge-amber' };
   return `<span class="badge ${map[tc]||'badge-gray'}">${tc}</span>`;
 }
 
@@ -511,16 +526,16 @@ function renderTabla() {
         <th>
           <select class="th-filter-select" onchange="_fltContrato=this.value;renderTabla()">
             <option value="" ${!_fltContrato?'selected':''}>Todos</option>
-            <option value="N2" ${_fltContrato==='N2'?'selected':''}>N2</option>
-            <option value="N1" ${_fltContrato==='N1'?'selected':''}>N1</option>
-            <option value="Pp"  ${_fltContrato==='Pp'?'selected':''}>Pp</option>
+            <option value="Contratista"    ${_fltContrato==='Contratista'?'selected':''}>Contratista</option>
+            <option value="Personal Propio" ${_fltContrato==='Personal Propio'?'selected':''}>Personal Propio</option>
+            <option value="Otros"          ${_fltContrato==='Otros'?'selected':''}>Otros</option>
           </select>
         </th>
         <th>
           <select class="th-filter-select" onchange="_fltFormato=this.value;renderTabla()">
             <option value="" ${!_fltFormato?'selected':''}>Todos</option>
-            <option value="Día"   ${_fltFormato==='Día'?'selected':''}>Día</option>
-            <option value="Trato" ${_fltFormato==='Trato'?'selected':''}>Trato</option>
+            <option value="Jornada" ${_fltFormato==='Jornada'?'selected':''}>Jornada</option>
+            <option value="Trato"   ${_fltFormato==='Trato'?'selected':''}>Trato</option>
           </select>
         </th>
         <th></th><th></th><th></th>
@@ -537,19 +552,24 @@ function renderTabla() {
             ondblclick="_startEdit(this, ${w.id}, 'rut', ${JSON.stringify(w.rut||'')}, 'text')">
           ${w.rut ? `<span style="font-size:12px;color:var(--text2)">${w.rut}</span>` : '<span style="color:var(--text3)">—</span>'}
         </td>
-        <td data-editable
-            ondblclick="_startEdit(this, ${w.id}, 'tipo_contrato', ${JSON.stringify(w.tipo_contrato||'N2')}, 'select-contrato')">
-          ${_contratoBadge(w.tipo_contrato)}
-          ${w.proveedor ? `<div style="font-size:10px;color:var(--text3);margin-top:2px">${w.proveedor}</div>` : ''}
+        <td>
+          <select class="cell-select" onchange="_saveField(${w.id},'tipo_contrato',this.value)">
+            <option value="Contratista"     ${(w.tipo_contrato||'')==='Contratista'    ?'selected':''}>Contratista</option>
+            <option value="Personal Propio" ${(w.tipo_contrato||'')==='Personal Propio'?'selected':''}>Personal Propio</option>
+            <option value="Otros"           ${(w.tipo_contrato||'')==='Otros'          ?'selected':''}>Otros</option>
+          </select>
         </td>
-        <td data-editable
-            ondblclick="_startEdit(this, ${w.id}, 'formato_labor', ${JSON.stringify(w.formato_labor||'Día')}, 'select-formato')">
-          <span style="font-size:12px">${w.formato_labor || '—'}</span>
-          ${w.unidad_control ? `<span style="font-size:11px;color:var(--text3)"> · ${w.unidad_control}</span>` : ''}
+        <td>
+          <select class="cell-select" onchange="_saveField(${w.id},'formato_labor',this.value)">
+            <option value="Jornada" ${(w.formato_labor||'')==='Jornada'?'selected':''}>Jornada</option>
+            <option value="Trato"   ${(w.formato_labor||'')==='Trato'  ?'selected':''}>Trato</option>
+          </select>
         </td>
-        <td data-editable
-            ondblclick="_startEdit(this, ${w.id}, 'valor_unitario', ${w.valor_unitario||0}, 'number')">
-          ${w.valor_unitario ? `<span style="font-size:12px">$ ${Number(w.valor_unitario).toLocaleString('es-CL')}</span>` : '<span style="color:var(--text3)">—</span>'}
+        <td>
+          <input class="cell-input" type="number" step="100" min="0"
+            value="${w.valor_unitario||''}"
+            onchange="_saveField(${w.id},'valor_unitario',parseFloat(this.value)||0)"
+            placeholder="—">
         </td>
         <td>
           <span class="badge ${w.activo !== false ? 'badge-green' : 'badge-red'}">
@@ -569,7 +589,7 @@ function renderTabla() {
     </tbody>
   </table>
   </div>
-  <p class="hint" style="margin-top:8px">💡 Doble clic en cualquier celda para editar directamente</p>`;
+  <p class="hint" style="margin-top:8px">💡 Contrato y Formato: desplegable directo. Valor: editar y presionar Enter o hacer clic fuera.</p>`;
 }
 
 // ── Inline edit ───────────────────────────────────────────────────
@@ -645,8 +665,8 @@ function _startEdit(td, workerId, field, value, type) {
 function abrirModalNuevo() {
   document.getElementById('nNombre').value = '';
   document.getElementById('nRut').value    = '';
-  document.getElementById('nTipoContrato').value = 'N2';
-  document.getElementById('nFormato').value      = 'Día';
+  document.getElementById('nTipoContrato').value = 'Contratista';
+  document.getElementById('nFormato').value      = 'Jornada';
   document.getElementById('nUnidad').value       = 'Día';
   document.getElementById('nValor').value        = '25000';
   document.getElementById('nProveedor').value    = '';
@@ -681,6 +701,21 @@ async function guardarNuevo() {
     await cargarTrabajadores();
   } catch(e) {
     toast('Error: ' + e.message, 'error');
+  }
+}
+
+// ── Save field directo (selects y inputs de fila)
+async function _saveField(workerId, field, value) {
+  try {
+    const patch = {};
+    patch[field] = field === 'valor_unitario' ? (parseFloat(value) || 0) : value;
+    await _supaPatch('trabajadores', workerId, patch);
+    const w = _workers.find(x => x.id === workerId);
+    if (w) Object.assign(w, patch);
+    toast('✓ Guardado', 'ok');
+  } catch(e) {
+    toast('Error: ' + e.message, 'error');
+    await cargarTrabajadores(); // revert
   }
 }
 
