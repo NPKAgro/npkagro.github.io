@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Aplicaciones LQ">
+  <meta name="theme-color" content="#0f1117">
+  <link rel="manifest" href="manifest.json">
+  <meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
+  <title>Aplicaciones · La Quinta</title>
+  <script>window.LQ_AUTH_MODE = 'admin'; window.LQ_AUTH_SHOW_BAR = false;</script>
+  <script src="auth.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:       #0f1117;
+      --bg2:      #161b24;
+      --bg3:      #1e2534;
+      --border:   rgba(255,255,255,0.08);
+      --text:     #f0f2f5;
+      --text2:    #8b93a5;
+      --text3:    #555e70;
+      --accent:   #9f1717;
+      --accent2:  #7a1515;
+      --green:    #10b981;
+      --amber:    #f59e0b;
+      --blue:     #3b82f6;
+      --red:      #ef4444;
+      --radius:   10px;
+    }
+    html, body { height: 100%; }
+    body {
+      font-family: -apple-system, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+      padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 24px);
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* ── Header ─────────────────────────────────── */
+    .header {
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 16px;
+      display: flex; align-items: center; gap: 12px;
+      position: sticky; top: 0; z-index: 50;
+    }
+    .header-back {
+      width: 36px; height: 36px; border-radius: 8px;
+      background: var(--bg3); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; color: var(--text2); text-decoration: none; flex-shrink: 0;
+    }
+    .header-info { flex: 1; }
+    .header-title { font-size: 15px; font-weight: 700; }
+    .header-sub   { font-size: 11px; color: var(--text3); margin-top: 1px; }
+    .header-accent { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+
+    /* ── Content ─────────────────────────────────── */
+    .content { padding: 14px 14px 0; max-width: 640px; margin: 0 auto; }
+
+    /* ── Tabs estado ─────────────────────────────── */
+    .tab-bar {
+      display: flex; gap: 0; background: var(--bg2);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      overflow: hidden; margin-bottom: 14px;
+    }
+    .tab-btn {
+      flex: 1; padding: 9px 0; font-size: 12px; font-weight: 600;
+      background: transparent; color: var(--text3); border: none; cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    .tab-btn.active { background: var(--accent); color: #fff; }
+
+    /* ── Orden card ───────────────────────────────── */
+    .orden-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 10px;
+      overflow: hidden;
+    }
+    .orden-card.pendiente { border-left: 3px solid var(--amber); }
+    .orden-card.en-progreso { border-left: 3px solid var(--blue); }
+    .orden-card.ejecutada { border-left: 3px solid var(--green); opacity: 0.7; }
+
+    .orden-head {
+      padding: 12px 14px;
+      display: flex; align-items: flex-start; gap: 10px; cursor: pointer;
+    }
+    .orden-num { font-size: 18px; font-weight: 700; color: var(--accent); min-width: 56px; }
+    .orden-info { flex: 1; }
+    .orden-tipo { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+    .orden-meta { font-size: 11px; color: var(--text3); line-height: 1.4; }
+    .estado-badge {
+      font-size: 10px; font-weight: 600;
+      padding: 3px 8px; border-radius: 99px; white-space: nowrap;
+    }
+    .badge-pendiente  { background: rgba(245,158,11,0.15); color: var(--amber); border: 1px solid rgba(245,158,11,0.3); }
+    .badge-progreso   { background: rgba(59,130,246,0.15);  color: var(--blue);  border: 1px solid rgba(59,130,246,0.3); }
+    .badge-ejecutada  { background: rgba(16,185,129,0.15);  color: var(--green); border: 1px solid rgba(16,185,129,0.3); }
+
+    .orden-productos {
+      padding: 0 14px 6px 14px;
+      font-size: 12px; color: var(--text2);
+      border-top: 1px solid var(--border);
+    }
+    .prod-item {
+      display: flex; align-items: center; gap: 6px;
+      padding: 5px 0; border-bottom: 1px solid var(--border);
+    }
+    .prod-item:last-child { border-bottom: none; }
+    .prod-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); opacity: 0.6; flex-shrink: 0; }
+
+    .orden-footer {
+      background: var(--bg3); padding: 8px 14px;
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    }
+    .jornadas-info { font-size: 11px; color: var(--text3); }
+    .btn-jornada {
+      background: transparent; border: 1px solid rgba(159,23,23,0.5);
+      color: var(--accent); border-radius: 8px;
+      padding: 6px 14px; font-size: 12px; font-weight: 700; cursor: pointer;
+    }
+    .btn-jornada:active { background: rgba(159,23,23,0.1); }
+    .btn-ejecutar {
+      background: var(--green); border: none; color: #fff;
+      border-radius: 8px; padding: 6px 14px;
+      font-size: 12px; font-weight: 700; cursor: pointer;
+    }
+
+    .empty-state {
+      text-align: center; padding: 3rem 1rem;
+      color: var(--text3); font-size: 14px;
+    }
+
+    /* ── Overlay / Modal ──────────────────────────── */
+    .overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.78);
+      display: none; align-items: flex-end; justify-content: center;
+      z-index: 100;
+    }
+    .overlay.open { display: flex; }
+    .modal {
+      background: var(--bg2); border-top: 1px solid var(--border);
+      border-radius: 16px 16px 0 0;
+      width: 100%; max-width: 640px;
+      padding: 0 0 calc(env(safe-area-inset-bottom, 0px) + 16px);
+      max-height: 92dvh; overflow-y: auto;
+    }
+    .modal-handle {
+      width: 36px; height: 4px; border-radius: 2px;
+      background: var(--border); margin: 10px auto 0;
+    }
+    .modal-header {
+      padding: 12px 16px 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .modal-title  { font-size: 15px; font-weight: 700; }
+    .modal-sub    { font-size: 11px; color: var(--text3); margin-top: 2px; }
+    .modal-body   { padding: 14px 16px; display: flex; flex-direction: column; gap: 14px; }
+
+    /* ── Form fields ──────────────────────────────── */
+    .field label {
+      font-size: 10px; color: var(--text3);
+      text-transform: uppercase; letter-spacing: 0.3px;
+      display: block; margin-bottom: 5px; font-weight: 600;
+    }
+    .field input, .field select, .field textarea {
+      width: 100%; background: var(--bg3);
+      border: 1px solid var(--border); border-radius: 8px;
+      color: var(--text); font-size: 14px;
+      padding: 10px 12px; font-family: inherit;
+    }
+    .field input:focus, .field select:focus {
+      outline: none; border-color: var(--accent);
+    }
+    .row { display: flex; gap: 8px; }
+    .row > * { flex: 1; }
+
+    /* ── Cuartel toggle ───────────────────────────── */
+    .cq-group { display: flex; gap: 8px; }
+    .cq-btn {
+      flex: 1; padding: 10px 4px; border: 1px solid var(--border);
+      border-radius: 8px; font-size: 13px; font-weight: 700;
+      background: var(--bg3); color: var(--text3);
+      cursor: pointer; text-align: center; transition: all 0.12s;
+    }
+    .cq-btn.sel { background: rgba(159,23,23,0.2); color: var(--accent); border-color: var(--accent); }
+
+    /* ── Porcentaje ───────────────────────────────── */
+    .pct-group { display: flex; gap: 6px; flex-wrap: wrap; }
+    .pct-btn {
+      padding: 7px 12px; border: 1px solid var(--border);
+      border-radius: 8px; font-size: 12px; font-weight: 600;
+      background: var(--bg3); color: var(--text3);
+      cursor: pointer; transition: all 0.12s;
+    }
+    .pct-btn.sel { background: rgba(159,23,23,0.2); color: var(--accent); border-color: var(--accent); }
+    .pct-input {
+      flex: 1; min-width: 70px;
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text);
+      font-size: 13px; padding: 7px 10px; font-family: inherit;
+    }
+    .pct-input:focus { outline: none; border-color: var(--accent); }
+
+    /* ── Workers ──────────────────────────────────── */
+    .worker-item {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 8px; padding: 10px 12px;
+      display: flex; align-items: center; gap: 10px; cursor: pointer;
+      transition: border-color 0.12s;
+    }
+    .worker-item.sel { border-color: var(--accent); background: rgba(159,23,23,0.08); }
+    .worker-check {
+      width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
+      border: 2px solid var(--border); background: var(--bg2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; transition: all 0.12s;
+    }
+    .worker-item.sel .worker-check { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .worker-name  { font-size: 13px; font-weight: 600; }
+    .worker-meta  { font-size: 11px; color: var(--text3); margin-top: 1px; }
+    .worker-valor { font-size: 12px; color: var(--accent); font-weight: 700; margin-left: auto; flex-shrink: 0; }
+
+    /* ── Pasos del modal ──────────────────────────── */
+    .step-indicator {
+      display: flex; gap: 6px; padding: 0 16px 10px;
+    }
+    .step-dot {
+      flex: 1; height: 3px; border-radius: 2px;
+      background: var(--border); transition: background 0.2s;
+    }
+    .step-dot.active { background: var(--accent); }
+
+    /* ── Botones ──────────────────────────────────── */
+    .btn-primary {
+      width: 100%; background: var(--accent); color: #fff;
+      border: none; border-radius: var(--radius);
+      padding: 14px; font-size: 15px; font-weight: 700;
+      cursor: pointer; transition: opacity 0.12s;
+    }
+    .btn-primary:active { opacity: 0.85; }
+    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-secondary {
+      width: 100%; background: transparent; color: var(--text3);
+      border: none; padding: 10px; font-size: 13px; cursor: pointer;
+    }
+
+    /* ── Toast ────────────────────────────────────── */
+    .toast {
+      position: fixed; bottom: calc(env(safe-area-inset-bottom,0px) + 20px);
+      left: 50%; transform: translateX(-50%);
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 10px 18px;
+      font-size: 13px; font-weight: 600; color: var(--text);
+      opacity: 0; pointer-events: none; transition: opacity 0.2s;
+      white-space: nowrap; z-index: 200;
+    }
+    .toast.show { opacity: 1; }
+    .toast.ok   { border-color: rgba(16,185,129,0.5); color: var(--green); }
+    .toast.err  { border-color: rgba(239,68,68,0.5);  color: var(--red); }
+
+    /* ── Loader ───────────────────────────────────── */
+    .loader {
+      display: flex; align-items: center; justify-content: center;
+      padding: 3rem; color: var(--text3); font-size: 13px; gap: 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      width: 16px; height: 16px; border-radius: 50%;
+      border: 2px solid var(--border); border-top-color: var(--accent);
+      animation: spin 0.7s linear infinite;
+    }
+  </style>
+</head>
+<body>
+
+<header class="header">
+  <a class="header-back" href="index.html">←</a>
+  <div class="header-info">
+    <div class="header-title">Aplicaciones</div>
+    <div class="header-sub">La Quinta · Órdenes en terreno</div>
+  </div>
+  <div class="header-accent"></div>
+</header>
+
+<div class="content">
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="setTab('activas')">Activas</button>
+    <button class="tab-btn" onclick="setTab('ejecutadas')">Ejecutadas</button>
+  </div>
+  <div id="lista-ordenes">
+    <div class="loader"><div class="spinner"></div>Cargando órdenes...</div>
+  </div>
+</div>
+
+<!-- Modal jornada (2 pasos) -->
+<div class="overlay" id="overlay-jornada">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title" id="modal-titulo">Nueva jornada</div>
+      <div class="modal-sub" id="modal-subtitulo"></div>
+    </div>
+    <div class="step-indicator">
+      <div class="step-dot active" id="dot1"></div>
+      <div class="step-dot" id="dot2"></div>
+    </div>
+
+    <!-- Paso 1: datos de la jornada -->
+    <div class="modal-body" id="paso1">
+      <div class="field">
+        <label>Fecha de aplicación</label>
+        <input type="date" id="jor-fecha">
+      </div>
+      <div class="field">
+        <label>Cuarteles aplicados hoy</label>
+        <div class="cq-group">
+          <button class="cq-btn" data-cq="C2" onclick="toggleCQ(this)">C2</button>
+          <button class="cq-btn" data-cq="C3" onclick="toggleCQ(this)">C3</button>
+          <button class="cq-btn" data-cq="C4" onclick="toggleCQ(this)">C4</button>
+          <button class="cq-btn" data-cq="TODOS" onclick="toggleCQTodos(this)">TODOS</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>% del total aplicado hoy <span style="color:var(--text3);font-weight:400">(opcional)</span></label>
+        <div class="pct-group">
+          <button class="pct-btn" data-pct="25"  onclick="setPct(this)">25%</button>
+          <button class="pct-btn" data-pct="50"  onclick="setPct(this)">50%</button>
+          <button class="pct-btn" data-pct="100" onclick="setPct(this)">100%</button>
+          <input  class="pct-input" id="pct-manual" type="number" min="1" max="100"
+                  placeholder="Otro %" oninput="onPctManual(this)">
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>Hora inicio</label>
+          <input type="time" id="jor-inicio">
+        </div>
+        <div class="field">
+          <label>Hora término</label>
+          <input type="time" id="jor-termino">
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>Temp (°C)</label>
+          <input type="number" id="jor-temp" placeholder="ej: 18">
+        </div>
+        <div class="field">
+          <label>Viento (km/h)</label>
+          <input type="number" id="jor-viento" placeholder="ej: 12">
+        </div>
+      </div>
+      <div class="field">
+        <label>Observaciones</label>
+        <input type="text" id="jor-obs" placeholder="Notas de la jornada...">
+      </div>
+      <button class="btn-primary" onclick="irPaso2()">Siguiente → Trabajadores</button>
+      <button class="btn-secondary" onclick="cerrarModal()">Cancelar</button>
+    </div>
+
+    <!-- Paso 2: seleccionar trabajadores -->
+    <div class="modal-body" id="paso2" style="display:none">
+      <div style="font-size:12px;color:var(--text2);margin-bottom:-6px">
+        Selecciona quiénes aplicaron hoy. El sistema cargará sus datos de contrato automáticamente.
+      </div>
+      <div id="lista-workers" style="display:flex;flex-direction:column;gap:6px">
+        <div class="loader"><div class="spinner"></div>Cargando trabajadores...</div>
+      </div>
+      <button class="btn-primary" id="btn-confirmar" onclick="confirmarJornada()">
+        Registrar jornada
+      </button>
+      <button class="btn-secondary" onclick="irPaso1()">← Volver</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal confirmar ejecutar -->
+<div class="overlay" id="overlay-ejecutar">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title">¿Marcar como ejecutada?</div>
+      <div class="modal-sub" id="ejecutar-sub"></div>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:13px;color:var(--text2);line-height:1.6">
+        Al ejecutar la orden, el sistema registrará las aplicaciones en el historial fitosanitario
+        usando la fecha de la última jornada por cuartel como referencia de carencia.
+      </div>
+      <button class="btn-primary" style="background:var(--green)" onclick="ejecutarOrden()">
+        ✓ Confirmar ejecución
+      </button>
+      <button class="btn-secondary" onclick="cerrarEjecutar()">Aún no</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Config ────────────────────────────────────────────────────
+const SUPA_URL   = 'https://eunuqwzrbqqpykyywjbu.supabase.co';
+const SUPA_KEY   = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV1bnVxd3pyYnFxcHlreXl3amJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3NzYyOTMsImV4cCI6MjA5MTM1MjI5M30.iiCd-6pa8mQgXR6DzMtZjGsJnn-8OD_-ayrRtXj-YkM';
+const EMPRESA_ID = 1;
+const CAMPO_ID   = 1;
+
+// ── Estado ────────────────────────────────────────────────────
+let _ordenes     = [];
+let _trabajadores= [];
+let _tabActiva   = 'activas';
+let _ordenActual = null;  // orden sobre la que estamos abriendo el modal
+let _workSelec   = new Set(); // IDs de trabajadores seleccionados
+let _pctSelec    = null;
+
+// ── Supabase helpers ──────────────────────────────────────────
+const _h = { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`,
+             'Content-Type': 'application/json', Accept: 'application/json' };
+
+async function _get(path) {
+  const r = await fetch(`${SUPA_URL}/rest/v1/${path}`, { headers: _h });
+  if (!r.ok) throw new Error(`${r.status}: ${await r.text()}`);
+  return r.json();
+}
+async function _post(tabla, data) {
+  const r = await fetch(`${SUPA_URL}/rest/v1/${tabla}`, {
+    method: 'POST', headers: { ..._h, Prefer: 'return=representation' },
+    body: JSON.stringify(data)
+  });
+  if (!r.ok) throw new Error(`${r.status}: ${await r.text()}`);
+  return r.json();
+}
+async function _patch(tabla, filtro, data) {
+  const r = await fetch(`${SUPA_URL}/rest/v1/${tabla}?${filtro}`, {
+    method: 'PATCH', headers: { ..._h, Prefer: 'return=minimal' },
+    body: JSON.stringify(data)
+  });
+  if (!r.ok) throw new Error(`${r.status}: ${await r.text()}`);
+}
+
+// ── Toast ─────────────────────────────────────────────────────
+function toast(msg, tipo='ok') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `toast show ${tipo}`;
+  setTimeout(() => { el.className = 'toast'; }, 3000);
+}
+
+// ── Tabs ──────────────────────────────────────────────────────
+function setTab(tab) {
+  _tabActiva = tab;
+  document.querySelectorAll('.tab-btn').forEach((b,i) => {
+    b.classList.toggle('active', (i===0&&tab==='activas')||(i===1&&tab==='ejecutadas'));
+  });
+  renderOrdenes();
+}
+
+// ── Carga de datos ────────────────────────────────────────────
+async function cargar() {
+  try {
+    // Órdenes con productos y jornadas en una sola llamada usando select embebido
+    const [ordRes, prodRes, jorRes] = await Promise.all([
+      _get(`ordenes_aplicacion?empresa_id=eq.${EMPRESA_ID}&campo_id=eq.${CAMPO_ID}&order=numero_orden.desc`),
+      _get(`ordenes_aplicacion_productos?orden_id=in.(${await getOrdenIds()})&order=nombre_producto.asc`),
+      _get(`ordenes_aplicacion_jornadas?orden_id=in.(${await getOrdenIds()})&order=fecha.desc`)
+    ]);
+    // Agrupar
+    const prodsMap = {}, jorMap = {};
+    prodRes.forEach(p => { (prodsMap[p.orden_id] = prodsMap[p.orden_id]||[]).push(p); });
+    jorRes.forEach(j  => { (jorMap[j.orden_id]   = jorMap[j.orden_id]  ||[]).push(j); });
+    _ordenes = ordRes.map(o => ({ ...o, _productos: prodsMap[o.id]||[], _jornadas: jorMap[o.id]||[] }));
+    renderOrdenes();
+  } catch(e) {
+    document.getElementById('lista-ordenes').innerHTML =
+      `<div class="empty-state" style="color:var(--red)">Error: ${e.message}</div>`;
+  }
+}
+
+async function getOrdenIds() {
+  // Llamada rápida solo para IDs
+  const res = await _get(`ordenes_aplicacion?empresa_id=eq.${EMPRESA_ID}&campo_id=eq.${CAMPO_ID}&select=id`);
+  const ids = res.map(r=>r.id);
+  return ids.length ? ids.join(',') : '00000000-0000-0000-0000-000000000000';
+}
+
+// ── Render órdenes ────────────────────────────────────────────
+function estadoOrden(o) {
+  if (o.estado === 'ejecutada') return 'ejecutada';
+  if (o._jornadas.length > 0)  return 'en-progreso';
+  return 'pendiente';
+}
+
+function renderOrdenes() {
+  const filtradas = _ordenes.filter(o => {
+    const est = estadoOrden(o);
+    return _tabActiva === 'activas' ? est !== 'ejecutada' : est === 'ejecutada';
+  });
+
+  if (!filtradas.length) {
+    document.getElementById('lista-ordenes').innerHTML =
+      `<div class="empty-state">${_tabActiva==='activas'?'No hay órdenes activas':'No hay órdenes ejecutadas'}</div>`;
+    return;
+  }
+
+  const html = filtradas.map(o => {
+    const est   = estadoOrden(o);
+    const badge = est==='ejecutada' ? `<span class="estado-badge badge-ejecutada">Ejecutada</span>`
+                : est==='en-progreso' ? `<span class="estado-badge badge-progreso">En progreso</span>`
+                : `<span class="estado-badge badge-pendiente">Pendiente</span>`;
+
+    const prods = o._productos.filter((p,i,arr)=>arr.findIndex(x=>x.nombre_producto===p.nombre_producto)===i)
+      .map(p=>`<div class="prod-item"><div class="prod-dot"></div>${p.nombre_producto}
+        <span style="margin-left:auto;color:var(--text3)">${p.dosis_ha||'—'} ${p.unidad_dosis||''}/ha</span></div>`).join('');
+
+    const ultJor = o._jornadas.length ? `Última jornada: ${fmtFecha(o._jornadas[0].fecha)}` : 'Sin jornadas';
+    const jorInfo = `${o._jornadas.length} jornada${o._jornadas.length!==1?'s':''} · ${ultJor}`;
+
+    const btnEjec = est==='en-progreso'
+      ? `<button class="btn-ejecutar" onclick="abrirEjecutar('${o.id}')">✓ Ejecutar</button>` : '';
+
+    return `
+    <div class="orden-card ${est}" id="card-${o.id}">
+      <div class="orden-head">
+        <div class="orden-num">#${String(o.numero_orden).padStart(4,'0')}</div>
+        <div class="orden-info">
+          <div class="orden-tipo">${o.tipo} · ${o.cuarteles||'—'}</div>
+          <div class="orden-meta">${o.estado_fenologico||'Sin estado fenológico'} · ${o.temporada}</div>
+        </div>
+        ${badge}
+      </div>
+      <div class="orden-productos">${prods||'<div class="prod-item" style="color:var(--text3)">Sin productos definidos</div>'}</div>
+      <div class="orden-footer">
+        <div class="jornadas-info">${jorInfo}</div>
+        <div style="display:flex;gap:6px">
+          ${btnEjec}
+          ${est!=='ejecutada'?`<button class="btn-jornada" onclick="abrirJornada('${o.id}')">+ Jornada</button>`:''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('lista-ordenes').innerHTML = html;
+}
+
+function fmtFecha(f) {
+  if (!f) return '—';
+  const [y,m,d] = f.split('-');
+  const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  return `${d} ${meses[+m-1]}`;
+}
+
+// ── Modal jornada ─────────────────────────────────────────────
+async function abrirJornada(ordenId) {
+  _ordenActual = _ordenes.find(o=>o.id===ordenId);
+  if (!_ordenActual) return;
+
+  // Reset form
+  document.getElementById('jor-fecha').value   = new Date().toISOString().slice(0,10);
+  document.getElementById('jor-inicio').value  = '';
+  document.getElementById('jor-termino').value = '';
+  document.getElementById('jor-temp').value    = '';
+  document.getElementById('jor-viento').value  = '';
+  document.getElementById('jor-obs').value     = '';
+  document.querySelectorAll('.cq-btn').forEach(b=>b.classList.remove('sel'));
+  document.querySelectorAll('.pct-btn').forEach(b=>b.classList.remove('sel'));
+  document.getElementById('pct-manual').value = '';
+  _pctSelec = null;
+
+  // Pre-seleccionar cuarteles de la orden
+  const cqs = ((_ordenActual.cuarteles)||'').split(',').map(s=>s.trim());
+  document.querySelectorAll('.cq-btn[data-cq]').forEach(b => {
+    if (cqs.includes(b.dataset.cq) || cqs.includes('TODOS')) b.classList.add('sel');
+  });
+
+  document.getElementById('modal-titulo').textContent =
+    `Jornada — Orden #${String(_ordenActual.numero_orden).padStart(4,'0')}`;
+  document.getElementById('modal-subtitulo').textContent =
+    `${_ordenActual.tipo} · ${_ordenActual.cuarteles}`;
+
+  irPaso1();
+  document.getElementById('overlay-jornada').classList.add('open');
+
+  // Cargar trabajadores si no están cargados
+  if (!_trabajadores.length) await cargarTrabajadores();
+}
+
+function cerrarModal() {
+  document.getElementById('overlay-jornada').classList.remove('open');
+  _workSelec.clear();
+}
+
+function irPaso1() {
+  document.getElementById('paso1').style.display = 'flex';
+  document.getElementById('paso1').style.flexDirection = 'column';
+  document.getElementById('paso2').style.display = 'none';
+  document.getElementById('dot1').classList.add('active');
+  document.getElementById('dot2').classList.remove('active');
+}
+
+function irPaso2() {
+  // Validar cuarteles seleccionados
+  const cqSel = [...document.querySelectorAll('.cq-btn.sel')].map(b=>b.dataset.cq);
+  if (!cqSel.length) { toast('Selecciona al menos un cuartel', 'err'); return; }
+
+  document.getElementById('paso1').style.display = 'none';
+  document.getElementById('paso2').style.display = 'flex';
+  document.getElementById('paso2').style.flexDirection = 'column';
+  document.getElementById('dot1').classList.add('active');
+  document.getElementById('dot2').classList.add('active');
+  renderWorkers();
+}
+
+// ── Cuartel toggle ────────────────────────────────────────────
+function toggleCQ(btn) {
+  // Deseleccionar TODOS si se elige cuartel individual
+  document.querySelector('.cq-btn[data-cq="TODOS"]').classList.remove('sel');
+  btn.classList.toggle('sel');
+}
+function toggleCQTodos(btn) {
+  const esSel = !btn.classList.contains('sel');
+  document.querySelectorAll('.cq-btn[data-cq]').forEach(b=>b.classList.remove('sel'));
+  if (esSel) btn.classList.add('sel');
+}
+
+// ── Porcentaje ────────────────────────────────────────────────
+function setPct(btn) {
+  document.querySelectorAll('.pct-btn').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+  document.getElementById('pct-manual').value = '';
+  _pctSelec = parseFloat(btn.dataset.pct);
+}
+function onPctManual(inp) {
+  document.querySelectorAll('.pct-btn').forEach(b=>b.classList.remove('sel'));
+  _pctSelec = parseFloat(inp.value)||null;
+}
+
+// ── Trabajadores ──────────────────────────────────────────────
+async function cargarTrabajadores() {
+  try {
+    _trabajadores = await _get(
+      `trabajadores?empresa_id=eq.${EMPRESA_ID}&campo_id=eq.${CAMPO_ID}&activo=eq.true&order=nombre.asc&select=*`
+    );
+  } catch(e) {
+    _trabajadores = [];
+  }
+}
+
+function renderWorkers() {
+  if (!_trabajadores.length) {
+    document.getElementById('lista-workers').innerHTML =
+      '<div style="color:var(--text3);font-size:13px">No hay trabajadores activos</div>';
+    return;
+  }
+  // Pre-seleccionar aplicadores de la orden
+  const aplicTxt = (_ordenActual.aplicadores_texto||'').toLowerCase();
+  _workSelec.clear();
+  _trabajadores.forEach(w => {
+    if (aplicTxt && aplicTxt.includes(w.nombre.toLowerCase().slice(0,5))) _workSelec.add(w.id);
+  });
+
+  document.getElementById('lista-workers').innerHTML = _trabajadores.map(w => {
+    const sel = _workSelec.has(w.id);
+    const val = w.valor_unitario ? `$${Number(w.valor_unitario).toLocaleString('es-CL')}` : '—';
+    const meta = [w.tipo_contrato, w.formato_labor].filter(Boolean).join(' · ');
+    return `
+    <div class="worker-item${sel?' sel':''}" id="wi-${w.id}" onclick="toggleWorker(${w.id})">
+      <div class="worker-check">${sel?'✓':''}</div>
+      <div style="flex:1">
+        <div class="worker-name">${_toTitleCase(w.nombre)}</div>
+        <div class="worker-meta">${meta}</div>
+      </div>
+      <div class="worker-valor">${val}/día</div>
+    </div>`;
+  }).join('');
+}
+
+function toggleWorker(id) {
+  if (_workSelec.has(id)) _workSelec.delete(id);
+  else _workSelec.add(id);
+  const el = document.getElementById(`wi-${id}`);
+  el.classList.toggle('sel', _workSelec.has(id));
+  el.querySelector('.worker-check').textContent = _workSelec.has(id) ? '✓' : '';
+}
+
+function _toTitleCase(s) {
+  return (s||'').toLowerCase().replace(/\b\w/g, c=>c.toUpperCase());
+}
+
+// ── Confirmar jornada ─────────────────────────────────────────
+async function confirmarJornada() {
+  const btn = document.getElementById('btn-confirmar');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+
+  try {
+    const fecha    = document.getElementById('jor-fecha').value;
+    const cqSel   = [...document.querySelectorAll('.cq-btn.sel')].map(b=>b.dataset.cq);
+    const cuarteles = cqSel.includes('TODOS') ? 'TODOS' : cqSel.join(',');
+    const pct      = _pctSelec || parseFloat(document.getElementById('pct-manual').value)||null;
+    const inicio   = document.getElementById('jor-inicio').value  || null;
+    const termino  = document.getElementById('jor-termino').value || null;
+    const temp     = parseFloat(document.getElementById('jor-temp').value)  || null;
+    const viento   = parseFloat(document.getElementById('jor-viento').value)|| null;
+    const obs      = document.getElementById('jor-obs').value.trim() || null;
+
+    if (!fecha)   throw new Error('La fecha es obligatoria');
+    if (!cuarteles) throw new Error('Selecciona al menos un cuartel');
+
+    // 1. Insertar jornada
+    const [jornada] = await _post('ordenes_aplicacion_jornadas', {
+      orden_id: _ordenActual.id,
+      fecha, cuarteles, porcentaje: pct,
+      hora_inicio: inicio, hora_termino: termino,
+      condiciones_temp: temp, condiciones_viento: viento,
+      observaciones: obs,
+      registrado_por: window.LQ_CURRENT_USER || 'Administrador'
+    });
+
+    // 2. Insertar trabajadores seleccionados + generar labores_agricolas
+    const worksSel = _trabajadores.filter(w => _workSelec.has(w.id));
+    if (worksSel.length) {
+      const [y,m,d]  = fecha.split('-').map(Number);
+      const semana   = getSemana(new Date(y,m-1,d));
+      const ordenRef = `Aplic. ${_ordenActual.tipo} #${String(_ordenActual.numero_orden).padStart(4,'0')}`;
+
+      for (const w of worksSel) {
+        const total = (w.valor_unitario||0) * 1;
+        // 2a. Junction jornada → trabajador
+        await _post('ordenes_jornadas_trabajadores', {
+          jornada_id:    jornada.id,
+          trabajador_id: w.id,
+          nombre:        w.nombre,
+          tipo_contrato: w.tipo_contrato,
+          formato_labor: w.formato_labor,
+          valor_unitario:w.valor_unitario,
+          total_dia:     total
+        });
+        // 2b. Labor agrícola automática
+        await _post('labores_agricolas', {
+          empresa_id:        EMPRESA_ID,
+          campo_id:          CAMPO_ID,
+          anio:              y,
+          mes:               m,
+          semana:            semana,
+          fecha:             fecha,
+          nombre:            w.nombre,
+          categoria:         'Aplicación',
+          subcategoria_labor:'Fitosanitario',
+          labor:             ordenRef,
+          tipo_contrato:     w.tipo_contrato,
+          proveedor:         w.proveedor  || null,
+          formato_labor:     w.formato_labor,
+          unidad_control:    w.unidad_control || 'Día',
+          valor_unitario:    w.valor_unitario,
+          produccion:        1,
+          total_dia:         total,
+          tabla:             'Jornada',
+          observaciones:     `${cuarteles} · ${pct?pct+'%':''}`,
+          usuario:           window.LQ_CURRENT_USER || 'app',
+          jornada_id:        jornada.id
+        });
+      }
+    }
+
+    // 3. Actualizar la orden a "pendiente" si estaba en borrador
+    if (_ordenActual.estado === 'borrador') {
+      await _patch('ordenes_aplicacion', `id=eq.${_ordenActual.id}`, { estado: 'pendiente' });
+    }
+
+    toast(`Jornada registrada · ${worksSel.length} labor${worksSel.length!==1?'es':''} creada${worksSel.length!==1?'s':''}`, 'ok');
+    cerrarModal();
+    await cargar(); // Recargar
+
+  } catch(e) {
+    toast(`Error: ${e.message}`, 'err');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Registrar jornada';
+  }
+}
+
+// ── Ejecutar orden ────────────────────────────────────────────
+function abrirEjecutar(ordenId) {
+  _ordenActual = _ordenes.find(o=>o.id===ordenId);
+  if (!_ordenActual) return;
+  const n = _ordenActual._jornadas.length;
+  document.getElementById('ejecutar-sub').textContent =
+    `Orden #${String(_ordenActual.numero_orden).padStart(4,'0')} · ${n} jornada${n!==1?'s':''} registrada${n!==1?'s':''}`;
+  document.getElementById('overlay-ejecutar').classList.add('open');
+}
+function cerrarEjecutar() {
+  document.getElementById('overlay-ejecutar').classList.remove('open');
+}
+async function ejecutarOrden() {
+  if (!_ordenActual) return;
+  try {
+    await _patch('ordenes_aplicacion', `id=eq.${_ordenActual.id}`, {
+      estado: 'ejecutada',
+      updated_at: new Date().toISOString()
+    });
+    toast('Orden ejecutada · Historial fitosanitario actualizado', 'ok');
+    cerrarEjecutar();
+    await cargar();
+  } catch(e) {
+    toast(`Error: ${e.message}`, 'err');
+  }
+}
+
+// ── Semana ISO ────────────────────────────────────────────────
+function getSemana(d) {
+  const tmp = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  tmp.setUTCDate(tmp.getUTCDate() + 4 - (tmp.getUTCDay()||7));
+  const yearStart = new Date(Date.UTC(tmp.getUTCFullYear(),0,1));
+  return Math.ceil((((tmp-yearStart)/86400000)+1)/7);
+}
+
+// ── Init ──────────────────────────────────────────────────────
+cargar();
+</script>
+</body>
+</html>
