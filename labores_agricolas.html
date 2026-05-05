@@ -387,7 +387,7 @@
 
 <script>
 const GAS_URL   = 'https://script.google.com/macros/s/AKfycbydi5imjeA5bXY5TlA7MBVGkG6-Aq4XhYC0soXGPUMl41lEvdL8rc-xhjeRv9m0_aJg/exec';
-const GAS_TOKEN = 'LQ2026-Santina';
+// GAS_TOKEN deprecated — auth via Supabase JWT (window.lqGetIdToken())
 
 // ── Pre-carga desde QR (?t=TRABAJADOR_ID) ────────────────────────
 const SUPA_URL = 'https://eunuqwzrbqqpykyywjbu.supabase.co';
@@ -590,7 +590,7 @@ async function guardarRegistro() {
       mode: 'no-cors',
       headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify({
-        token: GAS_TOKEN,
+        idToken: window.lqGetIdToken(),
         action: 'add_labores_agricolas',
         fecha, cuartel, labor_principal, sublabor, observaciones,
         workers: state.workers,

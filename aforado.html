@@ -711,7 +711,6 @@
 // ══════════════════════════════════════════════════════
 const CONFIG = {
   GAS_URL:      'https://script.google.com/macros/s/AKfycbydi5imjeA5bXY5TlA7MBVGkG6-Aq4XhYC0soXGPUMl41lEvdL8rc-xhjeRv9m0_aJg/exec',
-  ACCESS_TOKEN: 'LQ2026-Santina',
   CUARTELES:    ['C2', 'C3', 'C4'],
   MAX_FOTOS:    3,
 };
@@ -1491,7 +1490,7 @@ async function handleSubmit() {
   }
 
   const payload = {
-    token:     CONFIG.ACCESS_TOKEN,
+    idToken: window.lqGetIdToken(),
     action:    'aforado',
     fecha:     now.toISOString().slice(0,10),
     hora:      now.toTimeString().slice(0,5),

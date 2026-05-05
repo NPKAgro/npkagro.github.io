@@ -562,7 +562,7 @@
 
 <script>
 const GAS_URL   = 'https://script.google.com/macros/s/AKfycbydi5imjeA5bXY5TlA7MBVGkG6-Aq4XhYC0soXGPUMl41lEvdL8rc-xhjeRv9m0_aJg/exec';
-const GAS_TOKEN = 'LQ2026-Santina';
+// GAS_TOKEN deprecated — auth via Supabase JWT (window.lqGetIdToken())
 
 const state = {
   productos: [],
@@ -749,7 +749,7 @@ async function agregarItem(){
         mode: 'no-cors',
         headers: { 'Content-Type': 'text/plain' },
         body: JSON.stringify({
-          token: GAS_TOKEN,
+          idToken: window.lqGetIdToken(),
           action: 'upsert_producto',
           codigo, nombre_comercial: nombre, ingrediente_activo: ia,
           categoria, unidad, proveedor: proveedorSel,
@@ -889,7 +889,7 @@ async function detectarConIA(){
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({
-        token: GAS_TOKEN,
+        idToken: window.lqGetIdToken(),
         action: 'parse_factura',
         imagen_base64: state.iaBase64,
         mime_type: state.iaMimeType || 'image/jpeg'
@@ -1065,5 +1065,5 @@ async function enviarCompra(){
   btn.disabled = true; btn.textContent = 'Guardando...';
 
   const payload = {
-    token: GAS_TOKEN, action: 'add_compra',
+    idToken: window.lqGetIdToken(), action: 'add_compra',
     proveedor, factura

@@ -1,8 +1,8 @@
-// ── Service Worker · La Quinta · Opus v3 ────────────────────────────
+// ── Service Worker · NPK Agro ────────────────────────────────────────
 // Estrategia: Network-first para GAS, Cache-first con revalidación para assets.
 // Versión: bump cuando cambies archivos estáticos para forzar actualización.
 
-const CACHE_NAME = 'laquinta-opus-v32';
+const CACHE_NAME = 'npkagro-v1';
 
 // Permitir al cliente pedir skipWaiting si detecta SW nuevo waiting
 self.addEventListener('message', function(e) {

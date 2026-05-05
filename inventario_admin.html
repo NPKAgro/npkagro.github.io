@@ -345,7 +345,7 @@
 
 <script>
 const GAS_URL   = 'https://script.google.com/macros/s/AKfycbydi5imjeA5bXY5TlA7MBVGkG6-Aq4XhYC0soXGPUMl41lEvdL8rc-xhjeRv9m0_aJg/exec';
-const GAS_TOKEN = 'LQ2026-Santina';
+// GAS_TOKEN deprecated — auth via Supabase JWT (window.lqGetIdToken())
 
 const state = { inventario: [], productos: [], movimientos: [] };
 
@@ -547,7 +547,7 @@ function toxBadge(tox){
 
 async function actualizarMin(codigo, valor){
   try {
-    await fetch(`${GAS_URL}?action=update_stock_minimo&codigo=${encodeURIComponent(codigo)}&stock_minimo=${encodeURIComponent(valor)}&token=${GAS_TOKEN}&_=${Date.now()}`);
+    await fetch(`${GAS_URL}?action=update_stock_minimo&codigo=${encodeURIComponent(codigo)}&stock_minimo=${encodeURIComponent(valor)}&idToken=${window.lqGetIdToken()}&_=${Date.now()}`);
     const item = state.inventario.find(i => i.codigo === codigo);
     if (item) { item.stock_minimo = parseFloat(valor)||0; }
     toast('✅ Mínimo actualizado', 'ok');
@@ -558,7 +558,7 @@ async function actualizarMin(codigo, valor){
 async function anular(fila){
   if (!confirm('¿Anular este movimiento? Se revierte el stock.')) return;
   try {
-    await fetch(`${GAS_URL}?action=anular_movimiento&fila=${fila}&token=${GAS_TOKEN}&_=${Date.now()}`);
+    await fetch(`${GAS_URL}?action=anular_movimiento&fila=${fila}&idToken=${window.lqGetIdToken()}&_=${Date.now()}`);
     toast('✅ Movimiento anulado', 'ok');
     setTimeout(cargarTodo, 600);
   } catch(err) { toast('Error: '+err.message, 'error'); }
