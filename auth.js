@@ -19,6 +19,11 @@
   var currentSession = null;
   var currentProfile = null;
 
+  // Promise que se resuelve cuando termina el init (haya o no sesión).
+  // Páginas que llamen lqGasCall apenas cargar deben esperar este promise.
+  var _authReadyResolve;
+  window.lqAuthReady = new Promise(function (r) { _authReadyResolve = r; });
+
   // ── CSS ────────────────────────────────────────────────────────────
   var CSS = [
     '#lq-auth-screen{position:fixed;inset:0;z-index:9999;background:#0f1117;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:32px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;}',
@@ -238,6 +243,8 @@
     } else {
       showLoginScreen();
     }
+    // Marcar auth como listo (con o sin sesión)
+    if (_authReadyResolve) { _authReadyResolve(); _authReadyResolve = null; }
   }
 
   async function validateAndShow(email) {
@@ -305,6 +312,10 @@
   var DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbw1aPxY7QV-nAUYicKW9qLA_vVudNMcoAzWWG_XAbtCNzuSf_divWhPzNMlfW_623uz/exec';
 
   window.lqGasCall = async function (params) {
+    // Esperar a que auth termine de inicializarse (evita race con cargas tempranas)
+    if (window.lqAuthReady) {
+      try { await window.lqAuthReady; } catch (_) {}
+    }
     var token = window.lqGetIdToken();
     if (!token) throw new Error('No autenticado');
     var url = window.GAS_URL || DEFAULT_GAS_URL;
