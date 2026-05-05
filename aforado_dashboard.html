@@ -374,11 +374,7 @@ function cargarDatos() {
   document.getElementById('stateBox').innerHTML = '<div class="icon">⏳</div><p>Cargando datos...</p>';
   document.getElementById('tableWrap').style.display = 'none';
 
-  const ctrl = new AbortController();
-  setTimeout(() => ctrl.abort(), 15000);
-
-  fetch(`${GAS_URL}?action=list_aforado&_=${Date.now()}`, { signal: ctrl.signal })
-    .then(r => r.json())
+  lqGasCall({ action: 'list_aforado' })
     .then(data => {
       if (data.error) throw new Error(data.error);
       todosAforos = data.aforos || [];
@@ -590,7 +586,7 @@ function renderTabla(lista) {
 // ── Eliminar ─────────────────────────────────────────────────────
 function confirmarEliminar(fila) {
   if (!confirm('¿Eliminar este registro de aforado?')) return;
-  fetch(`${GAS_URL}?action=deleterow_aforado&fila=${fila}&idToken=${window.lqGetIdToken()}`)
+  lqGasCall({ action: 'deleterow_aforado', fila })
     .then(() => { mostrarToast('Registro eliminado'); cargarDatos(); })
     .catch(() => mostrarToast('Error al eliminar'));
 }

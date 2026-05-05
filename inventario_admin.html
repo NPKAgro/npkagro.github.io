@@ -364,9 +364,9 @@ function toast(msg, tipo){
 async function cargarTodo(){
   try {
     const [inv, prod, movs] = await Promise.all([
-      fetch(`${GAS_URL}?action=list_inventario&_=${Date.now()}`).then(r=>r.json()),
-      fetch(`${GAS_URL}?action=list_productos&_=${Date.now()}`).then(r=>r.json()),
-      fetch(`${GAS_URL}?action=list_movimientos&limit=500&_=${Date.now()}`).then(r=>r.json())
+      lqGasCall({ action: 'list_inventario' }),
+      lqGasCall({ action: 'list_productos' }),
+      lqGasCall({ action: 'list_movimientos', limit: 500 })
     ]);
     state.inventario  = inv.inventario   || [];
     state.productos   = prod.productos   || [];
@@ -547,7 +547,7 @@ function toxBadge(tox){
 
 async function actualizarMin(codigo, valor){
   try {
-    await fetch(`${GAS_URL}?action=update_stock_minimo&codigo=${encodeURIComponent(codigo)}&stock_minimo=${encodeURIComponent(valor)}&idToken=${window.lqGetIdToken()}&_=${Date.now()}`);
+    await lqGasCall({ action: 'update_stock_minimo', codigo, stock_minimo: valor });
     const item = state.inventario.find(i => i.codigo === codigo);
     if (item) { item.stock_minimo = parseFloat(valor)||0; }
     toast('✅ Mínimo actualizado', 'ok');
@@ -558,7 +558,7 @@ async function actualizarMin(codigo, valor){
 async function anular(fila){
   if (!confirm('¿Anular este movimiento? Se revierte el stock.')) return;
   try {
-    await fetch(`${GAS_URL}?action=anular_movimiento&fila=${fila}&idToken=${window.lqGetIdToken()}&_=${Date.now()}`);
+    await lqGasCall({ action: 'anular_movimiento', fila });
     toast('✅ Movimiento anulado', 'ok');
     setTimeout(cargarTodo, 600);
   } catch(err) { toast('Error: '+err.message, 'error'); }

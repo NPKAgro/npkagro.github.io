@@ -70,8 +70,8 @@ function fmtCLP(n){ return '$'+(Math.round(Number(n)||0)).toLocaleString('es-CL'
 
 async function cargar(){
   try {
-    const res = await fetch(`${GAS_URL}?action=list_movimientos&limit=200&_=${Date.now()}`);
-    state.mov = (await res.json()).movimientos || [];
+    const data = await lqGasCall({ action: 'list_movimientos', limit: 200 });
+    state.mov = data.movimientos || [];
     render();
   } catch(err) {
     document.getElementById('list').innerHTML = '<div class="empty">Error: '+esc(err.message)+'</div>';

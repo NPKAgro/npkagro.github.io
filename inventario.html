@@ -454,12 +454,10 @@ function toast(msg, tipo){
 
 async function cargarDatos(){
   try {
-    const [invRes, prodRes] = await Promise.all([
-      fetch(`${GAS_URL}?action=list_inventario&_=${Date.now()}`),
-      fetch(`${GAS_URL}?action=list_productos&_=${Date.now()}`)
+    const [inv, prod] = await Promise.all([
+      lqGasCall({ action: 'list_inventario' }),
+      lqGasCall({ action: 'list_productos' })
     ]);
-    const inv  = await invRes.json();
-    const prod = await prodRes.json();
     state.inventario = inv.inventario || [];
     state.productos  = prod.productos  || [];
     // Solo adjuntar categoría a items que ya tienen stock

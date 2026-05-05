@@ -661,45 +661,17 @@ function cargarObservaciones() {
   if (typeof google !== 'undefined' && google.script) {
     _llamarGAS();
   } else {
-    // Timeout de 15s para evitar spinner infinito
-    const controller = new AbortController();
-    const timeoutId  = setTimeout(() => controller.abort(), 15000);
-
-    fetch(`${GAS_URL}?action=list&filtro=todos&_=${Date.now()}`, { signal: controller.signal })
-      .then(r => {
-        clearTimeout(timeoutId);
-        // Verificar content-type — GAS sin doGet devuelve HTML, no JSON
-        const ct = r.headers.get('content-type') || '';
-        if (!ct.includes('json') && !ct.includes('text/plain')) {
-          throw new Error('GAS_NO_DOGET');
-        }
-        return r.text();
-      })
-      .then(txt => {
-        try {
-          const data = JSON.parse(txt);
-          observaciones = data.observaciones || [];
-          actualizarContadores();
-          aplicarFiltros();
-        } catch(_) {
-          throw new Error('GAS_NO_DOGET');
-        }
+    lqGasCall({ action: 'list', filtro: 'todos' })
+      .then(data => {
+        observaciones = data.observaciones || [];
+        actualizarContadores();
+        aplicarFiltros();
       })
       .catch(err => {
-        clearTimeout(timeoutId);
-        if (err.name === 'AbortError' || (err.message && err.message.includes('GAS_NO_DOGET'))) {
-          mostrarError(
-            '<b>El backend GAS necesita una actualización.</b><br><br>'
-            + 'Agrega la función <code>doGet()</code> al script de Apps Script y '
-            + 'vuelve a publicarlo (Deploy → Manage deployments → New version).<br><br>'
-            + '<span style="color:var(--text3);font-size:11px">Ver instrucciones en backend_gas_doget.gs</span>'
-          );
-        } else {
-          mostrarError(
-            'Error de conexión. Verifica tu red e intenta con ↻ Actualizar.<br>'
-            + `<code style="font-size:11px;word-break:break-all">${err.message || 'Network error'}</code>`
-          );
-        }
+        mostrarError(
+          'Error de conexión. Verifica tu red e intenta con ↻ Actualizar.<br>'
+          + `<code style="font-size:11px;word-break:break-all">${err.message || 'Network error'}</code>`
+        );
       });
   }
 }
@@ -972,7 +944,7 @@ function aprobar(fila) {
       .withFailureHandler(onError)
       .aprobarObservacion(fila, estadoJP);
   } else {
-    fetch(`${GAS_URL}?action=update&fila=${fila}&estado_aprobado=${encodeURIComponent(estadoJP)}&estado_revision=Revisado&idToken=${window.lqGetIdToken()}`)
+    lqGasCall({ action: 'update', fila, estado_aprobado: estadoJP, estado_revision: 'Revisado' })
       .then(() => onExito())
       .catch(onError);
   }
@@ -1067,7 +1039,7 @@ function ejecutarEliminarFoto(fila) {
       .withFailureHandler(onError)
       .eliminarFoto(fila);
   } else {
-    fetch(`${GAS_URL}?action=deletefoto&fila=${fila}&idToken=${window.lqGetIdToken()}`)
+    lqGasCall({ action: 'deletefoto', fila })
       .then(() => onExito()).catch(onError);
   }
 }
@@ -1118,7 +1090,7 @@ function guardarEdicion(fila) {
       .withFailureHandler(onError)
       .aprobarObservacion(fila, nuevoEstado);
   } else {
-    fetch(`${GAS_URL}?action=update&fila=${fila}&estado_aprobado=${encodeURIComponent(nuevoEstado)}&estado_revision=Revisado&idToken=${window.lqGetIdToken()}`)
+    lqGasCall({ action: 'update', fila, estado_aprobado: nuevoEstado, estado_revision: 'Revisado' })
       .then(() => onExito()).catch(onError);
   }
 }
@@ -1154,7 +1126,7 @@ function ejecutarEliminarRegistro(fila) {
       .withFailureHandler(onError)
       .eliminarRegistro(fila);
   } else {
-    fetch(`${GAS_URL}?action=deleterow&fila=${fila}&idToken=${window.lqGetIdToken()}`)
+    lqGasCall({ action: 'deleterow', fila })
       .then(() => onExito()).catch(onError);
   }
 }

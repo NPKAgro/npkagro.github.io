@@ -382,11 +382,7 @@ function cargarDatos() {
   document.getElementById('stateBox').innerHTML = '<div class="icon">⏳</div><p>Cargando registros...</p>';
   document.getElementById('grid').style.display = 'none';
 
-  const ctrl = new AbortController();
-  setTimeout(() => ctrl.abort(), 15000);
-
-  fetch(`${GAS_URL}?action=list_cuaderno&_=${Date.now()}`, { signal: ctrl.signal })
-    .then(r => r.json())
+  lqGasCall({ action: 'list_cuaderno' })
     .then(data => {
       if (data.error) throw new Error(data.error);
       todasEntradas = data.entradas || [];
@@ -511,7 +507,7 @@ function renderEntradas(lista) {
 // ── Eliminar ─────────────────────────────────────────────────────
 function confirmarEliminar(fila) {
   if (!confirm('¿Eliminar este registro del cuaderno?')) return;
-  fetch(`${GAS_URL}?action=deleterow_cuaderno&fila=${fila}&idToken=${window.lqGetIdToken()}`)
+  lqGasCall({ action: 'deleterow_cuaderno', fila })
     .then(() => { mostrarToast('Registro eliminado'); cargarDatos(); })
     .catch(() => mostrarToast('Error al eliminar'));
 }

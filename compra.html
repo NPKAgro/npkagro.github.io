@@ -599,8 +599,7 @@ function fmtCLP(n){
 
 async function cargarProductos(){
   try {
-    const res = await fetch(`${GAS_URL}?action=list_productos&_=${Date.now()}`);
-    const data = await res.json();
+    const data = await lqGasCall({ action: 'list_productos' });
     state.productos = data.productos || [];
   } catch(err) {
     toast('⚠️ No se pudo cargar catálogo: '+err.message, 'error');

@@ -552,14 +552,14 @@ async function cargarDatos(){
   try {
     const tipoAlCargar = state.tipo;
     const c = cfg();
-    const [stRes, mvRes] = await Promise.all([
-      fetch(`${GAS_URL}?action=${c.getAction}&_=${Date.now()}`),
-      fetch(`${GAS_URL}?action=${c.listAction}&limit=30&_=${Date.now()}`)
+    const [stock, movs] = await Promise.all([
+      lqGasCall({ action: c.getAction }),
+      lqGasCall({ action: c.listAction, limit: 30 })
     ]);
     // Si el usuario cambió de tab mientras cargaba, descartamos la respuesta
     if (state.tipo !== tipoAlCargar) return;
-    state.stock = await stRes.json();
-    state.mov   = (await mvRes.json()).movimientos || [];
+    state.stock = stock;
+    state.mov   = movs.movimientos || [];
     render();
   } catch(err) {
     toast('Error: '+err.message, 'error');
