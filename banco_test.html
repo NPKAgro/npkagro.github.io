@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>NPK Agro — Conciliación Bancaria (test)</title>
+
+  <!-- Supabase JS -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.js"></script>
+  <!-- SheetJS para Excel (lazy load) -->
+
+  <style>
+    :root{
+      --cherry: #9f1717;
+      --cherry-dark: #7a1515;
+      --cherry-deep: #4a0808;
+      --cherry-accent: #c41a1a;
+      --amber: #d97706;
+      --green: #059669;
+      --slate: #475569;
+      --bg: #fafafa;
+      --card: #ffffff;
+      --border: #e5e7eb;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:#1f2937}
+    header{background:var(--cherry);color:#fff;padding:12px 24px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+    header h1{margin:0;font-size:18px;font-weight:600}
+    header .badge{background:rgba(255,255,255,.2);padding:4px 10px;border-radius:12px;font-size:12px}
+    main{max-width:1280px;margin:0 auto;padding:24px}
+
+    /* Tabs */
+    .tabs{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:24px;overflow-x:auto}
+    .tab{padding:10px 18px;cursor:pointer;border:none;background:none;font-size:14px;font-weight:500;color:var(--slate);border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap}
+    .tab:hover{color:var(--cherry)}
+    .tab.active{color:var(--cherry);border-bottom-color:var(--cherry)}
+    .tab .count{background:var(--cherry);color:#fff;border-radius:10px;padding:1px 8px;font-size:11px;margin-left:6px}
+
+    .panel{display:none}
+    .panel.active{display:block}
+
+    /* Cards */
+    .card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:20px;margin-bottom:16px}
+    .card h2{margin:0 0 12px 0;font-size:16px;color:var(--cherry-dark)}
+    .card h3{margin:16px 0 8px 0;font-size:14px;color:var(--slate)}
+
+    /* KPI grid */
+    .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:20px}
+    .kpi{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px}
+    .kpi .label{font-size:12px;color:var(--slate);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
+    .kpi .value{font-size:22px;font-weight:600;color:var(--cherry-deep)}
+    .kpi .sub{font-size:11px;color:var(--slate);margin-top:2px}
+    .kpi.green .value{color:var(--green)}
+    .kpi.amber .value{color:var(--amber)}
+
+    /* Tables */
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    thead{background:#f8f9fa;position:sticky;top:0;z-index:1}
+    th{text-align:left;padding:8px 10px;font-weight:600;border-bottom:2px solid var(--border);color:var(--slate);text-transform:uppercase;font-size:11px;letter-spacing:.3px}
+    td{padding:8px 10px;border-bottom:1px solid var(--border)}
+    tr:hover{background:#fafafa}
+    .num{text-align:right;font-variant-numeric:tabular-nums}
+    .num.pos{color:var(--green)}
+    .num.neg{color:var(--cherry-accent)}
+
+    /* Badges */
+    .badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:500}
+    .badge-green{background:#d1fae5;color:var(--green)}
+    .badge-amber{background:#fef3c7;color:var(--amber)}
+    .badge-red{background:#fee2e2;color:var(--cherry-accent)}
+    .badge-purple{background:#ede9fe;color:#7c3aed}
+    .badge-blue{background:#dbeafe;color:#2563eb}
+    .badge-slate{background:#e5e7eb;color:var(--slate)}
+
+    /* Buttons */
+    .btn{padding:8px 14px;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500}
+    .btn-primary{background:var(--cherry);color:#fff}
+    .btn-primary:hover{background:var(--cherry-dark)}
+    .btn-secondary{background:#fff;border:1px solid var(--border);color:var(--slate)}
+    .btn-secondary:hover{background:#f8f9fa}
+    .btn-success{background:var(--green);color:#fff}
+    .btn-danger{background:var(--cherry-accent);color:#fff}
+    .btn:disabled{opacity:.5;cursor:not-allowed}
+
+    /* Drop zone */
+    .dropzone{border:2px dashed var(--border);border-radius:8px;padding:40px;text-align:center;background:#fafafa;cursor:pointer;transition:all .15s}
+    .dropzone:hover, .dropzone.drag{border-color:var(--cherry);background:#fff7f7}
+    .dropzone .icon{font-size:32px;color:var(--cherry);margin-bottom:8px}
+    .dropzone .hint{font-size:12px;color:var(--slate);margin-top:6px}
+    input[type=file]{display:none}
+
+    /* Forms */
+    .form-row{display:grid;grid-template-columns:160px 1fr;gap:12px;align-items:center;margin-bottom:12px}
+    .form-row label{font-size:13px;color:var(--slate)}
+    select, input[type=text], input[type=number], input[type=date], input[type=password]{
+      width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit
+    }
+
+    /* Status bar */
+    .status{position:fixed;bottom:20px;right:20px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px 16px;box-shadow:0 4px 12px rgba(0,0,0,.1);font-size:13px;display:none}
+    .status.show{display:block}
+    .status.success{border-left:4px solid var(--green)}
+    .status.error{border-left:4px solid var(--cherry-accent)}
+
+    .toolbar{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+    .filter-group{display:flex;gap:6px;align-items:center}
+
+    /* Login overlay */
+    #login-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:100}
+    #login-overlay .login-box{background:#fff;padding:32px;border-radius:8px;width:380px;max-width:90vw}
+    #login-overlay h2{margin:0 0 16px 0;color:var(--cherry-dark)}
+
+    .empty-state{text-align:center;padding:60px 20px;color:var(--slate)}
+    .empty-state .icon{font-size:40px;margin-bottom:12px;opacity:.5}
+
+    .alert{padding:12px 16px;border-radius:6px;margin-bottom:16px;font-size:13px}
+    .alert-info{background:#dbeafe;color:#1e40af;border-left:4px solid #2563eb}
+    .alert-warn{background:#fef3c7;color:#92400e;border-left:4px solid var(--amber)}
+
+    code{background:#f3f4f6;padding:2px 6px;border-radius:4px;font-size:12px;font-family:Consolas,Monaco,monospace}
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>NPK Agro — Conciliación Bancaria <span class="badge">TEST</span></h1>
+  <div>
+    <span id="user-info" style="font-size:12px;margin-right:12px">no logged in</span>
+    <button class="btn btn-secondary" id="btn-logout" style="display:none">Salir</button>
+  </div>
+</header>
+
+<main>
+  <div class="tabs">
+    <button class="tab active" data-tab="cuentas">Cuentas</button>
+    <button class="tab" data-tab="cartola">Cartola</button>
+    <button class="tab" data-tab="importar">Importar</button>
+    <button class="tab" data-tab="sugerencias">Sugerencias <span class="count" id="cnt-sugerencias">0</span></button>
+    <button class="tab" data-tab="resumen">Resumen</button>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- TAB: CUENTAS                                  -->
+  <!-- ============================================ -->
+  <div class="panel active" id="panel-cuentas">
+    <div class="kpis" id="kpis-cuentas"></div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h2>Cuentas registradas</h2>
+        <button class="btn btn-primary" onclick="abrirNuevaCuenta()">+ Agregar cuenta</button>
+      </div>
+      <table id="tbl-cuentas">
+        <thead><tr>
+          <th>Banco</th><th>Tipo</th><th>Número</th><th>Alias</th>
+          <th class="num">Saldo</th><th class="num">Cupo TC</th>
+          <th>Última actualización</th><th></th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+      <div id="cuentas-empty" class="empty-state" style="display:none">
+        <div class="icon">🏦</div>
+        <p>Aún no hay cuentas registradas. Agrega la primera para empezar a importar cartolas.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- TAB: CARTOLA                                  -->
+  <!-- ============================================ -->
+  <div class="panel" id="panel-cartola">
+    <div class="toolbar">
+      <select id="cartola-cuenta" onchange="renderCartola()"></select>
+      <select id="cartola-mes" onchange="renderCartola()"></select>
+      <select id="cartola-anio" onchange="renderCartola()"></select>
+      <input type="text" id="cartola-buscar" placeholder="Buscar en glosa..." oninput="renderCartola()" style="width:240px">
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--slate)">
+        <input type="checkbox" id="cartola-solo-sin-conciliar" onchange="renderCartola()"> Solo sin conciliar
+      </label>
+    </div>
+    <div class="kpis" id="kpis-cartola"></div>
+    <div class="card">
+      <table id="tbl-cartola">
+        <thead><tr>
+          <th>Fecha</th><th>Glosa</th><th>RUT</th><th>Tipo</th>
+          <th class="num">Cargo</th><th class="num">Abono</th><th class="num">Saldo</th>
+          <th>Conciliación</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- TAB: IMPORTAR                                 -->
+  <!-- ============================================ -->
+  <div class="panel" id="panel-importar">
+    <div class="card">
+      <h2>1. Selecciona la cuenta</h2>
+      <div class="form-row">
+        <label>Cuenta destino:</label>
+        <select id="import-cuenta"></select>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2. Sube la cartola</h2>
+      <div class="alert alert-info">
+        <strong>Formatos soportados:</strong>
+        <ul style="margin:6px 0 0 16px">
+          <li><strong>TXT</strong> — Officebanking Santander (formato Defontana, separado por TAB)</li>
+          <li><strong>Excel (.xlsx)</strong> — Officebanking exportable directo</li>
+          <li><strong>PDF</strong> — Estado de cuenta de TC o cartola en PDF (procesado en backend)</li>
+        </ul>
+      </div>
+      <div class="dropzone" id="dropzone" onclick="document.getElementById('file-input').click()">
+        <div class="icon">📁</div>
+        <div><strong>Haz clic o arrastra el archivo</strong></div>
+        <div class="hint">TXT, XLSX o PDF — máx 10 MB</div>
+      </div>
+      <input type="file" id="file-input" accept=".txt,.xlsx,.xls,.pdf" onchange="onFileSelected(event)">
+    </div>
+
+    <div class="card" id="preview-card" style="display:none">
+      <h2>3. Revisa y confirma</h2>
+      <div id="preview-resumen"></div>
+      <div style="max-height:400px;overflow:auto;margin-top:12px">
+        <table id="tbl-preview">
+          <thead><tr>
+            <th>Fecha</th><th>Glosa</th><th>RUT</th>
+            <th class="num">Cargo</th><th class="num">Abono</th><th class="num">Saldo</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div style="margin-top:16px;display:flex;gap:8px">
+        <button class="btn btn-primary" id="btn-confirmar-import" onclick="confirmarImport()">Confirmar e importar</button>
+        <button class="btn btn-secondary" onclick="cancelarImport()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- TAB: SUGERENCIAS                              -->
+  <!-- ============================================ -->
+  <div class="panel" id="panel-sugerencias">
+    <div class="alert alert-warn">
+      Estas son coincidencias entre movimientos bancarios y documentos del SII (facturas, honorarios)
+      con confianza media (50-74%). Revisa cada una y confirma o rechaza.
+    </div>
+    <div class="card">
+      <h2>Sugerencias pendientes</h2>
+      <table id="tbl-sugerencias">
+        <thead><tr>
+          <th>Movimiento</th><th>Documento sugerido</th>
+          <th class="num">Confianza</th><th>Factores</th><th></th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+      <div id="sugerencias-empty" class="empty-state" style="display:none">
+        <div class="icon">✓</div>
+        <p>No hay sugerencias pendientes.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- TAB: RESUMEN                                  -->
+  <!-- ============================================ -->
+  <div class="panel" id="panel-resumen">
+    <div class="kpis" id="kpis-resumen"></div>
+    <div class="card">
+      <h2>Flujo mensual</h2>
+      <table id="tbl-resumen-mensual">
+        <thead><tr>
+          <th>Período</th>
+          <th class="num">Ingresos</th>
+          <th class="num">Egresos</th>
+          <th class="num">Flujo neto</th>
+          <th class="num">N° movs</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<div id="status" class="status"></div>
+
+<!-- Login overlay (simple email + magic link, alineado con auth.js de la PWA) -->
+<div id="login-overlay" style="display:none">
+  <div class="login-box">
+    <h2>Ingresar</h2>
+    <p style="font-size:13px;color:var(--slate);margin-top:0">Ingresa tu email para recibir un enlace mágico.</p>
+    <div class="form-row">
+      <label>Email:</label>
+      <input type="text" id="login-email" placeholder="tu@empresa.cl">
+    </div>
+    <button class="btn btn-primary" onclick="enviarMagicLink()" style="width:100%">Enviar enlace</button>
+    <div id="login-msg" style="font-size:12px;color:var(--slate);margin-top:12px"></div>
+  </div>
+</div>
+
+<script>
+// ============================================================================
+// CONFIG
+// ============================================================================
+const SUPABASE_URL = 'https://eunuqwzrbqqpykyywjbu.supabase.co';
+const SUPABASE_ANON_KEY = '__REEMPLAZAR_CON_ANON_KEY__';  // JP completar antes de probar
+
+let _supa = null;
+let _user = null;
+let _empresa_id = 1;
+let _cuentas = [];
+let _movimientos = [];
+let _sugerencias = [];
+let _previewMovs = null;
+let _previewArchivoNombre = null;
+
+// ============================================================================
+// INICIALIZACIÓN
+// ============================================================================
+async function init(){
+  if(SUPABASE_ANON_KEY === '__REEMPLAZAR_CON_ANON_KEY__'){
+    showStatus('error', 'Falta configurar SUPABASE_ANON_KEY en el HTML');
+    return;
+  }
+  _supa = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // Check sesión
+  const { data: { session } } = await _supa.auth.getSession();
+  if(!session){
+    document.getElementById('login-overlay').style.display = 'flex';
+    return;
+  }
+  _user = session.user;
+  _empresa_id = parseInt(_user.app_metadata?.empresa_id || _user.user_metadata?.empresa_id || 1);
+  document.getElementById('user-info').textContent = _user.email + ' (empresa ' + _empresa_id + ')';
+  document.getElementById('btn-logout').style.display = 'inline-block';
+
+  // Setup tabs
+  document.querySelectorAll('.tab').forEach(t => {
+    t.addEventListener('click', () => switchTab(t.dataset.tab));
+  });
+
+  // Setup drop zone
+  setupDropzone();
+
+  // Cargar datos iniciales
+  await loadCuentas();
+  await loadMovimientos();
+  await loadSugerencias();
+  renderCuentas();
+  renderResumen();
+  renderCartolaFiltros();
+}
+
+// ============================================================================
+// AUTH
+// ============================================================================
+async function enviarMagicLink(){
+  const email = document.getElementById('login-email').value.trim();
+  if(!email){ showLoginMsg('Ingresa tu email'); return; }
+  const { error } = await _supa.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.href } });
+  if(error){ showLoginMsg('Error: ' + error.message); return; }
+  showLoginMsg('Listo. Revisa tu correo y haz clic en el enlace.');
+}
+function showLoginMsg(msg){ document.getElementById('login-msg').textContent = msg; }
+document.getElementById('btn-logout').addEventListener('click', async () => {
+  await _supa.auth.signOut();
+  location.reload();
+});
+
+// ============================================================================
+// TABS
+// ============================================================================
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + name));
+  if(name === 'cartola') renderCartola();
+  if(name === 'sugerencias') renderSugerencias();
+  if(name === 'resumen') renderResumen();
+}
+
+// ============================================================================
+// DATA LOADERS
+// ============================================================================
+async function loadCuentas(){
+  const { data, error } = await _supa.from('cuentas_bancarias')
+    .select('*').eq('empresa_id', _empresa_id).order('banco').order('tipo_cuenta');
+  if(error){ showStatus('error', 'Error cargando cuentas: ' + error.message); return; }
+  _cuentas = data || [];
+}
+
+async function loadMovimientos(){
+  const { data, error } = await _supa.from('movimientos_bancarios')
+    .select('*').eq('empresa_id', _empresa_id).order('fecha', { ascending: false }).limit(2000);
+  if(error){ showStatus('error', 'Error cargando movimientos: ' + error.message); return; }
+  _movimientos = data || [];
+}
+
+async function loadSugerencias(){
+  const { data, error } = await _supa.from('sugerencias_match_bancario')
+    .select('*').eq('empresa_id', _empresa_id).eq('estado', 'pendiente').order('confidence', { ascending: false });
+  if(error){ console.warn(error); return; }
+  _sugerencias = data || [];
+  document.getElementById('cnt-sugerencias').textContent = _sugerencias.length;
+}
+
+// ============================================================================
+// RENDER: CUENTAS
+// ============================================================================
+function renderCuentas(){
+  const tbody = document.querySelector('#tbl-cuentas tbody');
+  tbody.innerHTML = '';
+
+  if(_cuentas.length === 0){
+    document.getElementById('cuentas-empty').style.display = 'block';
+    document.querySelector('#tbl-cuentas').style.display = 'none';
+  } else {
+    document.getElementById('cuentas-empty').style.display = 'none';
+    document.querySelector('#tbl-cuentas').style.display = '';
+    for(const c of _cuentas){
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><span class="badge ${bancoBadgeClass(c.banco)}">${c.banco.toUpperCase()}</span></td>
+        <td>${tipoLabel(c.tipo_cuenta)}</td>
+        <td><code>${c.numero_cuenta_masked || maskNum(c.numero_cuenta)}</code></td>
+        <td>${c.alias || '—'}</td>
+        <td class="num">${formatCLP(c.saldo_actual)}</td>
+        <td class="num">${c.cupo_disponible != null ? formatCLP(c.cupo_disponible) + ' / ' + formatCLP(c.cupo_total) : '—'}</td>
+        <td>${c.ultima_actualizacion ? formatFecha(c.ultima_actualizacion) : '—'}</td>
+        <td><button class="btn btn-secondary" onclick="verCartola(${c.id})">Ver cartola</button></td>
+      `;
+      tbody.appendChild(tr);
+    }
+  }
+
+  // KPIs
+  const totalSaldo = _cuentas.filter(c => !['tarjeta_credito','linea_credito'].includes(c.tipo_cuenta) && c.moneda === 'CLP').reduce((s,c) => s + (c.saldo_actual || 0), 0);
+  const totalCupoDisp = _cuentas.filter(c => c.tipo_cuenta === 'tarjeta_credito').reduce((s,c) => s + (c.cupo_disponible || 0), 0);
+  const totalDeudaTC = _cuentas.filter(c => c.tipo_cuenta === 'tarjeta_credito').reduce((s,c) => s + ((c.cupo_total || 0) - (c.cupo_disponible || 0)), 0);
+
+  document.getElementById('kpis-cuentas').innerHTML = `
+    <div class="kpi green"><div class="label">Saldo total CLP</div><div class="value">${formatCLP(totalSaldo)}</div><div class="sub">${_cuentas.filter(c => c.moneda === 'CLP').length} cuentas</div></div>
+    <div class="kpi"><div class="label">Cupo TC disponible</div><div class="value">${formatCLP(totalCupoDisp)}</div></div>
+    <div class="kpi amber"><div class="label">Deuda TC actual</div><div class="value">${formatCLP(totalDeudaTC)}</div></div>
+    <div class="kpi"><div class="label">Cuentas activas</div><div class="value">${_cuentas.filter(c => c.activa).length}</div></div>
+  `;
+
+  // Llenar selects de cuentas
+  for(const id of ['import-cuenta', 'cartola-cuenta']){
+    const sel = document.getElementById(id);
+    sel.innerHTML = '<option value="">— Selecciona cuenta —</option>';
+    for(const c of _cuentas){
+      const opt = document.createElement('option');
+      opt.value = c.id;
+      opt.textContent = `${c.banco.toUpperCase()} · ${tipoLabel(c.tipo_cuenta)} ${c.numero_cuenta_masked || maskNum(c.numero_cuenta)}${c.alias ? ' · '+c.alias : ''}`;
+      sel.appendChild(opt);
+    }
+  }
+}
+
+// ============================================================================
+// RENDER: CARTOLA (con filtros)
+// ============================================================================
+function renderCartolaFiltros(){
+  const meses = [['','Todos los meses'],['01','Ene'],['02','Feb'],['03','Mar'],['04','Abr'],['05','May'],['06','Jun'],['07','Jul'],['08','Ago'],['09','Sep'],['10','Oct'],['11','Nov'],['12','Dic']];
+  document.getElementById('cartola-mes').innerHTML = meses.map(([v,l]) => `<option value="${v}">${l}</option>`).join('');
+
+  const anios = new Set(['']);
+  _movimientos.forEach(m => anios.add(String(m.fecha).slice(0,4)));
+  const anioOpts = ['<option value="">Todos los años</option>'];
+  Array.from(anios).filter(a => a).sort().reverse().forEach(a => anioOpts.push(`<option value="${a}">${a}</option>`));
+  document.getElementById('cartola-anio').innerHTML = anioOpts.join('');
+}
+
+function renderCartola(){
+  const cuentaId = document.getElementById('cartola-cuenta').value;
+  const mes = document.getElementById('cartola-mes').value;
+  const anio = document.getElementById('cartola-anio').value;
+  const buscar = document.getElementById('cartola-buscar').value.toLowerCase();
+  const soloSinConciliar = document.getElementById('cartola-solo-sin-conciliar').checked;
+
+  let filtrados = _movimientos.slice();
+  if(cuentaId) filtrados = filtrados.filter(m => m.cuenta_id == cuentaId);
+  if(mes) filtrados = filtrados.filter(m => String(m.fecha).slice(5,7) === mes);
+  if(anio) filtrados = filtrados.filter(m => String(m.fecha).slice(0,4) === anio);
+  if(buscar) filtrados = filtrados.filter(m => (m.glosa || '').toLowerCase().includes(buscar));
+  if(soloSinConciliar) filtrados = filtrados.filter(m => !m.matched_doc_id);
+
+  const tbody = document.querySelector('#tbl-cartola tbody');
+  tbody.innerHTML = '';
+  for(const m of filtrados.slice(0, 500)){
+    const tr = document.createElement('tr');
+    const cuenta = _cuentas.find(c => c.id === m.cuenta_id);
+    tr.innerHTML = `
+      <td>${formatFecha(m.fecha)}</td>
+      <td>${escape(m.glosa_normalizada || m.glosa || '')}</td>
+      <td>${m.rut_contraparte ? '<code>'+m.rut_contraparte+'</code>' : '—'}</td>
+      <td>${tipoMovBadge(m.tipo_movimiento)}</td>
+      <td class="num neg">${m.debe > 0 ? '-'+formatCLP(m.debe) : '—'}</td>
+      <td class="num pos">${m.haber > 0 ? '+'+formatCLP(m.haber) : '—'}</td>
+      <td class="num">${m.saldo != null ? formatCLP(m.saldo) : '—'}</td>
+      <td>${matchBadge(m)}</td>
+    `;
+    tbody.appendChild(tr);
+  }
+
+  // KPIs cartola
+  const totIng = filtrados.reduce((s,m) => s + (m.haber || 0), 0);
+  const totEgr = filtrados.reduce((s,m) => s + (m.debe || 0), 0);
+  const conciliados = filtrados.filter(m => m.matched_doc_id).length;
+  document.getElementById('kpis-cartola').innerHTML = `
+    <div class="kpi green"><div class="label">Ingresos</div><div class="value">+${formatCLP(totIng)}</div></div>
+    <div class="kpi amber"><div class="label">Egresos</div><div class="value">-${formatCLP(totEgr)}</div></div>
+    <div class="kpi"><div class="label">Flujo neto</div><div class="value">${formatCLP(totIng - totEgr)}</div></div>
+    <div class="kpi"><div class="label">Conciliados</div><div class="value">${conciliados} / ${filtrados.length}</div><div class="sub">${filtrados.length > 0 ? Math.round(100*conciliados/filtrados.length) : 0}%</div></div>
+  `;
+}
+
+function verCartola(cuentaId){
+  document.getElementById('cartola-cuenta').value = cuentaId;
+  switchTab('cartola');
+}
+
+// ============================================================================
+// RENDER: SUGERENCIAS
+// ============================================================================
+async function renderSugerencias(){
+  const tbody = document.querySelector('#tbl-sugerencias tbody');
+  tbody.innerHTML = '';
+  if(_sugerencias.length === 0){
+    document.getElementById('sugerencias-empty').style.display = 'block';
+    return;
+  }
+  document.getElementById('sugerencias-empty').style.display = 'none';
+
+  // Para cada sugerencia, cargar movimiento y doc
+  for(const s of _sugerencias.slice(0, 50)){
+    const mov = _movimientos.find(m => m.id === s.movimiento_id);
+    if(!mov) continue;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><div><strong>${formatFecha(mov.fecha)}</strong> · ${escape((mov.glosa||'').slice(0,80))}</div>
+          <div class="num neg" style="font-size:12px">${formatCLP(mov.debe || mov.haber)}</div></td>
+      <td><span class="badge badge-blue">${s.doc_tipo}</span> Doc #${s.doc_id}</td>
+      <td class="num">${s.confidence}%</td>
+      <td><span style="font-size:11px;color:var(--slate)">${formatFactores(s.factores)}</span></td>
+      <td>
+        <button class="btn btn-success" onclick="aceptarSugerencia(${s.id})">✓</button>
+        <button class="btn btn-danger" onclick="rechazarSugerencia(${s.id})">✗</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  }
+}
+
+async function aceptarSugerencia(id){
+  const { error } = await _supa.from('sugerencias_match_bancario')
+    .update({ estado: 'aceptada', resuelto_at: new Date().toISOString(), resuelto_por: _user.email })
+    .eq('id', id);
+  if(error){ showStatus('error', error.message); return; }
+  showStatus('success', 'Sugerencia aceptada');
+  await loadSugerencias();
+  renderSugerencias();
+}
+
+async function rechazarSugerencia(id){
+  const { error } = await _supa.from('sugerencias_match_bancario')
+    .update({ estado: 'rechazada', resuelto_at: new Date().toISOString(), resuelto_por: _user.email })
+    .eq('id', id);
+  if(error){ showStatus('error', error.message); return; }
+  showStatus('success', 'Sugerencia rechazada');
+  await loadSugerencias();
+  renderSugerencias();
+}
+
+// ============================================================================
+// RENDER: RESUMEN
+// ============================================================================
+function renderResumen(){
+  // Agrupar por mes
+  const porMes = {};
+  for(const m of _movimientos){
+    const periodo = String(m.fecha).slice(0, 7);
+    if(!porMes[periodo]) porMes[periodo] = { ing: 0, egr: 0, n: 0 };
+    porMes[periodo].ing += m.haber || 0;
+    porMes[periodo].egr += m.debe || 0;
+    porMes[periodo].n += 1;
+  }
+  const periodos = Object.keys(porMes).sort().reverse();
+  const tbody = document.querySelector('#tbl-resumen-mensual tbody');
+  tbody.innerHTML = '';
+  for(const p of periodos){
+    const r = porMes[p];
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${p}</td>
+      <td class="num pos">+${formatCLP(r.ing)}</td>
+      <td class="num neg">-${formatCLP(r.egr)}</td>
+      <td class="num"><strong>${formatCLP(r.ing - r.egr)}</strong></td>
+      <td class="num">${r.n}</td>
+    `;
+    tbody.appendChild(tr);
+  }
+}
+
+// ============================================================================
+// IMPORT — DROPZONE Y PARSING
+// ============================================================================
+function setupDropzone(){
+  const dz = document.getElementById('dropzone');
+  ['dragenter','dragover'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add('drag'); }));
+  ['dragleave','drop'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.remove('drag'); }));
+  dz.addEventListener('drop', e => {
+    if(e.dataTransfer.files.length > 0){
+      document.getElementById('file-input').files = e.dataTransfer.files;
+      onFileSelected({ target: { files: e.dataTransfer.files } });
+    }
+  });
+}
+
+async function onFileSelected(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const cuentaId = document.getElementById('import-cuenta').value;
+  if(!cuentaId){ showStatus('error', 'Selecciona la cuenta destino primero'); return; }
+
+  _previewArchivoNombre = file.name;
+  const ext = file.name.split('.').pop().toLowerCase();
+
+  if(ext === 'txt'){
+    const text = await file.text();
+    _previewMovs = parseTxtClient(text, parseInt(cuentaId), _empresa_id, file.name);
+    showPreview();
+  } else if(ext === 'xlsx' || ext === 'xls'){
+    showStatus('error', 'Excel: pendiente, usa TXT por ahora o procesa con Python local + insert via Supabase');
+  } else if(ext === 'pdf'){
+    showStatus('error', 'PDF requiere parser server-side (pdfplumber). Usa Python local: python santander_pdf.py archivo.pdf --cuenta-id=X --empresa-id=1');
+  } else {
+    showStatus('error', 'Formato no soportado: ' + ext);
+  }
+}
+
+function showPreview(){
+  if(!_previewMovs || _previewMovs.length === 0){
+    showStatus('error', 'No se encontraron movimientos en el archivo');
+    return;
+  }
+  const card = document.getElementById('preview-card');
+  card.style.display = 'block';
+  const totIng = _previewMovs.reduce((s,m) => s + (m.haber||0), 0);
+  const totEgr = _previewMovs.reduce((s,m) => s + (m.debe||0), 0);
+  document.getElementById('preview-resumen').innerHTML = `
+    <div class="kpis">
+      <div class="kpi"><div class="label">Movimientos</div><div class="value">${_previewMovs.length}</div></div>
+      <div class="kpi green"><div class="label">Ingresos</div><div class="value">+${formatCLP(totIng)}</div></div>
+      <div class="kpi amber"><div class="label">Egresos</div><div class="value">-${formatCLP(totEgr)}</div></div>
+      <div class="kpi"><div class="label">Período</div><div class="value" style="font-size:14px">${_previewMovs[_previewMovs.length-1].fecha} → ${_previewMovs[0].fecha}</div></div>
+    </div>
+  `;
+  const tbody = document.querySelector('#tbl-preview tbody');
+  tbody.innerHTML = '';
+  for(const m of _previewMovs.slice(0, 100)){
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${formatFecha(m.fecha)}</td>
+      <td>${escape((m.glosa||'').slice(0,80))}</td>
+      <td>${m.rut_contraparte ? '<code>'+m.rut_contraparte+'</code>' : '—'}</td>
+      <td class="num neg">${m.debe > 0 ? '-'+formatCLP(m.debe) : '—'}</td>
+      <td class="num pos">${m.haber > 0 ? '+'+formatCLP(m.haber) : '—'}</td>
+      <td class="num">${m.saldo != null ? formatCLP(m.saldo) : '—'}</td>
+    `;
+    tbody.appendChild(tr);
+  }
+}
+
+async function confirmarImport(){
+  if(!_previewMovs) return;
+  document.getElementById('btn-confirmar-import').disabled = true;
+
+  // Insert en batch (Supabase tiene límite ~1000 rows por request)
+  let nuevos = 0, dups = 0, errs = 0;
+  const batchSize = 200;
+  for(let i = 0; i < _previewMovs.length; i += batchSize){
+    const batch = _previewMovs.slice(i, i + batchSize);
+    const { data, error } = await _supa.from('movimientos_bancarios').upsert(batch, {
+      onConflict: 'cuenta_id,hash_idempotencia',
+      ignoreDuplicates: true,
+    }).select('id');
+    if(error){ console.error(error); errs += batch.length; continue; }
+    nuevos += (data || []).length;
+    dups += batch.length - (data || []).length;
+  }
+
+  // Log import
+  await _supa.from('imports_bancarios_log').insert({
+    empresa_id: _empresa_id,
+    cuenta_id: _previewMovs[0].cuenta_id,
+    archivo_nombre: _previewArchivoNombre,
+    fuente: _previewMovs[0].fuente,
+    movimientos_nuevos: nuevos,
+    movimientos_duplicados: dups,
+    movimientos_total: _previewMovs.length,
+    estado: errs > 0 ? 'parcial' : 'ok',
+    importado_por: _user.email,
+  });
+
+  showStatus('success', `Importados: ${nuevos} nuevos, ${dups} duplicados, ${errs} errores`);
+  cancelarImport();
+  await loadMovimientos();
+  renderCartolaFiltros();
+}
+
+function cancelarImport(){
+  document.getElementById('preview-card').style.display = 'none';
+  document.getElementById('file-input').value = '';
+  _previewMovs = null;
+  _previewArchivoNombre = null;
+  document.getElementById('btn-confirmar-import').disabled = false;
+}
+
+// ============================================================================
+// PARSER TXT CLIENT-SIDE (mirror simplificado del Python)
+// ============================================================================
+const _RE_RUT = /\b(\d{1,2}\.?\d{3}\.?\d{3}-[\dkK])\b/;
+const _MOJIBAKE = { "Ã±":"ñ","Ã¡":"á","Ã©":"é","Ã­":"í","Ã³":"ó","Ãº":"ú","ã'":"ñ" };
+
+function parseTxtClient(content, cuentaId, empresaId, archivo){
+  const movs = [];
+  const lines = content.split(/\r?\n/);
+  let headerSeen = false, headerMap = null;
+
+  for(const line of lines){
+    if(!line.trim()) continue;
+    const parts = line.includes('\t') ? line.split('\t') : line.split(/\s{2,}/);
+    if(parts.length < 4) continue;
+
+    const lower = parts.join(' ').toLowerCase();
+    if(!headerSeen && (lower.includes('fecha') || lower.includes('descrip'))){
+      headerSeen = true;
+      headerMap = buildHeaderMap(parts);
+      continue;
+    }
+    if(!headerSeen) continue;
+
+    const fecha = parseFecha(parts[headerMap?.fecha ?? 0]);
+    if(!fecha) continue;
+
+    const glosa = (parts[headerMap?.descripcion ?? 1] || '').trim();
+    const debe = parseMonto(parts[headerMap?.cargo ?? 2]);
+    const haber = parseMonto(parts[headerMap?.abono ?? 3]);
+    const saldo = parseMonto(parts[headerMap?.saldo ?? 4]);
+
+    if(debe === 0 && haber === 0) continue;
+
+    const glosaNorm = normalizar(glosa);
+    movs.push({
+      empresa_id: empresaId,
+      cuenta_id: cuentaId,
+      fecha: fecha,
+      glosa: glosa,
+      glosa_normalizada: glosaNorm,
+      debe: debe,
+      haber: haber,
+      saldo: saldo || null,
+      rut_contraparte: extractRut(glosa),
+      tipo_movimiento: classifyTipo(glosa, debe, haber),
+      fuente: 'officebanking_txt',
+      archivo_origen: archivo,
+      hash_idempotencia: hashSync(`${cuentaId}|${fecha}|${glosaNorm}|${debe.toFixed(2)}|${haber.toFixed(2)}`),
+    });
+  }
+  return movs.sort((a,b) => b.fecha.localeCompare(a.fecha));
+}
+
+function buildHeaderMap(parts){
+  const map = {};
+  parts.forEach((p, i) => {
+    const norm = p.toLowerCase().trim();
+    if(norm.startsWith('fecha')) map.fecha = i;
+    if(norm.includes('descrip') || norm.includes('glosa') || norm.includes('concepto')) map.descripcion = i;
+    if(norm.startsWith('cargo') || norm.startsWith('debe') || norm.startsWith('debit')) map.cargo = i;
+    if(norm.startsWith('abono') || norm.startsWith('haber') || norm.startsWith('credit')) map.abono = i;
+    if(norm.startsWith('saldo')) map.saldo = i;
+  });
+  return map;
+}
+
+function parseFecha(raw){
+  if(!raw) return null;
+  raw = raw.trim();
+  // AAAAMMDD
+  if(/^\d{8}$/.test(raw)) return raw.slice(0,4) + '-' + raw.slice(4,6) + '-' + raw.slice(6,8);
+  // DD/MM/YYYY o DD-MM-YYYY
+  const m = raw.match(/^(\d{2})[\/\-](\d{2})[\/\-](\d{2,4})$/);
+  if(m){
+    let y = m[3]; if(y.length === 2) y = '20' + y;
+    return `${y}-${m[2]}-${m[1]}`;
+  }
+  // YYYY-MM-DD
+  if(/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+  return null;
+}
+
+function parseMonto(raw){
+  if(raw == null || raw === '') return 0;
+  let s = String(raw).trim().replace(/\$/g,'').replace(/\s/g,'');
+  if(s.includes(',') && s.includes('.') && s.lastIndexOf(',') > s.lastIndexOf('.')){
+    s = s.replace(/\./g,'').replace(',','.');
+  } else if((s.match(/\./g)||[]).length > 1){
+    s = s.replace(/\./g,'');
+  } else if(s.includes(',') && /^\-?\d{1,3}(,\d{3})+$/.test(s)){
+    s = s.replace(/,/g,'');
+  } else if(s.includes(',')){
+    s = s.replace(',','.');
+  }
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
+}
+
+function extractRut(text){
+  const m = (text||'').match(_RE_RUT);
+  if(!m) return null;
+  let r = m[1].toUpperCase().replace(/\./g,'').replace(/\s/g,'');
+  if(!r.includes('-') && r.length >= 2) r = r.slice(0,-1) + '-' + r.slice(-1);
+  return r;
+}
+
+function normalizar(text){
+  let t = text || '';
+  for(const [b,g] of Object.entries(_MOJIBAKE)) t = t.split(b).join(g);
+  return t.replace(/\s+/g,' ').trim();
+}
+
+function classifyTipo(glosa, debe, haber){
+  const g = (glosa||'').toLowerCase();
+  if(g.includes('transf de') || g.includes('abono transf')) return 'transferencia_recibida';
+  if(g.includes('transf a') || g.includes('envio transf')) return 'transferencia_enviada';
+  if(g.includes('cheque') || g.includes('chq')) return debe > 0 ? 'cheque_cobrado' : 'cheque_emitido';
+  if(g.includes('pago aut') || g.includes('pat ') || g.includes('pac ')) return 'pago_servicios';
+  if(g.includes('comision') || g.includes('cargo banco')) return 'comision';
+  if(g.includes('sueldo') || g.includes('remuneracion')) return 'sueldo';
+  if(g.includes('impuesto') || g.includes('f29') || g.includes('iva')) return 'impuesto';
+  return debe > 0 ? 'cargo_otro' : 'abono_otro';
+}
+
+// SHA-256 sync — usa subtle crypto (async) en realidad. Para cliente, hacemos un hash más simple y suficiente.
+function hashSync(s){
+  // FNV-1a 64-bit-ish, estable y reproducible. Suficiente para idempotencia client-side.
+  // Para idempotencia robusta DB-side, el server puede recalcular SHA-256 del trigger.
+  let h = 0xcbf29ce484222325n;
+  for(let i=0;i<s.length;i++){ h ^= BigInt(s.charCodeAt(i)); h = (h * 0x100000001b3n) & 0xffffffffffffffffn; }
+  return h.toString(16).padStart(16,'0') + s.length.toString(16).padStart(4,'0');
+}
+
+// ============================================================================
+// HELPERS DE FORMATO
+// ============================================================================
+function formatCLP(n){ if(n == null) return '—'; return '$' + Math.round(n).toLocaleString('es-CL'); }
+function formatFecha(f){ if(!f) return '—'; const d = String(f).slice(0,10).split('-'); return `${d[2]}-${d[1]}-${d[0]}`; }
+function escape(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function maskNum(n){ if(!n) return '—'; const s = String(n); return s.length > 4 ? '****'+s.slice(-4) : s; }
+
+function tipoLabel(t){
+  return ({corriente:'Corriente',vista:'Vista',rut:'CuentaRUT',chequera_electronica:'Chequera elec.',tarjeta_credito:'TC',linea_credito:'Línea créd.',ahorro:'Ahorro'}[t] || t);
+}
+function bancoBadgeClass(b){
+  return ({santander:'badge-red',bchile:'badge-blue',bestado:'badge-amber',bci:'badge-purple',itau:'badge-blue',scotiabank:'badge-red'}[b] || 'badge-slate');
+}
+function tipoMovBadge(t){
+  if(!t) return '—';
+  const map = {transferencia_recibida:'badge-green',transferencia_enviada:'badge-amber',cheque_emitido:'badge-purple',cheque_cobrado:'badge-purple',pago_servicios:'badge-blue',comision:'badge-slate',sueldo:'badge-amber',impuesto:'badge-red',cargo_tc:'badge-red',abono_tc:'badge-green'};
+  const cls = map[t] || 'badge-slate';
+  return `<span class="badge ${cls}">${t.replace(/_/g,' ')}</span>`;
+}
+function matchBadge(m){
+  if(m.matched_doc_id) return `<span class="badge badge-green">✓ ${m.matched_doc_tipo} #${m.matched_doc_id}</span>`;
+  return '<span class="badge badge-slate">sin match</span>';
+}
+function formatFactores(f){
+  if(!f) return '';
+  return Object.entries(f).filter(([,v]) => v !== false).map(([k,v]) => `${k}=${v}`).join(', ');
+}
+
+function showStatus(type, msg){
+  const el = document.getElementById('status');
+  el.className = 'status show ' + type;
+  el.textContent = msg;
+  setTimeout(() => el.classList.remove('show'), 4500);
+}
+
+// ============================================================================
+// NUEVA CUENTA (modal simple via prompt — refinar después)
+// ============================================================================
+async function abrirNuevaCuenta(){
+  const banco = prompt('Banco (santander, bchile, bestado, bci, itau):');
+  if(!banco) return;
+  const tipo = prompt('Tipo (corriente, vista, rut, chequera_electronica, tarjeta_credito):');
+  if(!tipo) return;
+  const numero = prompt('Número de cuenta:');
+  if(!numero) return;
+  const alias = prompt('Alias (opcional):') || null;
+
+  const { error } = await _supa.from('cuentas_bancarias').insert({
+    empresa_id: _empresa_id,
+    banco: banco.trim().toLowerCase(),
+    tipo_cuenta: tipo.trim().toLowerCase(),
+    numero_cuenta: numero.trim(),
+    numero_cuenta_masked: numero.length > 4 ? '****' + numero.slice(-4) : numero,
+    alias: alias,
+  });
+  if(error){ showStatus('error', error.message); return; }
+  showStatus('success', 'Cuenta agregada');
+  await loadCuentas();
+  renderCuentas();
+}
+
+// ============================================================================
+// BOOT
+// ============================================================================
+init();
+</script>
+
+</body>
+</html>
